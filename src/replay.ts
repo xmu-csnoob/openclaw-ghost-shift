@@ -22,6 +22,7 @@ export interface PlaybackState {
   selectedTimestamp: number | null
   currentFrameIndex: number
   isPlaying: boolean
+  playbackRate: 0.5 | 1 | 2
 }
 
 export const REPLAY_RETENTION_MS = 24 * 60 * 60 * 1000

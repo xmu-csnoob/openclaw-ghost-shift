@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -28,6 +29,10 @@ type recordedPublicSession struct {
 	ActivityScore  float64 `json:"activityScore,omitempty"`
 	ActivityWindow string  `json:"activityWindow,omitempty"`
 	Footprint      string  `json:"footprint,omitempty"`
+	MessageCount   int     `json:"messageCount,omitempty"`
+	InputTokens    int     `json:"inputTokens,omitempty"`
+	OutputTokens   int     `json:"outputTokens,omitempty"`
+	TotalTokens    int     `json:"totalTokens,omitempty"`
 }
 
 type PublicHistoryFrame struct {
@@ -37,11 +42,16 @@ type PublicHistoryFrame struct {
 }
 
 type PublicTimelinePoint struct {
-	CapturedAt string `json:"capturedAt"`
-	Connected  bool   `json:"connected"`
-	Status     string `json:"status"`
-	Displayed  int    `json:"displayed"`
-	Running    int    `json:"running"`
+	CapturedAt      string                `json:"capturedAt"`
+	Connected       bool                  `json:"connected"`
+	Status          string                `json:"status"`
+	Displayed       int                   `json:"displayed"`
+	Running         int                   `json:"running"`
+	AvgResponseTime float64               `json:"avgResponseTime"`
+	ToolCallCount   int                   `json:"toolCallCount"`
+	MessageCount    int                   `json:"messageCount"`
+	ZoneMix         []PublicZoneMixEntry  `json:"zoneMix"`
+	ModelMix        []PublicModelMixEntry `json:"modelMix"`
 }
 
 type PublicTimelineResponse struct {
@@ -146,13 +156,23 @@ func (r *PublicHistoryRecorder) recordSnapshotAt(snapshot PublicSnapshot, captur
 func (r *PublicHistoryRecorder) Timeline(since, until time.Time) PublicTimelineResponse {
 	frames := r.filteredFrames(since, until)
 	points := make([]PublicTimelinePoint, 0, len(frames))
-	for _, frame := range frames {
+	for index, frame := range frames {
+		var previous *PublicHistoryFrame
+		if index > 0 {
+			previous = &frames[index-1]
+		}
+		avgResponseTime, toolCallCount := intervalResponseAndToolMetrics(previous, frame)
 		points = append(points, PublicTimelinePoint{
-			CapturedAt: frame.CapturedAt,
-			Connected:  frame.Status.Connected,
-			Status:     frame.Status.Status,
-			Displayed:  frame.Status.Displayed,
-			Running:    frame.Status.Running,
+			CapturedAt:      frame.CapturedAt,
+			Connected:       frame.Status.Connected,
+			Status:          frame.Status.Status,
+			Displayed:       frame.Status.Displayed,
+			Running:         frame.Status.Running,
+			AvgResponseTime: avgResponseTime,
+			ToolCallCount:   toolCallCount,
+			MessageCount:    totalMessageCount(frame.Sessions),
+			ZoneMix:         buildZoneMix(frame.Sessions),
+			ModelMix:        buildModelMix(frame.Sessions),
 		})
 	}
 
@@ -257,6 +277,16 @@ func (r *PublicHistoryRecorder) filteredFrames(since, until time.Time) []PublicH
 	return frames
 }
 
+func (r *PublicHistoryRecorder) cacheVersion() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if len(r.frames) == 0 {
+		return "empty"
+	}
+	return fmt.Sprintf("%d:%s", len(r.frames), r.frames[len(r.frames)-1].CapturedAt)
+}
+
 func (r *PublicHistoryRecorder) pruneLocked(now time.Time) int {
 	if len(r.frames) == 0 {
 		return 0
@@ -334,6 +364,10 @@ func buildHistoryFrame(snapshot PublicSnapshot, capturedAt time.Time) PublicHist
 			ActivityScore:  session.ActivityScore,
 			ActivityWindow: session.ActivityWindow,
 			Footprint:      session.Footprint,
+			MessageCount:   session.MessageCount,
+			InputTokens:    session.InputTokens,
+			OutputTokens:   session.OutputTokens,
+			TotalTokens:    session.TotalTokens,
 		})
 	}
 
@@ -359,6 +393,10 @@ func restorePublicSessions(recorded []recordedPublicSession) []PublicSession {
 			ActivityScore:  session.ActivityScore,
 			ActivityWindow: session.ActivityWindow,
 			Footprint:      session.Footprint,
+			MessageCount:   session.MessageCount,
+			InputTokens:    session.InputTokens,
+			OutputTokens:   session.OutputTokens,
+			TotalTokens:    session.TotalTokens,
 		})
 	}
 	return sessions

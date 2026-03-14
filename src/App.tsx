@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { CaseStudyLayer } from './components/CaseStudyLayer.js'
 import { GhostShiftSummaryCard } from './components/GhostShiftSummaryCard.js'
 import { LiveOfficeStage } from './components/LiveOfficeStage.js'
+import { ProductDashboard } from './components/ProductDashboard.js'
+import { RealtimeStatsSidebar } from './components/RealtimeStatsSidebar.js'
+import { SharePanel } from './components/SharePanel.js'
 import {
-  caseStudyCards,
   demoSidebarNotes,
   documentationPoints,
   heroPills,
@@ -16,6 +19,8 @@ import {
   getPublicAgentLabel,
   getZoneColor,
   getZoneLabel,
+  summarizeModelMix,
+  summarizeZones,
   toDisplaySession,
   updateObservation,
 } from './publicDisplay.js'
@@ -31,6 +36,7 @@ import {
   type TimelinePoint,
 } from './replay.js'
 import { apiClient } from './services/ApiClient.js'
+import type { HistoryMeta } from './portfolioMetrics.js'
 import type {
   AgentSession,
   PublicOfficeSnapshot,
@@ -40,6 +46,7 @@ import { SNAPSHOT_REFRESH_MS, SUMMARY_CARD_SEGMENT } from './surfaceConfig.js'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 type SurfaceMode = 'portfolio' | 'embed-card'
+type SharedPlaybackMode = 'live' | 'replay'
 
 const officeStateRef = { current: null as OfficeState | null }
 const sessionToAgentId = new Map<string, number>()
@@ -102,6 +109,16 @@ function getSurfacePaths(pathname: string): { livePath: string; embedCardPath: s
       : normalized
   const embedCardPath = livePath === '/' ? SUMMARY_CARD_SEGMENT : `${livePath}${SUMMARY_CARD_SEGMENT}`
   return { livePath, embedCardPath }
+}
+
+function parseWindowHours(value: string | null): PlaybackState['windowHours'] {
+  if (value === '6') return 6
+  if (value === '24') return 24
+  return 1
+}
+
+function parsePlaybackMode(value: string | null): SharedPlaybackMode {
+  return value === 'replay' ? 'replay' : 'live'
 }
 
 function buildEmbedSnippet(embedCardPath: string): string {
@@ -263,15 +280,198 @@ function buildTourCandidateIds(sessions: DisplaySession[]): number[] {
     .filter((agentId): agentId is number => agentId !== undefined)
 }
 
+function getModelColor(label: string): string {
+  switch (label.toLowerCase()) {
+    case 'gpt':
+      return '#7db3ff'
+    case 'claude':
+      return '#f6c978'
+    case 'gemini':
+      return '#9bffb4'
+    case 'qwen':
+      return '#ff9fb2'
+    case 'deepseek':
+      return '#cba6f7'
+    default:
+      return '#90a5c1'
+  }
+}
+
+function buildSessionInsights(replayFrames: ReplayFrame[], liveSessions: DisplaySession[], liveTimestamp: number) {
+  const insights = new Map<
+    string,
+    {
+      publicId: string
+      points: Array<{ timestamp: number; score: number }>
+      toolStats: { read: number; write: number; ops: number }
+      windowCounts: Map<string, number>
+    }
+  >()
+
+  const sourceFrames = replayFrames.slice()
+  if (liveSessions.length > 0) {
+    sourceFrames.push({
+      timestamp: liveTimestamp,
+      status: replayFrames[replayFrames.length - 1]?.status || {
+        connected: true,
+        status: 'live',
+        displayed: liveSessions.length,
+        running: liveSessions.filter((session) => session.status === 'running').length,
+        lastUpdatedAt: new Date(liveTimestamp).toISOString(),
+      },
+      sessions: liveSessions,
+      characters: [],
+    })
+  }
+
+  for (const frame of sourceFrames) {
+    for (const session of frame.sessions) {
+      const entry = insights.get(session.sessionKey) || {
+        publicId: session.publicId || session.sessionKey,
+        points: [],
+        toolStats: { read: 0, write: 0, ops: 0 },
+        windowCounts: new Map<string, number>(),
+      }
+
+      entry.points.push({
+        timestamp: frame.timestamp,
+        score: session.status === 'running' ? Math.max(session.signalScore, 0.9) : session.signalScore,
+      })
+      entry.windowCounts.set(session.signalWindow, (entry.windowCounts.get(session.signalWindow) || 0) + 1)
+
+      if (session.role === 'automation') {
+        entry.toolStats.ops += Math.max(1, Math.round(session.signalScore * 2))
+      } else if (session.role === 'webchat') {
+        entry.toolStats.read += 1
+        entry.toolStats.ops += session.signalScore > 0.55 ? 1 : 0
+      } else {
+        entry.toolStats.write += session.status === 'running' ? 2 : session.signalScore > 0.7 ? 1 : 0
+        entry.toolStats.read += session.signalScore < 0.55 ? 1 : 0
+      }
+
+      insights.set(session.sessionKey, entry)
+    }
+  }
+
+  return new Map(
+    Array.from(insights.entries()).map(([sessionKey, entry]) => {
+      const dominantWindow =
+        Array.from(entry.windowCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 'observed'
+
+      return [
+        sessionKey,
+        {
+          publicId: entry.publicId,
+          activityPoints: entry.points.slice(-20),
+          toolStats: [
+            { label: 'Read', count: entry.toolStats.read, color: '#7db3ff' },
+            { label: 'Write', count: entry.toolStats.write, color: '#f6c978' },
+            { label: 'Ops', count: entry.toolStats.ops, color: '#9bffb4' },
+          ],
+          dominantWindow,
+        },
+      ]
+    }),
+  )
+}
+
+function buildReplayPreviewFrames(
+  frames: ReplayFrame[],
+  currentReplayFrame: ReplayFrame | null,
+): Array<{
+  id: string
+  timestamp: number
+  label: string
+  running: number
+  displayed: number
+  zoneLabel: string
+  accent: string
+  isCurrent: boolean
+}> {
+  if (frames.length === 0) return []
+
+  const sampleCount = Math.min(4, frames.length)
+  const indices = new Set<number>([0, frames.length - 1])
+  if (sampleCount > 2) {
+    for (let step = 1; step < sampleCount - 1; step += 1) {
+      indices.add(Math.round((step / (sampleCount - 1)) * (frames.length - 1)))
+    }
+  }
+
+  return Array.from(indices)
+    .sort((a, b) => a - b)
+    .map((index) => {
+      const frame = frames[index]
+      const topZone = summarizeZones(frame.sessions)[0]
+      return {
+        id: `${frame.timestamp}`,
+        timestamp: frame.timestamp,
+        label: formatPlaybackTimestamp(frame.timestamp),
+        running: frame.status.running,
+        displayed: frame.status.displayed,
+        zoneLabel: topZone?.label || 'Quiet office',
+        accent: getZoneColor(topZone?.zone || 'ops-lab'),
+        isCurrent: currentReplayFrame?.timestamp === frame.timestamp,
+      }
+    })
+}
+
+function buildReplayEventMarkers(
+  frames: ReplayFrame[],
+  scrubberMin: number,
+  scrubberMax: number,
+): Array<{ id: string; timestamp: number; position: number; label: string; tone: string }> {
+  if (frames.length < 2 || scrubberMax <= scrubberMin) return []
+
+  const events: Array<{ id: string; timestamp: number; position: number; label: string; tone: string }> = []
+  for (let index = 1; index < frames.length; index += 1) {
+    const previous = frames[index - 1]
+    const current = frames[index]
+    const runningDelta = current.status.running - previous.status.running
+    const visibleDelta = current.status.displayed - previous.status.displayed
+    const currentZone = summarizeZones(current.sessions)[0]?.label
+    const previousZone = summarizeZones(previous.sessions)[0]?.label
+
+    if (Math.abs(runningDelta) < 2 && Math.abs(visibleDelta) < 2 && currentZone === previousZone) {
+      continue
+    }
+
+    const tone =
+      runningDelta > 0
+        ? '#F38BA8'
+        : runningDelta < 0
+          ? '#89B4FA'
+          : '#F9E2AF'
+    const labelParts = [`${formatPlaybackTimestamp(current.timestamp)}`]
+    if (runningDelta !== 0) labelParts.push(`${runningDelta > 0 ? '+' : ''}${runningDelta} live`)
+    if (visibleDelta !== 0) labelParts.push(`${visibleDelta > 0 ? '+' : ''}${visibleDelta} visible`)
+    if (currentZone !== previousZone && currentZone) labelParts.push(`lead ${currentZone}`)
+
+    events.push({
+      id: `${current.timestamp}`,
+      timestamp: current.timestamp,
+      position: (current.timestamp - scrubberMin) / (scrubberMax - scrubberMin),
+      label: labelParts.join(' • '),
+      tone,
+    })
+  }
+
+  return events.slice(0, 6)
+}
+
 function App() {
   const officeState = getOfficeState()
 
-  const [{ surfaceMode, livePath, embedCardPath }] = useState(() => {
+  const [{ surfaceMode, livePath, embedCardPath, initialMode, initialWindowHours, initialTimestamp }] = useState(() => {
     const pathname = window.location.pathname
     const search = window.location.search
+    const params = new URLSearchParams(search)
     return {
       surfaceMode: resolveSurfaceMode(pathname, search),
       ...getSurfacePaths(pathname),
+      initialMode: parsePlaybackMode(params.get('mode')),
+      initialWindowHours: parseWindowHours(params.get('window')),
+      initialTimestamp: parseTimestamp(params.get('ts') || undefined),
     }
   })
 
@@ -279,17 +479,20 @@ function App() {
   const [liveSnapshot, setLiveSnapshot] = useState<PublicOfficeSnapshot | null>(null)
   const [liveSessions, setLiveSessions] = useState<DisplaySession[]>([])
   const [timelineSeries, setTimelineSeries] = useState<TimelinePoint[]>([])
+  const [historyMeta, setHistoryMeta] = useState<HistoryMeta | null>(null)
   const [replayFrames, setReplayFrames] = useState<ReplayFrame[]>([])
   const [playbackState, setPlaybackState] = useState<PlaybackState>({
-    mode: 'live',
-    windowHours: 1,
-    selectedTimestamp: null,
+    mode: initialMode,
+    windowHours: initialWindowHours,
+    selectedTimestamp: initialTimestamp,
     currentFrameIndex: 0,
     isPlaying: false,
+    playbackRate: 1,
   })
   const [backendError, setBackendError] = useState<string | null>(null)
   const [showStatusPanel, setShowStatusPanel] = useState(false)
   const [showSessionPanel, setShowSessionPanel] = useState(false)
+  const [heatmapEnabled, setHeatmapEnabled] = useState(false)
   const [zoom, setZoom] = useState(() => {
     const dpr = window.devicePixelRatio || 1
     return Math.round(2 * dpr)
@@ -297,6 +500,13 @@ function App() {
   const [compactViewport, setCompactViewport] = useState(() => window.innerWidth < 980)
   const [autoTourPaused, setAutoTourPaused] = useState(false)
   const [tourTargetAgentId, setTourTargetAgentId] = useState<number | null>(null)
+  const [responseTrend, setResponseTrend] = useState<Array<{ timestamp: number; value: number }>>([])
+  const [hoverState, setHoverState] = useState<{ agentId: number | null; position: { x: number; y: number } | null }>({
+    agentId: null,
+    position: null,
+  })
+  const [isSnapshotLoading, setIsSnapshotLoading] = useState(true)
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true)
   const panRef = useRef({ x: 0, y: 0 })
   const observationsRef = useRef<Map<string, SessionObservation>>(new Map())
   const tourCursorRef = useRef(-1)
@@ -336,6 +546,7 @@ function App() {
     let cancelled = false
 
     const fetchSnapshot = async () => {
+      const requestStartedAt = performance.now()
       try {
         const snapshot = await apiClient.getSnapshot()
         if (cancelled) return
@@ -348,14 +559,26 @@ function App() {
           now,
         )
 
-        setLiveSnapshot(snapshot)
-        setLiveSessions(nextSessions)
+        startTransition(() => {
+          setLiveSnapshot(snapshot)
+          setLiveSessions(nextSessions)
+        })
+        setResponseTrend((previous) =>
+          previous
+            .concat({
+              timestamp: now,
+              value: performance.now() - requestStartedAt,
+            })
+            .slice(-40),
+        )
         setConnectionState(snapshot.status.connected ? 'connected' : 'disconnected')
         setBackendError(null)
+        setIsSnapshotLoading(false)
       } catch {
         if (cancelled) return
         setConnectionState('disconnected')
         setBackendError('API unavailable')
+        setIsSnapshotLoading(false)
       }
     }
 
@@ -372,32 +595,41 @@ function App() {
 
     const fetchHistory = async () => {
       try {
-        const since = new Date(Date.now() - getPlaybackWindowMs(24)).toISOString()
+        const timelineSince = new Date(Date.now() - (48 * 60 * 60 * 1000)).toISOString()
+        const replaySince = new Date(Date.now() - getPlaybackWindowMs(24)).toISOString()
         const [timelineResponse, replayResponse] = await Promise.all([
-          apiClient.getTimeline(since),
-          apiClient.getReplay(since),
+          apiClient.getTimeline(timelineSince),
+          apiClient.getReplay(replaySince),
         ])
 
         if (cancelled) return
 
-        setTimelineSeries(
-          timelineResponse.points
-            .map((point) => {
-              const timestamp = parseTimestamp(point.capturedAt)
-              if (timestamp === null) return null
-              return {
-                timestamp,
-                displayed: point.displayed,
-                running: point.running,
-                connected: point.connected,
-              }
-            })
-            .filter((point): point is TimelinePoint => point !== null),
-        )
-        setReplayFrames(buildReplayFrames(officeState.getLayout(), replayResponse.frames))
+        startTransition(() => {
+          setTimelineSeries(
+            timelineResponse.points
+              .map((point) => {
+                const timestamp = parseTimestamp(point.capturedAt)
+                if (timestamp === null) return null
+                return {
+                  timestamp,
+                  displayed: point.displayed,
+                  running: point.running,
+                  connected: point.connected,
+                }
+              })
+              .filter((point): point is TimelinePoint => point !== null),
+          )
+          setHistoryMeta({
+            intervalSeconds: timelineResponse.intervalSeconds,
+            retentionHours: timelineResponse.retentionHours,
+          })
+          setReplayFrames(buildReplayFrames(officeState.getLayout(), replayResponse.frames))
+        })
+        setIsHistoryLoading(false)
       } catch {
         if (!cancelled) {
           setBackendError((previous) => previous ?? 'History unavailable')
+          setIsHistoryLoading(false)
         }
       }
     }
@@ -469,7 +701,10 @@ function App() {
       return
     }
 
-    const delayMs = Math.max(450, Math.min(2_400, nextFrame.timestamp - currentFrame.timestamp))
+    const delayMs = Math.max(
+      240,
+      Math.min(2_400, (nextFrame.timestamp - currentFrame.timestamp) / playbackState.playbackRate),
+    )
     const timeoutId = window.setTimeout(() => {
       setPlaybackState((previous) => {
         if (previous.mode !== 'replay' || !previous.isPlaying) return previous
@@ -488,6 +723,7 @@ function App() {
     playbackState.currentFrameIndex,
     playbackState.isPlaying,
     playbackState.mode,
+    playbackState.playbackRate,
     replayFrames,
     visibleReplayFrames.length,
     visibleReplayStartIndex,
@@ -579,19 +815,77 @@ function App() {
     [augmentedTimelineSeries, displayTimestamp, playbackWindowMs],
   )
 
-  const displaySessions =
-    playbackState.mode === 'replay'
-      ? currentReplayFrame?.sessions ?? []
-      : liveSessions
+  const displaySessions = useMemo(
+    () => (playbackState.mode === 'replay' ? currentReplayFrame?.sessions ?? [] : liveSessions),
+    [currentReplayFrame?.sessions, liveSessions, playbackState.mode],
+  )
 
-  const displayStatus =
-    playbackState.mode === 'replay'
-      ? currentReplayFrame?.status ?? liveStatus
-      : liveStatus
+  const displayStatus = useMemo(
+    () => (playbackState.mode === 'replay' ? currentReplayFrame?.status ?? liveStatus : liveStatus),
+    [currentReplayFrame?.status, liveStatus, playbackState.mode],
+  )
 
   const selectedAgentId = officeState.selectedAgentId
   const selectedSession =
     displaySessions.find((session) => sessionToAgentId.get(session.sessionKey) === selectedAgentId) || null
+
+  const sessionInsights = useMemo(
+    () => buildSessionInsights(replayFrames, liveSessions, liveTimestamp),
+    [liveSessions, liveTimestamp, replayFrames],
+  )
+
+  const hoveredSession =
+    displaySessions.find((session) => sessionToAgentId.get(session.sessionKey) === hoverState.agentId) || null
+  const hoveredInsight = hoveredSession ? sessionInsights.get(hoveredSession.sessionKey) : null
+
+  const heatmapSources = useMemo(
+    () =>
+      displaySessions
+        .map((session) => {
+          const agentId = sessionToAgentId.get(session.sessionKey)
+          if (agentId === undefined) return null
+          return {
+            agentId,
+            zone: session.zone,
+            intensity: session.status === 'running' ? 1 : Math.max(0.18, session.signalScore),
+          }
+        })
+        .filter((entry): entry is { agentId: number; zone: string; intensity: number } => entry !== null),
+    [displaySessions],
+  )
+
+  const replayPreviewFrames = useMemo(
+    () => buildReplayPreviewFrames(visibleReplayFrames, currentReplayFrame),
+    [currentReplayFrame, visibleReplayFrames],
+  )
+
+  const replayEventMarkers = useMemo(
+    () => buildReplayEventMarkers(visibleReplayFrames, scrubberMin, scrubberMax),
+    [scrubberMax, scrubberMin, visibleReplayFrames],
+  )
+
+  const sidebarModelMix = useMemo(
+    () =>
+      summarizeModelMix(displaySessions)
+        .slice(0, 5)
+        .map((entry) => ({
+          ...entry,
+          color: getModelColor(entry.label),
+        })),
+    [displaySessions],
+  )
+
+  const sidebarZoneBars = useMemo(
+    () =>
+      summarizeZones(displaySessions).map((entry) => ({
+        label: entry.label,
+        color: getZoneColor(entry.zone),
+        value: entry.count / Math.max(displaySessions.length, 1),
+        running: entry.running,
+        count: entry.count,
+      })),
+    [displaySessions],
+  )
 
   const freshness = useMemo(() => {
     if (playbackState.mode === 'replay') {
@@ -652,6 +946,13 @@ function App() {
     pauseAutoTour()
   }, [pauseAutoTour])
 
+  const handleCanvasHoverChange = useCallback(
+    (agentId: number | null, position: { x: number; y: number } | null) => {
+      setHoverState({ agentId, position })
+    },
+    [],
+  )
+
   const handleAgentClick = useCallback(
     (agentId: number) => {
       pauseAutoTour()
@@ -688,6 +989,7 @@ function App() {
   const handleModeChange = useCallback(
     (mode: 'live' | 'replay') => {
       pauseAutoTour()
+      setHoverState({ agentId: null, position: null })
       officeState.cameraFollowId = null
       if (mode === 'live') {
         setPlaybackState((previous) => ({
@@ -726,6 +1028,7 @@ function App() {
   const handleScrub = useCallback(
     (timestamp: number) => {
       pauseAutoTour()
+      setHoverState({ agentId: null, position: null })
       officeState.cameraFollowId = null
 
       if (visibleReplayFrames.length === 0) return
@@ -754,6 +1057,17 @@ function App() {
     }))
   }, [pauseAutoTour])
 
+  const handlePlaybackRateChange = useCallback(
+    (playbackRate: PlaybackState['playbackRate']) => {
+      pauseAutoTour()
+      setPlaybackState((previous) => ({
+        ...previous,
+        playbackRate,
+      }))
+    },
+    [pauseAutoTour],
+  )
+
   const handleJumpToLive = useCallback(() => {
     handleModeChange('live')
   }, [handleModeChange])
@@ -763,12 +1077,18 @@ function App() {
     setAutoTourPaused(false)
   }, [officeState])
 
+  const handleToggleHeatmap = useCallback(() => {
+    pauseAutoTour()
+    setHeatmapEnabled((previous) => !previous)
+  }, [pauseAutoTour])
+
   if (surfaceMode === 'embed-card') {
     return (
       <main className="gs-embed-shell">
         <GhostShiftSummaryCard
           status={liveStatus}
           sessions={liveSessions}
+          timeline={augmentedTimelineSeries}
           connectionState={connectionState}
           backendError={backendError}
           refreshMs={SNAPSHOT_REFRESH_MS}
@@ -824,12 +1144,21 @@ function App() {
           <GhostShiftSummaryCard
             status={liveStatus}
             sessions={liveSessions}
+            timeline={augmentedTimelineSeries}
             connectionState={connectionState}
             backendError={backendError}
             refreshMs={SNAPSHOT_REFRESH_MS}
             liveDemoHref={livePath}
           />
         </section>
+
+        <ProductDashboard
+          status={displayStatus}
+          sessions={displaySessions}
+          timeline={augmentedTimelineSeries}
+          historyMeta={historyMeta}
+          displayTimestamp={displayTimestamp}
+        />
 
         <section className="gs-demo-section">
           <div className="gs-demo-copy">
@@ -850,6 +1179,14 @@ function App() {
                 zoom={zoom}
                 onZoomChange={handleZoomChange}
                 onAgentClick={handleAgentClick}
+                hoveredAgentId={hoverState.agentId}
+                hoverPosition={hoverState.position}
+                hoveredSession={hoveredSession}
+                hoveredPublicId={hoveredInsight?.publicId || hoveredSession?.publicId || hoveredSession?.sessionKey || null}
+                hoveredToolStats={hoveredInsight?.toolStats || []}
+                hoveredActivityPoints={hoveredInsight?.activityPoints || []}
+                hoveredActiveWindow={hoveredInsight?.dominantWindow || hoveredSession?.signalWindow || 'observed'}
+                onCanvasHoverChange={handleCanvasHoverChange}
                 onCanvasInteraction={handleCanvasInteraction}
                 connectionState={connectionState}
                 backendError={backendError}
@@ -869,9 +1206,13 @@ function App() {
                 compactViewport={compactViewport}
                 playbackState={playbackState}
                 hasReplayFrames={replayFrames.length > 0}
+                isLoading={isSnapshotLoading || isHistoryLoading}
                 replayCharacters={playbackState.mode === 'replay' ? currentReplayFrame?.characters ?? null : null}
                 replayCharacterMap={currentReplayCharacterMap}
                 tourTargetAgentId={tourTargetAgentId}
+                heatmapEnabled={heatmapEnabled}
+                heatmapSources={heatmapSources}
+                onToggleHeatmap={handleToggleHeatmap}
                 freshness={freshness}
                 scrubberMin={scrubberMin}
                 scrubberMax={scrubberMax}
@@ -881,16 +1222,27 @@ function App() {
                 endLabel={formatPlaybackBoundary(scrubberMax)}
                 coverageLabel={coverageLabel}
                 autoTourPaused={autoTourPaused}
+                previewFrames={replayPreviewFrames}
+                eventMarkers={replayEventMarkers}
                 onModeChange={handleModeChange}
                 onWindowHoursChange={handleWindowHoursChange}
                 onScrub={handleScrub}
                 onPlayToggle={handlePlayToggle}
                 onJumpToLive={handleJumpToLive}
                 onResumeTour={handleResumeTour}
+                onPlaybackRateChange={handlePlaybackRateChange}
               />
             </div>
 
             <div className="gs-side-stack">
+              <RealtimeStatsSidebar
+                freshnessLabel={freshness.label}
+                loading={isSnapshotLoading || isHistoryLoading}
+                modelMix={sidebarModelMix}
+                zoneBars={sidebarZoneBars}
+                responseTrend={responseTrend}
+              />
+
               <article className="gs-side-card">
                 <div className="gs-side-card__eyebrow">Live roster</div>
                 <h3>Public aliases and room cadence</h3>
@@ -929,19 +1281,18 @@ function App() {
           </div>
         </section>
 
-        <section className="gs-case-study">
-          <span className="gs-section-kicker">Case Study Layer</span>
-          <h2>Explain the privacy boundary while the product is visibly running.</h2>
-          <div className="gs-case-grid">
-            {caseStudyCards.map((card) => (
-              <article key={card.title} className="gs-case-card">
-                <div className="gs-case-card__eyebrow">Boundary</div>
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        <SharePanel
+          livePath={livePath}
+          status={displayStatus}
+          sessions={displaySessions}
+          timeline={augmentedTimelineSeries}
+          timestamp={displayTimestamp}
+          freshnessLabel={freshness.label}
+          playbackMode={playbackState.mode}
+          windowHours={playbackState.windowHours}
+        />
+
+        <CaseStudyLayer exampleSession={liveSessions[0] || null} />
 
         <section className="gs-docs-section">
           <div className="gs-docs-copy">

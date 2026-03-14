@@ -13,6 +13,9 @@ const (
 	defaultPublicHistoryFileName    = "public-history.jsonl"
 	defaultPublicHistoryHours       = 24
 	defaultPublicHistoryIntervalSec = 30
+	defaultCacheTTLSeconds          = 5
+	defaultCacheMemoryMaxEntries    = 512
+	defaultSlowRequestThresholdMS   = 250
 )
 
 type Config struct {
@@ -21,6 +24,12 @@ type Config struct {
 	PublicHistoryHours     int
 	PublicHistoryInterval  time.Duration
 	PublicHistoryRetention time.Duration
+	RedisURL               string
+	CacheTTL               time.Duration
+	CacheMemoryMaxEntries  int
+	CacheWarmOnStartup     bool
+	LogLevel               string
+	SlowRequestThreshold   time.Duration
 }
 
 func LoadConfigFromEnv() (Config, error) {
@@ -30,6 +39,21 @@ func LoadConfigFromEnv() (Config, error) {
 	}
 
 	intervalSeconds, err := positiveEnvInt("PUBLIC_HISTORY_INTERVAL_SECONDS", defaultPublicHistoryIntervalSec)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cacheTTLSeconds, err := positiveEnvInt("CACHE_TTL_SECONDS", defaultCacheTTLSeconds)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cacheMemoryMaxEntries, err := positiveEnvInt("CACHE_MEMORY_MAX_ENTRIES", defaultCacheMemoryMaxEntries)
+	if err != nil {
+		return Config{}, err
+	}
+
+	slowRequestMS, err := positiveEnvInt("REQUEST_SLOW_THRESHOLD_MS", defaultSlowRequestThresholdMS)
 	if err != nil {
 		return Config{}, err
 	}
@@ -51,6 +75,12 @@ func LoadConfigFromEnv() (Config, error) {
 		PublicHistoryHours:     hours,
 		PublicHistoryInterval:  time.Duration(intervalSeconds) * time.Second,
 		PublicHistoryRetention: time.Duration(hours) * time.Hour,
+		RedisURL:               strings.TrimSpace(os.Getenv("REDIS_URL")),
+		CacheTTL:               time.Duration(cacheTTLSeconds) * time.Second,
+		CacheMemoryMaxEntries:  cacheMemoryMaxEntries,
+		CacheWarmOnStartup:     envBool("CACHE_WARM_ON_STARTUP"),
+		LogLevel:               envOrDefault("LOG_LEVEL", "info"),
+		SlowRequestThreshold:   time.Duration(slowRequestMS) * time.Millisecond,
 	}, nil
 }
 
@@ -65,4 +95,17 @@ func positiveEnvInt(name string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%s must be a positive integer", name)
 	}
 	return value, nil
+}
+
+func envBool(name string) bool {
+	raw := strings.TrimSpace(strings.ToLower(os.Getenv(name)))
+	return raw == "1" || raw == "true" || raw == "yes" || raw == "on"
+}
+
+func envOrDefault(name, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+	return value
 }

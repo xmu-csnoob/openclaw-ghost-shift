@@ -15,15 +15,34 @@ export interface ReplayControlBarProps {
   freshnessColor: string
   freshnessDetail: string
   autoTourPaused: boolean
+  previewFrames: Array<{
+    id: string
+    timestamp: number
+    label: string
+    running: number
+    displayed: number
+    zoneLabel: string
+    accent: string
+    isCurrent: boolean
+  }>
+  eventMarkers: Array<{
+    id: string
+    timestamp: number
+    position: number
+    label: string
+    tone: string
+  }>
   onModeChange: (mode: 'live' | 'replay') => void
   onWindowHoursChange: (hours: PlaybackWindowHours) => void
   onScrub: (timestamp: number) => void
   onPlayToggle: () => void
   onJumpToLive: () => void
   onResumeTour: () => void
+  onPlaybackRateChange: (rate: PlaybackState['playbackRate']) => void
 }
 
 const windowOptions: PlaybackWindowHours[] = [1, 6, 24]
+const playbackRates: PlaybackState['playbackRate'][] = [0.5, 1, 2]
 
 function pillButtonStyle(active: boolean, disabled = false): React.CSSProperties {
   return {
@@ -55,12 +74,15 @@ export function ReplayControlBar({
   freshnessColor,
   freshnessDetail,
   autoTourPaused,
+  previewFrames,
+  eventMarkers,
   onModeChange,
   onWindowHoursChange,
   onScrub,
   onPlayToggle,
   onJumpToLive,
   onResumeTour,
+  onPlaybackRateChange,
 }: ReplayControlBarProps): React.ReactElement {
   const scrubberDisabled = !hasFrames || scrubberMin === scrubberMax
 
@@ -68,7 +90,7 @@ export function ReplayControlBar({
     <div
       style={{
         position: 'absolute',
-        top: 12,
+        top: 64,
         left: '50%',
         transform: 'translateX(-50%)',
         width: 'min(760px, calc(100vw - 32px))',
@@ -138,6 +160,53 @@ export function ReplayControlBar({
         </div>
       </div>
 
+      {previewFrames.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${previewFrames.length}, minmax(0, 1fr))`, gap: 8 }}>
+          {previewFrames.map((preview) => (
+            <button
+              key={preview.id}
+              type="button"
+              onClick={() => onScrub(preview.timestamp)}
+              style={{
+                padding: 10,
+                border: '1px solid',
+                borderColor: preview.isCurrent ? preview.accent : 'rgba(69, 71, 90, 0.7)',
+                background: preview.isCurrent ? 'rgba(137, 180, 250, 0.12)' : 'rgba(17, 24, 39, 0.48)',
+                color: '#CDD6F4',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 10, color: preview.accent, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  Thumbnail
+                </span>
+                <span style={{ fontSize: 10, color: '#9399B2' }}>{preview.label}</span>
+              </div>
+              <div
+                style={{
+                  height: 38,
+                  border: `1px solid ${preview.accent}`,
+                  background: `linear-gradient(135deg, ${preview.accent}22, rgba(17, 24, 39, 0.22))`,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 4,
+                  padding: 6,
+                }}
+              >
+                <span style={{ background: `${preview.accent}66` }} />
+                <span style={{ background: `${preview.accent}44` }} />
+                <span style={{ background: `${preview.accent}22` }} />
+              </div>
+              <div style={{ marginTop: 8, fontSize: 11, color: '#CDD6F4' }}>
+                {preview.running}/{preview.displayed} active
+              </div>
+              <div style={{ marginTop: 2, fontSize: 10, color: '#9399B2' }}>{preview.zoneLabel}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {windowOptions.map((hours) => (
@@ -159,6 +228,20 @@ export function ReplayControlBar({
             </button>
           )}
           {playbackState.mode === 'replay' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {playbackRates.map((rate) => (
+                <button
+                  key={rate}
+                  type="button"
+                  onClick={() => onPlaybackRateChange(rate)}
+                  style={pillButtonStyle(playbackState.playbackRate === rate)}
+                >
+                  {rate}x
+                </button>
+              ))}
+            </div>
+          )}
+          {playbackState.mode === 'replay' && (
             <button type="button" onClick={onJumpToLive} style={pillButtonStyle(false)}>
               Jump to live
             </button>
@@ -168,16 +251,51 @@ export function ReplayControlBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input
-          type="range"
-          min={scrubberMin}
-          max={scrubberMax}
-          step={1000}
-          value={scrubberValue}
-          disabled={scrubberDisabled}
-          onChange={(event) => onScrub(Number(event.target.value))}
-          style={{ width: '100%' }}
-        />
+        <div style={{ position: 'relative', paddingTop: 12 }}>
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 12,
+              pointerEvents: 'none',
+            }}
+          >
+            {eventMarkers.map((marker) => (
+              <button
+                key={marker.id}
+                type="button"
+                title={marker.label}
+                onClick={() => onScrub(marker.timestamp)}
+                style={{
+                  position: 'absolute',
+                  left: `calc(${Math.min(100, Math.max(0, marker.position * 100))}% - 5px)`,
+                  top: 0,
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  border: `1px solid ${marker.tone}`,
+                  background: marker.tone,
+                  boxShadow: `0 0 0 4px ${marker.tone}22`,
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                }}
+              />
+            ))}
+          </div>
+
+          <input
+            type="range"
+            min={scrubberMin}
+            max={scrubberMax}
+            step={1000}
+            value={scrubberValue}
+            disabled={scrubberDisabled}
+            onChange={(event) => onScrub(Number(event.target.value))}
+            style={{ width: '100%' }}
+          />
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, color: '#9399B2' }}>
           <span>{startLabel}</span>

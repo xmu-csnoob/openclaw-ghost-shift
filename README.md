@@ -180,7 +180,9 @@ If you want to mount Ghost Shift inside another site:
 - set `VITE_PUBLIC_API_BASE=/office/api` at build time if you want an explicit API base instead of auto-detection
 - use `/office/embed/card` as the portfolio iframe target for the summary card surface
 
-See [docs/deployment.md](./docs/deployment.md) for the full deployment guide, Docker usage, GitHub Actions workflow, and reverse-proxy examples for Nginx and Caddy.
+See [docs/deployment.md](./docs/deployment.md) for the full deployment guide, Docker Compose, Kubernetes manifests, GitHub Actions workflow, and reverse-proxy examples for Nginx and Caddy.
+
+See [docs/api.md](./docs/api.md) for the embedded OpenAPI workflow and [docs/performance-tuning.md](./docs/performance-tuning.md) for cache, metrics, and logging guidance.
 
 ## Development Commands
 

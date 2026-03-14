@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,10 +12,21 @@ import (
 	"strings"
 
 	"github.com/xmu-csnoob/openclaw-ghost-shift/server/api"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/cache"
 	"github.com/xmu-csnoob/openclaw-ghost-shift/server/gateway"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/observability"
 )
 
 func main() {
+	cfg, err := api.LoadConfigFromEnv()
+	if err != nil {
+		observability.NewLogger(strings.TrimSpace(os.Getenv("LOG_LEVEL"))).Error("failed_to_load_config", "error", err.Error())
+		os.Exit(1)
+	}
+	logger := observability.NewLogger(cfg.LogLevel)
+	metricsRegistry := observability.NewRegistry()
+	cacheManager := cache.NewManager(cfg.RedisURL, cfg.CacheMemoryMaxEntries, logger)
+
 	port := strings.TrimSpace(os.Getenv("PORT"))
 	if port == "" {
 		port = "3002"
@@ -27,59 +37,102 @@ func main() {
 		bindAddr = "127.0.0.1"
 	}
 
-	cfg, err := api.LoadConfigFromEnv()
+	source, startBackground, fixtureMode, err := newDataSource()
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	source, startBackground, err := newDataSource()
-	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed_to_create_data_source", "error", err.Error())
+		os.Exit(1)
 	}
 	if startBackground != nil {
 		go startBackground()
 	}
 
-	h, err := api.NewHandler(source, cfg)
+	h, err := api.NewHandler(source, cfg, api.Dependencies{
+		Cache:   cacheManager,
+		Metrics: metricsRegistry,
+		Logger:  logger,
+	})
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed_to_create_handler", "error", err.Error())
+		os.Exit(1)
 	}
 	h.StartBackground(context.Background())
-	mux := http.NewServeMux()
+	if cfg.CacheWarmOnStartup {
+		go func() {
+			if err := h.WarmCache(context.Background()); err != nil {
+				logger.Warn("cache_warm_failed", "error", err.Error())
+				return
+			}
+			logger.Info("cache_warmed")
+		}()
+	}
 
-	mux.HandleFunc("/api/sessions", h.PublicSessions)
-	mux.HandleFunc("/api/status", h.PublicStatus)
-	mux.HandleFunc("/api/public/snapshot", h.PublicSnapshot)
-	mux.HandleFunc("/api/public/timeline", h.PublicTimeline)
-	mux.HandleFunc("/api/public/replay", h.PublicReplay)
+	mux := http.NewServeMux()
+	obs := observability.NewMiddleware(logger, metricsRegistry, cfg.SlowRequestThreshold)
+
+	version := strings.TrimSpace(os.Getenv("GHOST_SHIFT_VERSION"))
+	if version == "" {
+		version = "0.1.0"
+	}
+
+	staticDir, staticReady := resolveStaticDir()
+	health := newHealthHandler(source, cacheManager, staticReady, fixtureMode, version)
+
+	handle := func(path, route string, next http.Handler) {
+		mux.Handle(path, obs.Wrap(route, next))
+	}
+
+	handle("/metrics", "metrics", metricsRegistry.Handler(func() observability.MetricsSnapshot {
+		return observability.MetricsSnapshot{
+			AppVersion:       version,
+			GatewayConnected: source.GetStatus().Connected,
+			CacheEntries:     cacheManager.Stats(context.Background()).Entries,
+		}
+	}))
+	handle("/healthz", "healthz", http.HandlerFunc(health.Liveness))
+	handle("/readyz", "readyz", http.HandlerFunc(health.Readiness))
+	handle("/openapi.yaml", "openapi", http.HandlerFunc(h.OpenAPI))
+
+	handle("/api/sessions", "api_sessions", http.HandlerFunc(h.PublicSessions))
+	handle("/api/status", "api_status", http.HandlerFunc(h.PublicStatus))
+	handle("/api/public/snapshot", "api_public_snapshot", http.HandlerFunc(h.PublicSnapshot))
+	handle("/api/public/timeline", "api_public_timeline", http.HandlerFunc(h.PublicTimeline))
+	handle("/api/public/replay", "api_public_replay", http.HandlerFunc(h.PublicReplay))
+	handle("/api/public/agent/", "api_public_agent_stats", http.HandlerFunc(h.PublicAgentStats))
+	handle("/api/public/zones/heatmap", "api_public_zones_heatmap", http.HandlerFunc(h.PublicZonesHeatmap))
+	handle("/api/public/models/distribution", "api_public_models_distribution", http.HandlerFunc(h.PublicModelsDistribution))
+	handle("/api/public/metrics/live", "api_public_metrics_live", http.HandlerFunc(h.PublicMetricsLive))
 
 	if enableInternalAPI() {
 		internalToken, err := loadInternalAPIToken()
 		if err != nil {
-			log.Fatal(err)
+			logger.Error("failed_to_load_internal_api_token", "error", err.Error())
+			os.Exit(1)
 		}
 
 		internalMux := http.NewServeMux()
-		internalMux.HandleFunc("/health", h.InternalHealth)
-		internalMux.HandleFunc("/presence", h.InternalPresence)
-		internalMux.HandleFunc("/channels", h.InternalChannels)
-		internalMux.HandleFunc("/nodes", h.InternalNodes)
-		internalMux.HandleFunc("/cron", h.InternalCron)
+		internalMux.Handle("/health", obs.Wrap("internal_health", http.HandlerFunc(h.InternalHealth)))
+		internalMux.Handle("/presence", obs.Wrap("internal_presence", http.HandlerFunc(h.InternalPresence)))
+		internalMux.Handle("/channels", obs.Wrap("internal_channels", http.HandlerFunc(h.InternalChannels)))
+		internalMux.Handle("/nodes", obs.Wrap("internal_nodes", http.HandlerFunc(h.InternalNodes)))
+		internalMux.Handle("/cron", obs.Wrap("internal_cron", http.HandlerFunc(h.InternalCron)))
 
 		mux.Handle("/internal-api/", http.StripPrefix("/internal-api", requireInternalToken(internalToken, internalMux)))
-		log.Printf("Internal API enabled under /internal-api/* with token auth")
+		logger.Info("internal_api_enabled")
 	}
 
-	if staticDir, ok := resolveStaticDir(); ok {
-		log.Printf("Serving static frontend from %s", staticDir)
+	if staticReady {
+		logger.Info("serving_static_frontend", "path", staticDir)
 		mux.Handle("/", spaHandler(staticDir))
 	} else {
-		log.Printf("Static frontend not found; serving API-only mode")
+		logger.Warn("static_frontend_not_found")
 	}
 
 	addr := net.JoinHostPort(bindAddr, port)
-	log.Printf("Ghost Shift server starting on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, securityHeaders(mux)))
+	logger.Info("ghost_shift_server_starting", "addr", addr)
+	if err := http.ListenAndServe(addr, securityHeaders(mux)); err != nil {
+		logger.Error("server_stopped", "error", err.Error())
+		os.Exit(1)
+	}
 }
 
 func enableInternalAPI() bool {
@@ -182,18 +235,18 @@ func securityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-func newDataSource() (api.DataSource, func(), error) {
+func newDataSource() (api.DataSource, func(), bool, error) {
 	fixturePath := strings.TrimSpace(os.Getenv("GHOST_SHIFT_FIXTURE_PATH"))
 	if fixturePath != "" {
 		fixtureClient, err := gateway.NewFixtureClientFromFile(fixturePath)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, false, err
 		}
-		return fixtureClient, nil, nil
+		return fixtureClient, nil, true, nil
 	}
 
 	client := gateway.NewClient()
-	return client, client.Connect, nil
+	return client, client.Connect, false, nil
 }
 
 func frameAncestorsDirective() string {

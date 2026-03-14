@@ -23,7 +23,57 @@ interface OfficeCanvasProps {
   replayCharacters?: Character[] | null
   replayCharacterMap?: Map<number, Character> | null
   tourTargetAgentId?: number | null
+  heatmapEnabled?: boolean
+  heatmapSources?: Array<{ agentId: number; zone: string; intensity: number }>
+  onHoverChange?: (agentId: number | null, position: { x: number; y: number } | null) => void
   onUserInteraction?: () => void
+}
+
+function renderHeatmapOverlay(
+  ctx: CanvasRenderingContext2D,
+  heatmapSources: Array<{ agentId: number; zone: string; intensity: number }>,
+  characterMap: Map<number, Character>,
+  offsetX: number,
+  offsetY: number,
+  zoom: number,
+) {
+  const buckets = new Map<string, { x: number; y: number; count: number; intensity: number }>()
+
+  for (const source of heatmapSources) {
+    const character = characterMap.get(source.agentId)
+    if (!character) continue
+    const bucket = buckets.get(source.zone) || { x: 0, y: 0, count: 0, intensity: 0 }
+    bucket.x += character.x
+    bucket.y += character.y
+    bucket.count += 1
+    bucket.intensity += source.intensity
+    buckets.set(source.zone, bucket)
+  }
+
+  if (buckets.size === 0) return
+
+  ctx.save()
+  ctx.globalCompositeOperation = 'screen'
+
+  for (const bucket of buckets.values()) {
+    const intensity = Math.max(0.15, Math.min(1, bucket.intensity / Math.max(1, bucket.count)))
+    const screenX = offsetX + (bucket.x / bucket.count) * zoom
+    const screenY = offsetY + (bucket.y / bucket.count) * zoom
+    const radius = Math.max(48, 34 * zoom + intensity * 64)
+    const hue = (1 - intensity) * 220
+    const centerAlpha = 0.12 + intensity * 0.22
+    const edgeAlpha = 0.04 + intensity * 0.1
+    const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, radius)
+    gradient.addColorStop(0, `hsla(${hue}, 90%, 60%, ${centerAlpha})`)
+    gradient.addColorStop(0.45, `hsla(${hue}, 90%, 56%, ${edgeAlpha})`)
+    gradient.addColorStop(1, `hsla(${hue}, 90%, 50%, 0)`)
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.restore()
 }
 
 function getCharacterAtPosition(characters: Character[], worldX: number, worldY: number): number | null {
@@ -52,6 +102,9 @@ export function OfficeCanvas({
   replayCharacters = null,
   replayCharacterMap = null,
   tourTargetAgentId = null,
+  heatmapEnabled = false,
+  heatmapSources = [],
+  onHoverChange,
   onUserInteraction,
 }: OfficeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -62,6 +115,8 @@ export function OfficeCanvas({
   const renderCharactersRef = useRef<Character[] | null>(replayCharacters)
   const renderCharacterMapRef = useRef<Map<number, Character> | null>(replayCharacterMap)
   const tourTargetAgentIdRef = useRef<number | null>(tourTargetAgentId)
+  const heatmapEnabledRef = useRef(heatmapEnabled)
+  const heatmapSourcesRef = useRef<Array<{ agentId: number; zone: string; intensity: number }>>(heatmapSources)
 
   useEffect(() => {
     renderCharactersRef.current = replayCharacters
@@ -74,6 +129,14 @@ export function OfficeCanvas({
   useEffect(() => {
     tourTargetAgentIdRef.current = tourTargetAgentId
   }, [tourTargetAgentId])
+
+  useEffect(() => {
+    heatmapEnabledRef.current = heatmapEnabled
+  }, [heatmapEnabled])
+
+  useEffect(() => {
+    heatmapSourcesRef.current = heatmapSources
+  }, [heatmapSources])
 
   // Clamp pan so the map edge can't go past a margin inside the viewport
   const clampPan = useCallback((px: number, py: number): { x: number; y: number } => {
@@ -173,6 +236,18 @@ export function OfficeCanvas({
           officeState.getLayout().cols,
           officeState.getLayout().rows,
         )
+
+        if (heatmapEnabledRef.current && heatmapSourcesRef.current.length > 0) {
+          renderHeatmapOverlay(
+            ctx,
+            heatmapSourcesRef.current,
+            renderCharacterMap,
+            offsetX,
+            offsetY,
+            zoom,
+          )
+        }
+
         offsetRef.current = { x: offsetX, y: offsetY }
       },
     })
@@ -211,6 +286,7 @@ export function OfficeCanvas({
           panStartRef.current.panX + dx,
           panStartRef.current.panY + dy,
         )
+        onHoverChange?.(null, null)
         return
       }
 
@@ -222,8 +298,9 @@ export function OfficeCanvas({
         canvas.style.cursor = hitId !== null ? 'pointer' : 'default'
       }
       officeState.hoveredAgentId = hitId
+      onHoverChange?.(hitId, hitId !== null ? { x: pos.screenX, y: pos.screenY } : null)
     },
-    [officeState, screenToWorld, panRef, clampPan],
+    [officeState, screenToWorld, panRef, clampPan, onHoverChange],
   )
 
   const handleMouseDown = useCallback(
@@ -231,6 +308,7 @@ export function OfficeCanvas({
       if (e.button === 1) {
         e.preventDefault()
         onUserInteraction?.()
+        onHoverChange?.(null, null)
         officeState.cameraFollowId = null
         isPanningRef.current = true
         panStartRef.current = {
@@ -244,7 +322,7 @@ export function OfficeCanvas({
         return
       }
     },
-    [officeState, onUserInteraction, panRef],
+    [officeState, onUserInteraction, panRef, onHoverChange],
   )
 
   const handleMouseUp = useCallback(
@@ -288,7 +366,8 @@ export function OfficeCanvas({
     isPanningRef.current = false
     officeState.hoveredAgentId = null
     officeState.hoveredTile = null
-  }, [officeState])
+    onHoverChange?.(null, null)
+  }, [officeState, onHoverChange])
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {

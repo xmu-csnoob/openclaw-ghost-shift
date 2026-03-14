@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	cachepkg "github.com/xmu-csnoob/openclaw-ghost-shift/server/cache"
 	"github.com/xmu-csnoob/openclaw-ghost-shift/server/models"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/observability"
 )
 
 type DataSource interface {
@@ -27,6 +30,18 @@ type Handler struct {
 	gc           DataSource
 	publicIDSalt string
 	history      *PublicHistoryRecorder
+	cache        *cachepkg.Manager
+	live         *liveMetricsTracker
+	now          func() time.Time
+	metrics      *observability.Registry
+	logger       *slog.Logger
+	cacheTTL     time.Duration
+}
+
+type Dependencies struct {
+	Cache   *cachepkg.Manager
+	Metrics *observability.Registry
+	Logger  *slog.Logger
 }
 
 type PublicSession struct {
@@ -41,6 +56,10 @@ type PublicSession struct {
 	ActivityScore  float64 `json:"activityScore,omitempty"`
 	ActivityWindow string  `json:"activityWindow,omitempty"`
 	Footprint      string  `json:"footprint,omitempty"`
+	MessageCount   int     `json:"-"`
+	InputTokens    int     `json:"-"`
+	OutputTokens   int     `json:"-"`
+	TotalTokens    int     `json:"-"`
 }
 
 type PublicStatus struct {
@@ -56,16 +75,31 @@ type PublicSnapshot struct {
 	Sessions []PublicSession `json:"sessions"`
 }
 
-func NewHandler(gc DataSource, cfg Config) (*Handler, error) {
+func NewHandler(gc DataSource, cfg Config, deps Dependencies) (*Handler, error) {
+	nowFn := func() time.Time { return time.Now().UTC() }
+
 	history, err := NewPublicHistoryRecorder(cfg)
 	if err != nil {
 		return nil, err
+	}
+	history.now = nowFn
+	if deps.Logger == nil {
+		deps.Logger = slog.Default()
+	}
+	if deps.Cache == nil {
+		deps.Cache = cachepkg.NewManager("", cfg.CacheMemoryMaxEntries, deps.Logger)
 	}
 
 	return &Handler{
 		gc:           gc,
 		publicIDSalt: cfg.PublicIDSalt,
 		history:      history,
+		cache:        deps.Cache,
+		live:         newLiveMetricsTracker(nowFn),
+		now:          nowFn,
+		metrics:      deps.Metrics,
+		logger:       deps.Logger,
+		cacheTTL:     cfg.CacheTTL,
 	}, nil
 }
 
@@ -82,7 +116,16 @@ func (h *Handler) PublicSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.publicSessions())
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_sessions", "public:sessions", h.cacheTTL, func() ([]PublicSession, error) {
+		return h.publicSessions(), nil
+	})
+	if err != nil {
+		http.Error(w, "failed to build sessions", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) PublicStatus(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +134,16 @@ func (h *Handler) PublicStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.publicStatus())
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_status", "public:status", h.cacheTTL, func() (PublicStatus, error) {
+		return h.publicStatus(), nil
+	})
+	if err != nil {
+		http.Error(w, "failed to build status", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +152,16 @@ func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.buildPublicSnapshot())
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_snapshot", "public:snapshot", h.cacheTTL, func() (PublicSnapshot, error) {
+		return h.buildPublicSnapshot(), nil
+	})
+	if err != nil {
+		http.Error(w, "failed to build snapshot", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) PublicTimeline(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +176,19 @@ func (h *Handler) PublicTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.history.Timeline(since, until))
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_timeline", h.analyticsCacheKey("timeline", r.URL.Path, r.URL.RawQuery), h.cacheTTL, func() (PublicTimelineResponse, error) {
+		if h.history == nil {
+			return PublicTimelineResponse{}, nil
+		}
+		return h.history.Timeline(since, until), nil
+	})
+	if err != nil {
+		http.Error(w, "failed to build timeline", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) PublicReplay(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +203,19 @@ func (h *Handler) PublicReplay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.history.Replay(since, until))
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_replay", h.analyticsCacheKey("replay", r.URL.Path, r.URL.RawQuery), h.cacheTTL, func() (PublicReplayResponse, error) {
+		if h.history == nil {
+			return PublicReplayResponse{}, nil
+		}
+		return h.history.Replay(since, until), nil
+	})
+	if err != nil {
+		http.Error(w, "failed to build replay", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Handler) InternalHealth(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +272,7 @@ func (h *Handler) publicStatus() PublicStatus {
 
 func (h *Handler) publicSessions() []PublicSession {
 	raw := h.gc.GetSessions()
-	now := time.Now().UTC()
+	now := h.now()
 
 	publicSessions := make([]PublicSession, 0, len(raw))
 	for _, session := range raw {
@@ -206,6 +291,10 @@ func (h *Handler) publicSessions() []PublicSession {
 			ActivityScore:  activity.Score,
 			ActivityWindow: activity.Window,
 			Footprint:      activity.Footprint,
+			MessageCount:   session.MessageCount,
+			InputTokens:    session.InputTokens,
+			OutputTokens:   session.OutputTokens,
+			TotalTokens:    session.TotalTokens,
 		})
 	}
 
@@ -229,15 +318,128 @@ func (h *Handler) publicStatusFromSessions(sessions []PublicSession) PublicStatu
 		Status:        gwStatus.Status,
 		Displayed:     len(sessions),
 		Running:       running,
-		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		LastUpdatedAt: h.now().Format(time.RFC3339),
 	}
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
+	body, err := marshalJSON(payload)
+	if err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSONBytes(w, statusCode, body)
+}
+
+func marshalJSON(payload any) ([]byte, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return append(body, '\n'), nil
+}
+
+func writeJSONBytes(w http.ResponseWriter, statusCode int, payload []byte) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(payload)
+	_, _ = w.Write(payload)
+}
+
+func (h *Handler) WarmCache(ctx context.Context) error {
+	if h.cache == nil || h.cacheTTL <= 0 {
+		return nil
+	}
+
+	entries := []struct {
+		key   string
+		route string
+		build func() (any, error)
+	}{
+		{
+			key:   "public:status",
+			route: "api_status",
+			build: func() (any, error) { return h.publicStatus(), nil },
+		},
+		{
+			key:   "public:sessions",
+			route: "api_sessions",
+			build: func() (any, error) { return h.publicSessions(), nil },
+		},
+		{
+			key:   "public:snapshot",
+			route: "api_public_snapshot",
+			build: func() (any, error) { return h.buildPublicSnapshot(), nil },
+		},
+		{
+			key:   "public:timeline",
+			route: "api_public_timeline",
+			build: func() (any, error) {
+				if h.history == nil {
+					return PublicTimelineResponse{}, nil
+				}
+				return h.history.Timeline(time.Time{}, time.Time{}), nil
+			},
+		},
+		{
+			key:   "public:replay",
+			route: "api_public_replay",
+			build: func() (any, error) {
+				if h.history == nil {
+					return PublicReplayResponse{}, nil
+				}
+				return h.history.Replay(time.Time{}, time.Time{}), nil
+			},
+		},
+		{
+			key:   h.analyticsCacheKey("zones-heatmap", "/api/public/zones/heatmap", ""),
+			route: "api_public_zones_heatmap",
+			build: func() (any, error) { return h.computeZonesHeatmap(time.Time{}, time.Time{}), nil },
+		},
+		{
+			key:   h.analyticsCacheKey("models-distribution", "/api/public/models/distribution", ""),
+			route: "api_public_models_distribution",
+			build: func() (any, error) { return h.computeModelsDistribution(time.Time{}, time.Time{}), nil },
+		},
+		{
+			key:   "metrics-live",
+			route: "api_public_metrics_live",
+			build: func() (any, error) { return h.live.compute(h.publicSessions()), nil },
+		},
+	}
+
+	for _, entry := range entries {
+		payload, err := entry.build()
+		if err != nil {
+			return err
+		}
+		body, err := marshalJSON(payload)
+		if err != nil {
+			return err
+		}
+
+		storeName, err := h.cache.Set(ctx, entry.key, body, h.cacheTTL)
+		if h.metrics != nil {
+			if err != nil {
+				h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "error")
+			} else {
+				h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "success")
+			}
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (h *Handler) recordCacheMetric(cacheName, route, operation, result string) {
+	if h.metrics == nil {
+		return
+	}
+	h.metrics.ObserveCacheOperation(cacheName, route, operation, result)
 }
 
 func parseHistoryWindow(r *http.Request) (time.Time, time.Time, error) {

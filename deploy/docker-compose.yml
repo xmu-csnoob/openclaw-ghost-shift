@@ -1,0 +1,54 @@
+services:
+  ghost-shift:
+    build:
+      context: ..
+      dockerfile: ./Dockerfile
+    image: ghost-shift:local
+    env_file:
+      - ../.env.production
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    volumes:
+      - ghost-shift-data:/home/ghostshift/.config/ghost-shift
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3002/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - ghost-shift
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["cache"]
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ghost-shift
+
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: ["observability"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - ghost-shift
+
+networks:
+  ghost-shift:
+    driver: bridge
+
+volumes:
+  ghost-shift-data:

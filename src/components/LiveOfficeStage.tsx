@@ -1,4 +1,5 @@
 import type { MutableRefObject } from 'react'
+import { AgentHoverCard, type HoverActivityPoint, type HoverToolStat } from './AgentHoverCard.js'
 import { OfficeCanvas } from '../office/components/OfficeCanvas.js'
 import type { OfficeState } from '../office/engine/officeState.js'
 import type { DisplaySession, PulseSample } from '../publicDisplay.js'
@@ -19,6 +20,14 @@ export interface LiveOfficeStageProps {
   zoom: number
   onZoomChange: (zoom: number) => void
   onAgentClick: (agentId: number) => void
+  hoveredAgentId: number | null
+  hoverPosition: { x: number; y: number } | null
+  hoveredSession: DisplaySession | null
+  hoveredPublicId: string | null
+  hoveredToolStats: HoverToolStat[]
+  hoveredActivityPoints: HoverActivityPoint[]
+  hoveredActiveWindow: string
+  onCanvasHoverChange?: (agentId: number | null, position: { x: number; y: number } | null) => void
   connectionState: ConnectionState
   backendError: string | null
   officeStatus: PublicOfficeStatus | null
@@ -37,9 +46,13 @@ export interface LiveOfficeStageProps {
   compactViewport: boolean
   playbackState: PlaybackState
   hasReplayFrames: boolean
+  isLoading: boolean
   replayCharacters?: Character[] | null
   replayCharacterMap?: Map<number, Character> | null
   tourTargetAgentId?: number | null
+  heatmapEnabled: boolean
+  heatmapSources: Array<{ agentId: number; zone: string; intensity: number }>
+  onToggleHeatmap: () => void
   freshness: {
     label: string
     color: string
@@ -53,12 +66,30 @@ export interface LiveOfficeStageProps {
   endLabel: string
   coverageLabel: string
   autoTourPaused: boolean
+  previewFrames: Array<{
+    id: string
+    timestamp: number
+    label: string
+    running: number
+    displayed: number
+    zoneLabel: string
+    accent: string
+    isCurrent: boolean
+  }>
+  eventMarkers: Array<{
+    id: string
+    timestamp: number
+    position: number
+    label: string
+    tone: string
+  }>
   onModeChange: (mode: 'live' | 'replay') => void
   onWindowHoursChange: (hours: PlaybackState['windowHours']) => void
   onScrub: (timestamp: number) => void
   onPlayToggle: () => void
   onJumpToLive: () => void
   onResumeTour: () => void
+  onPlaybackRateChange: (rate: PlaybackState['playbackRate']) => void
   onCanvasInteraction?: () => void
 }
 
@@ -84,6 +115,14 @@ export function LiveOfficeStage({
   zoom,
   onZoomChange,
   onAgentClick,
+  hoveredAgentId,
+  hoverPosition,
+  hoveredSession,
+  hoveredPublicId,
+  hoveredToolStats,
+  hoveredActivityPoints,
+  hoveredActiveWindow,
+  onCanvasHoverChange,
   connectionState,
   backendError,
   officeStatus,
@@ -102,9 +141,13 @@ export function LiveOfficeStage({
   compactViewport,
   playbackState,
   hasReplayFrames,
+  isLoading,
   replayCharacters = null,
   replayCharacterMap = null,
   tourTargetAgentId = null,
+  heatmapEnabled,
+  heatmapSources,
+  onToggleHeatmap,
   freshness,
   scrubberMin,
   scrubberMax,
@@ -114,12 +157,15 @@ export function LiveOfficeStage({
   endLabel,
   coverageLabel,
   autoTourPaused,
+  previewFrames,
+  eventMarkers,
   onModeChange,
   onWindowHoursChange,
   onScrub,
   onPlayToggle,
   onJumpToLive,
   onResumeTour,
+  onPlaybackRateChange,
   onCanvasInteraction,
 }: LiveOfficeStageProps) {
   const runningCount = sessions.filter((session) => session.status === 'running').length
@@ -136,6 +182,9 @@ export function LiveOfficeStage({
         replayCharacters={replayCharacters}
         replayCharacterMap={replayCharacterMap}
         tourTargetAgentId={tourTargetAgentId}
+        heatmapEnabled={heatmapEnabled}
+        heatmapSources={heatmapSources}
+        onHoverChange={onCanvasHoverChange}
         onUserInteraction={onCanvasInteraction}
       />
 
@@ -153,12 +202,25 @@ export function LiveOfficeStage({
         freshnessColor={freshness.color}
         freshnessDetail={freshness.detail}
         autoTourPaused={autoTourPaused}
+        previewFrames={previewFrames}
+        eventMarkers={eventMarkers}
         onModeChange={onModeChange}
         onWindowHoursChange={onWindowHoursChange}
         onScrub={onScrub}
         onPlayToggle={onPlayToggle}
         onJumpToLive={onJumpToLive}
         onResumeTour={onResumeTour}
+        onPlaybackRateChange={onPlaybackRateChange}
+      />
+
+      <AgentHoverCard
+        visible={Boolean(hoveredAgentId && hoveredSession)}
+        anchor={hoverPosition}
+        session={hoveredSession}
+        publicId={hoveredPublicId}
+        toolStats={hoveredToolStats}
+        activityPoints={hoveredActivityPoints}
+        dominantWindow={hoveredActiveWindow}
       />
 
       <div className="gs-stage-topbar">
@@ -186,6 +248,13 @@ export function LiveOfficeStage({
           onClick={onToggleStatusPanel}
         >
           Telemetry
+        </button>
+
+        <button
+          className={`gs-stage-panel gs-stage-panel--button ${heatmapEnabled ? 'is-active' : ''}`}
+          onClick={onToggleHeatmap}
+        >
+          Heatmap
         </button>
       </div>
 
@@ -246,6 +315,14 @@ export function LiveOfficeStage({
         <div className="gs-stage-help">
           Scrub the timeline to replay the public office. Any pan, zoom, or click pauses the camera auto-tour until you
           resume it.
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="gs-stage-skeleton">
+          <div className="gs-skeleton gs-skeleton--canvas" />
+          <div className="gs-skeleton gs-skeleton--floating" />
+          <div className="gs-skeleton gs-skeleton--floating gs-skeleton--floating-right" />
         </div>
       ) : null}
 

@@ -1,0 +1,559 @@
+openapi: 3.1.0
+info:
+  title: Ghost Shift HTTP API
+  version: 0.1.0
+  description: Public, internal, operational, and observability endpoints exposed by Ghost Shift.
+servers:
+  - url: /
+paths:
+  /api/status:
+    get:
+      summary: Get current public status
+      operationId: getPublicStatus
+      responses:
+        "200":
+          description: Public status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicStatus"
+  /api/sessions:
+    get:
+      summary: List public-facing sessions
+      operationId: listPublicSessions
+      responses:
+        "200":
+          description: Public sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicSession"
+  /api/public/snapshot:
+    get:
+      summary: Get the combined public status and session snapshot
+      operationId: getPublicSnapshot
+      responses:
+        "200":
+          description: Public snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSnapshot"
+  /api/public/timeline:
+    get:
+      summary: Get public timeline points
+      operationId: getPublicTimeline
+      parameters:
+        - $ref: "#/components/parameters/Since"
+        - $ref: "#/components/parameters/Until"
+      responses:
+        "200":
+          description: Timeline response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicTimelineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/public/replay:
+    get:
+      summary: Get public replay frames
+      operationId: getPublicReplay
+      parameters:
+        - $ref: "#/components/parameters/Since"
+        - $ref: "#/components/parameters/Until"
+      responses:
+        "200":
+          description: Replay response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicReplayResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/public/agent/{publicId}/stats:
+    get:
+      summary: Get aggregated stats for one public agent
+      operationId: getAgentStats
+      parameters:
+        - name: publicId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Since"
+        - $ref: "#/components/parameters/Until"
+      responses:
+        "200":
+          description: Agent stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAgentStatsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/public/zones/heatmap:
+    get:
+      summary: Get zone activity heatmap
+      operationId: getZonesHeatmap
+      parameters:
+        - $ref: "#/components/parameters/Since"
+        - $ref: "#/components/parameters/Until"
+      responses:
+        "200":
+          description: Zone heatmap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicZonesHeatmapResponse"
+  /api/public/models/distribution:
+    get:
+      summary: Get model distribution metrics
+      operationId: getModelsDistribution
+      parameters:
+        - $ref: "#/components/parameters/Since"
+        - $ref: "#/components/parameters/Until"
+      responses:
+        "200":
+          description: Model distribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicModelsDistributionResponse"
+  /api/public/metrics/live:
+    get:
+      summary: Get live TPS and agent load metrics
+      operationId: getLiveMetrics
+      responses:
+        "200":
+          description: Live metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicLiveMetricsResponse"
+  /healthz:
+    get:
+      summary: Liveness probe
+      operationId: getLiveness
+      responses:
+        "200":
+          description: Process health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /readyz:
+    get:
+      summary: Readiness probe
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Prometheus exposition format
+          content:
+            text/plain:
+              schema:
+                type: string
+  /openapi.yaml:
+    get:
+      summary: Download this OpenAPI specification
+      operationId: getOpenApiSpec
+      responses:
+        "200":
+          description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /internal-api/health:
+    get:
+      summary: Get raw gateway health
+      operationId: getInternalHealth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Gateway health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayHealth"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /internal-api/presence:
+    get:
+      summary: Get gateway presence entries
+      operationId: getInternalPresence
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Presence list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PresenceEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /internal-api/channels:
+    get:
+      summary: Get gateway channels
+      operationId: getInternalChannels
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Channel list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChannelStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /internal-api/nodes:
+    get:
+      summary: Get gateway nodes
+      operationId: getInternalNodes
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Node list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NodeInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /internal-api/cron:
+    get:
+      summary: Get gateway cron jobs
+      operationId: getInternalCron
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cron list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CronJob"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+  parameters:
+    Since:
+      name: since
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    Until:
+      name: until
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+  responses:
+    BadRequest:
+      description: Invalid query parameters
+      content:
+        text/plain:
+          schema:
+            type: string
+    Unauthorized:
+      description: Missing or invalid internal API token
+      content:
+        text/plain:
+          schema:
+            type: string
+    NotFound:
+      description: Resource not found
+      content:
+        text/plain:
+          schema:
+            type: string
+  schemas:
+    PublicSession:
+      type: object
+      properties:
+        publicId:
+          type: string
+        sessionKey:
+          type: string
+        agentId:
+          type: string
+        status:
+          type: string
+        model:
+          type: string
+        zone:
+          type: string
+        role:
+          type: string
+        origin:
+          type: string
+        activityScore:
+          type: number
+        activityWindow:
+          type: string
+        footprint:
+          type: string
+      required: [publicId, agentId, status, zone, role, origin]
+    PublicStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        status:
+          type: string
+        displayed:
+          type: integer
+        running:
+          type: integer
+        lastUpdatedAt:
+          type: string
+          format: date-time
+      required: [connected, status, displayed, running, lastUpdatedAt]
+    PublicSnapshot:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/PublicStatus"
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicSession"
+      required: [status, sessions]
+    PublicTimelinePoint:
+      type: object
+      properties:
+        capturedAt:
+          type: string
+          format: date-time
+        connected:
+          type: boolean
+        status:
+          type: string
+        displayed:
+          type: integer
+        running:
+          type: integer
+        avgResponseTime:
+          type: number
+        toolCallCount:
+          type: integer
+        messageCount:
+          type: integer
+      required: [capturedAt, connected, status, displayed, running]
+    PublicTimelineResponse:
+      type: object
+      properties:
+        retentionHours:
+          type: integer
+        intervalSeconds:
+          type: integer
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTimelinePoint"
+      required: [retentionHours, intervalSeconds, points]
+    PublicReplayFrame:
+      type: object
+      properties:
+        capturedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/PublicStatus"
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicSession"
+      required: [capturedAt, status, sessions]
+    PublicReplayResponse:
+      type: object
+      properties:
+        retentionHours:
+          type: integer
+        intervalSeconds:
+          type: integer
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicReplayFrame"
+      required: [retentionHours, intervalSeconds, frames]
+    PublicAgentStatsResponse:
+      type: object
+      properties:
+        publicId:
+          type: string
+        agentId:
+          type: string
+        workTimeSeconds:
+          type: integer
+        toolCallCount:
+          type: integer
+        avgResponseTime:
+          type: number
+        messageCount:
+          type: integer
+        sampleCount:
+          type: integer
+      required: [publicId, agentId, workTimeSeconds, toolCallCount, avgResponseTime, messageCount, sampleCount]
+    PublicZonesHeatmapResponse:
+      type: object
+      properties:
+        capturedAt:
+          type: string
+          format: date-time
+      required: [capturedAt]
+    PublicModelsDistributionResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            type: object
+      required: [models]
+    PublicLiveMetricsResponse:
+      type: object
+      properties:
+        tps:
+          type: number
+        onlineAgents:
+          type: integer
+        averageLoad:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required: [tps, onlineAgents, averageLoad, updatedAt]
+    GatewayHealth:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string
+        uptimeMs:
+          type: integer
+        timestamp:
+          type: string
+      required: [status, timestamp]
+    PresenceEntry:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        online:
+          type: boolean
+      required: [deviceId, online]
+    ChannelStatus:
+      type: object
+      properties:
+        channel:
+          type: string
+        status:
+          type: string
+      required: [channel, status]
+    NodeInfo:
+      type: object
+      properties:
+        nodeId:
+          type: string
+        online:
+          type: boolean
+      required: [nodeId, online]
+    CronJob:
+      type: object
+      properties:
+        id:
+          type: string
+        schedule:
+          type: string
+        enabled:
+          type: boolean
+      required: [id, schedule, enabled]
+    CacheBackendHealth:
+      type: object
+      properties:
+        name:
+          type: string
+        ok:
+          type: boolean
+        details:
+          type: string
+      required: [name, ok]
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        ready:
+          type: boolean
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        staticAssetsReady:
+          type: boolean
+        gateway:
+          type: object
+          properties:
+            connected:
+              type: boolean
+            status:
+              type: string
+            error:
+              type: string
+          required: [connected, status]
+        cache:
+          type: object
+          properties:
+            status:
+              type: string
+            backends:
+              type: array
+              items:
+                $ref: "#/components/schemas/CacheBackendHealth"
+          required: [status, backends]
+      required: [status, ready, requestId, timestamp, version, staticAssetsReady, gateway, cache]

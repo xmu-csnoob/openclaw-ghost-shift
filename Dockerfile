@@ -53,6 +53,6 @@ USER ghostshift
 EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1:3002/api/status || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:3002/healthz || exit 1
 
 ENTRYPOINT ["/app/ghost-shift-server"]

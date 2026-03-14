@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost-shift-redis
+  namespace: ghost-shift
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost-shift-redis
+  template:
+    metadata:
+      labels:
+        app: ghost-shift-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--save", "", "--appendonly", "no"]
+          ports:
+            - containerPort: 6379
+              name: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost-shift-redis
+  namespace: ghost-shift
+spec:
+  selector:
+    app: ghost-shift-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
