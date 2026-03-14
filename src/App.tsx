@@ -868,6 +868,7 @@ function App() {
                 getNumericAgentId={(sessionKey) => sessionToAgentId.get(sessionKey)}
                 compactViewport={compactViewport}
                 playbackState={playbackState}
+                hasReplayFrames={replayFrames.length > 0}
                 replayCharacters={playbackState.mode === 'replay' ? currentReplayFrame?.characters ?? null : null}
                 replayCharacterMap={currentReplayCharacterMap}
                 tourTargetAgentId={tourTargetAgentId}

@@ -30,6 +30,7 @@ func TestPublicHistoryRecorderPersistsSanitizedFramesAndPrunes(t *testing.T) {
 
 	t0 := time.Date(2026, time.March, 14, 10, 0, 0, 0, time.UTC)
 	t1 := t0.Add(2 * time.Hour)
+	recorder.now = func() time.Time { return t1 }
 
 	first := PublicSnapshot{
 		Status: PublicStatus{

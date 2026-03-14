@@ -28,6 +28,8 @@
     "dev:web": "vite",
     "build": "tsc -b && node ./scripts/build.mjs",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "proxy:local": "node ./scripts/local-proxy.mjs"
   },

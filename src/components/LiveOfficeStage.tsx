@@ -36,6 +36,7 @@ export interface LiveOfficeStageProps {
   getNumericAgentId: (sessionKey: string) => number | undefined
   compactViewport: boolean
   playbackState: PlaybackState
+  hasReplayFrames: boolean
   replayCharacters?: Character[] | null
   replayCharacterMap?: Map<number, Character> | null
   tourTargetAgentId?: number | null
@@ -100,6 +101,7 @@ export function LiveOfficeStage({
   getNumericAgentId,
   compactViewport,
   playbackState,
+  hasReplayFrames,
   replayCharacters = null,
   replayCharacterMap = null,
   tourTargetAgentId = null,
@@ -139,7 +141,7 @@ export function LiveOfficeStage({
 
       <ReplayControlBar
         playbackState={playbackState}
-        hasFrames={scrubberMax >= scrubberMin}
+        hasFrames={hasReplayFrames}
         scrubberMin={scrubberMin}
         scrubberMax={scrubberMax}
         scrubberValue={scrubberValue}
@@ -205,7 +207,7 @@ export function LiveOfficeStage({
 
       <SessionPanel
         session={selectedSession}
-        visible={showSessionPanel && !showStatusPanel}
+        visible={showSessionPanel && !showStatusPanel && Boolean(selectedSession)}
         onClose={onCloseSessionPanel}
         position="left"
       />
@@ -214,7 +216,7 @@ export function LiveOfficeStage({
 
       {!compactViewport && sessions.length > 0 && !showStatusPanel && !showSessionPanel ? (
         <div className="gs-stage-roster">
-          <div className="gs-stage-roster__label">Live Roster</div>
+          <div className="gs-stage-roster__label">{playbackState.mode === 'replay' ? 'Replay Roster' : 'Live Roster'}</div>
           {sessions.slice(0, 5).map((session) => {
             const numericAgentId = getNumericAgentId(session.sessionKey)
             const isSelected = numericAgentId === selectedAgentId
@@ -242,8 +244,8 @@ export function LiveOfficeStage({
 
       {!compactViewport ? (
         <div className="gs-stage-help">
-          Tap or click an agent to inspect its public card. Middle-drag pans the room. Ctrl or Cmd + scroll changes
-          zoom.
+          Scrub the timeline to replay the public office. Any pan, zoom, or click pauses the camera auto-tour until you
+          resume it.
         </div>
       ) : null}
 
