@@ -75,6 +75,7 @@ export interface LiveOfficeStageProps {
     zoneLabel: string
     accent: string
     isCurrent: boolean
+    previewBars: number[]
   }>
   eventMarkers: Array<{
     id: string
@@ -170,6 +171,8 @@ export function LiveOfficeStage({
 }: LiveOfficeStageProps) {
   const runningCount = sessions.filter((session) => session.status === 'running').length
   const warmCount = sessions.filter((session) => session.signalScore >= 0.6).length
+  const heatmapZoneCount = new Set(heatmapSources.map((source) => source.zone)).size
+  const zoomLabel = `${zoom >= 10 || Number.isInteger(zoom) ? zoom.toFixed(0) : zoom.toFixed(1)}x`
 
   return (
     <div className="gs-live-stage">
@@ -211,16 +214,19 @@ export function LiveOfficeStage({
         onJumpToLive={onJumpToLive}
         onResumeTour={onResumeTour}
         onPlaybackRateChange={onPlaybackRateChange}
+        compact={compactViewport}
       />
 
       <AgentHoverCard
-        visible={Boolean(hoveredAgentId && hoveredSession)}
+        visible={hoveredAgentId !== null && hoverPosition !== null}
         anchor={hoverPosition}
         session={hoveredSession}
         publicId={hoveredPublicId}
         toolStats={hoveredToolStats}
         activityPoints={hoveredActivityPoints}
         dominantWindow={hoveredActiveWindow}
+        loading={isLoading || (hoveredAgentId !== null && hoveredSession === null)}
+        compact={compactViewport}
       />
 
       <div className="gs-stage-topbar">
@@ -239,13 +245,14 @@ export function LiveOfficeStage({
           <span>
             <strong>{sessions.length}</strong> visible
           </span>
-          <span>{warmCount} warm</span>
+          {!compactViewport ? <span>{warmCount} warm</span> : null}
           <span>{runningCount} live</span>
         </div>
 
         <button
           className={`gs-stage-panel gs-stage-panel--button ${showStatusPanel ? 'is-active' : ''}`}
           onClick={onToggleStatusPanel}
+          aria-pressed={showStatusPanel}
         >
           Telemetry
         </button>
@@ -253,16 +260,28 @@ export function LiveOfficeStage({
         <button
           className={`gs-stage-panel gs-stage-panel--button ${heatmapEnabled ? 'is-active' : ''}`}
           onClick={onToggleHeatmap}
+          aria-pressed={heatmapEnabled}
         >
           Heatmap
         </button>
       </div>
 
       <div className="gs-stage-zoom">
-        <button onClick={() => onZoomChange(Math.min(10, zoom + 1))}>+</button>
-        <span>{zoom}x</span>
-        <button onClick={() => onZoomChange(Math.max(1, zoom - 1))}>-</button>
+        <button type="button" aria-label="Zoom in" onClick={() => onZoomChange(Math.min(10, zoom + 1))}>+</button>
+        <span>{zoomLabel}</span>
+        <button type="button" aria-label="Zoom out" onClick={() => onZoomChange(Math.max(1, zoom - 1))}>-</button>
       </div>
+
+      {heatmapEnabled ? (
+        <div className="gs-stage-heatmap-legend" role="status" aria-live="polite">
+          <div className="gs-stage-heatmap-legend__eyebrow">Activity heatmap</div>
+          <div className="gs-stage-heatmap-legend__body">
+            <span>{heatmapSources.length} active sources</span>
+            <span>{heatmapZoneCount} hot zones</span>
+            <span>{compactViewport ? 'Pinch or drag to inspect' : 'Pan or zoom to inspect density'}</span>
+          </div>
+        </div>
+      ) : null}
 
       <StatusPanel
         status={officeStatus}

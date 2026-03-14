@@ -29,6 +29,71 @@ interface OfficeCanvasProps {
   onUserInteraction?: () => void
 }
 
+interface TouchPoint {
+  identifier: number
+  clientX: number
+  clientY: number
+}
+
+type TouchGestureState =
+  | { kind: 'idle' }
+  | {
+      kind: 'pan'
+      touchId: number
+      startClientX: number
+      startClientY: number
+      startPanX: number
+      startPanY: number
+      moved: boolean
+    }
+  | {
+      kind: 'pinch'
+      firstTouchId: number
+      secondTouchId: number
+      startDistance: number
+      startZoom: number
+      worldX: number
+      worldY: number
+    }
+
+const MOBILE_RENDER_SCALE_MAX = 1.5
+const TOUCH_DRAG_THRESHOLD_PX = 10
+
+function getCanvasScale(): number {
+  if (typeof window === 'undefined') return 1
+  const dpr = window.devicePixelRatio || 1
+  const coarsePointer =
+    window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0
+  return coarsePointer ? Math.min(dpr, MOBILE_RENDER_SCALE_MAX) : dpr
+}
+
+function normalizeZoom(nextZoom: number): number {
+  return Math.round(nextZoom * 10) / 10
+}
+
+function getTouchDistance(first: TouchPoint, second: TouchPoint): number {
+  return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
+}
+
+function getTouchCenter(first: TouchPoint, second: TouchPoint): { clientX: number; clientY: number } {
+  return {
+    clientX: (first.clientX + second.clientX) / 2,
+    clientY: (first.clientY + second.clientY) / 2,
+  }
+}
+
+function getTouchPoint(touchList: TouchPoint[], touchId: number): TouchPoint | null {
+  return touchList.find((touch) => touch.identifier === touchId) || null
+}
+
+function listTouches(touches: React.TouchList): TouchPoint[] {
+  return Array.from(touches).map((touch) => ({
+    identifier: touch.identifier,
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  }))
+}
+
 function renderHeatmapOverlay(
   ctx: CanvasRenderingContext2D,
   heatmapSources: Array<{ agentId: number; zone: string; intensity: number }>,
@@ -54,12 +119,14 @@ function renderHeatmapOverlay(
 
   ctx.save()
   ctx.globalCompositeOperation = 'screen'
+  const phase = performance.now() / 1_000
 
   for (const bucket of buckets.values()) {
     const intensity = Math.max(0.15, Math.min(1, bucket.intensity / Math.max(1, bucket.count)))
     const screenX = offsetX + (bucket.x / bucket.count) * zoom
     const screenY = offsetY + (bucket.y / bucket.count) * zoom
-    const radius = Math.max(48, 34 * zoom + intensity * 64)
+    const pulse = 0.92 + Math.sin(phase * 2.1 + bucket.count) * 0.08
+    const radius = Math.max(48, (34 * zoom + intensity * 64) * pulse)
     const hue = (1 - intensity) * 220
     const centerAlpha = 0.12 + intensity * 0.22
     const edgeAlpha = 0.04 + intensity * 0.1
@@ -117,6 +184,8 @@ export function OfficeCanvas({
   const tourTargetAgentIdRef = useRef<number | null>(tourTargetAgentId)
   const heatmapEnabledRef = useRef(heatmapEnabled)
   const heatmapSourcesRef = useRef<Array<{ agentId: number; zone: string; intensity: number }>>(heatmapSources)
+  const zoomRef = useRef(zoom)
+  const touchGestureRef = useRef<TouchGestureState>({ kind: 'idle' })
 
   useEffect(() => {
     renderCharactersRef.current = replayCharacters
@@ -138,13 +207,17 @@ export function OfficeCanvas({
     heatmapSourcesRef.current = heatmapSources
   }, [heatmapSources])
 
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
+
   // Clamp pan so the map edge can't go past a margin inside the viewport
-  const clampPan = useCallback((px: number, py: number): { x: number; y: number } => {
+  const clampPan = useCallback((px: number, py: number, zoomLevel: number = zoom): { x: number; y: number } => {
     const canvas = canvasRef.current
     if (!canvas) return { x: px, y: py }
     const layout = officeState.getLayout()
-    const mapW = layout.cols * TILE_SIZE * zoom
-    const mapH = layout.rows * TILE_SIZE * zoom
+    const mapW = layout.cols * TILE_SIZE * zoomLevel
+    const mapH = layout.rows * TILE_SIZE * zoomLevel
     const marginX = canvas.width * PAN_MARGIN_FRACTION
     const marginY = canvas.height * PAN_MARGIN_FRACTION
     const maxPanX = (mapW / 2) + canvas.width / 2 - marginX
@@ -161,7 +234,7 @@ export function OfficeCanvas({
     const container = containerRef.current
     if (!canvas || !container) return
     const rect = container.getBoundingClientRect()
-    const dpr = window.devicePixelRatio || 1
+    const dpr = getCanvasScale()
     canvas.width = Math.round(rect.width * dpr)
     canvas.height = Math.round(rect.height * dpr)
     canvas.style.width = `${rect.width}px`
@@ -264,7 +337,7 @@ export function OfficeCanvas({
       const canvas = canvasRef.current
       if (!canvas) return null
       const rect = canvas.getBoundingClientRect()
-      const dpr = window.devicePixelRatio || 1
+      const dpr = getCanvasScale()
       const cssX = clientX - rect.left
       const cssY = clientY - rect.top
       const deviceX = cssX * dpr
@@ -276,10 +349,50 @@ export function OfficeCanvas({
     [zoom],
   )
 
+  const computePanFromFocus = useCallback(
+    (worldX: number, worldY: number, screenX: number, screenY: number, zoomLevel: number) => {
+      const canvas = canvasRef.current
+      if (!canvas) return panRef.current
+      const layout = officeState.getLayout()
+      const mapW = layout.cols * TILE_SIZE * zoomLevel
+      const mapH = layout.rows * TILE_SIZE * zoomLevel
+      return clampPan(
+        screenX - worldX * zoomLevel - Math.floor((canvas.width - mapW) / 2),
+        screenY - worldY * zoomLevel - Math.floor((canvas.height - mapH) / 2),
+        zoomLevel,
+      )
+    },
+    [clampPan, officeState, panRef],
+  )
+
+  const toggleSelectionAtPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const pos = screenToWorld(clientX, clientY)
+      if (!pos) return
+
+      const hitId = getCharacterAtPosition(renderCharactersRef.current ?? officeState.getCharacters(), pos.worldX, pos.worldY)
+      if (hitId !== null) {
+        officeState.dismissBubble(hitId)
+        if (officeState.selectedAgentId === hitId) {
+          officeState.selectedAgentId = null
+          officeState.cameraFollowId = null
+        } else {
+          officeState.selectedAgentId = hitId
+          officeState.cameraFollowId = hitId
+        }
+        onClick?.(hitId)
+      } else {
+        officeState.selectedAgentId = null
+        officeState.cameraFollowId = null
+      }
+    },
+    [officeState, onClick, screenToWorld],
+  )
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (isPanningRef.current) {
-        const dpr = window.devicePixelRatio || 1
+        const dpr = getCanvasScale()
         const dx = (e.clientX - panStartRef.current.mouseX) * dpr
         const dy = (e.clientY - panStartRef.current.mouseY) * dpr
         panRef.current = clampPan(
@@ -340,26 +453,9 @@ export function OfficeCanvas({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       onUserInteraction?.()
-      const pos = screenToWorld(e.clientX, e.clientY)
-      if (!pos) return
-
-      const hitId = getCharacterAtPosition(renderCharactersRef.current ?? officeState.getCharacters(), pos.worldX, pos.worldY)
-      if (hitId !== null) {
-        officeState.dismissBubble(hitId)
-        if (officeState.selectedAgentId === hitId) {
-          officeState.selectedAgentId = null
-          officeState.cameraFollowId = null
-        } else {
-          officeState.selectedAgentId = hitId
-          officeState.cameraFollowId = hitId
-        }
-        onClick?.(hitId)
-      } else {
-        officeState.selectedAgentId = null
-        officeState.cameraFollowId = null
-      }
+      toggleSelectionAtPoint(e.clientX, e.clientY)
     },
-    [officeState, onClick, onUserInteraction, screenToWorld],
+    [onUserInteraction, toggleSelectionAtPoint],
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -380,7 +476,7 @@ export function OfficeCanvas({
           onZoomChange(newZoom)
         }
       } else {
-        const dpr = window.devicePixelRatio || 1
+        const dpr = getCanvasScale()
         officeState.cameraFollowId = null
         panRef.current = clampPan(
           panRef.current.x - e.deltaX * dpr,
@@ -395,6 +491,167 @@ export function OfficeCanvas({
     if (e.button === 1) e.preventDefault()
   }, [])
 
+  const handleTouchStart = useCallback(
+    (event: React.TouchEvent) => {
+      onUserInteraction?.()
+      onHoverChange?.(null, null)
+      officeState.hoveredAgentId = null
+      officeState.cameraFollowId = null
+
+      const touches = listTouches(event.touches)
+      if (touches.length >= 2) {
+        const [firstTouch, secondTouch] = touches
+        const center = getTouchCenter(firstTouch, secondTouch)
+        const focusPoint = screenToWorld(center.clientX, center.clientY)
+        if (!focusPoint) return
+        touchGestureRef.current = {
+          kind: 'pinch',
+          firstTouchId: firstTouch.identifier,
+          secondTouchId: secondTouch.identifier,
+          startDistance: Math.max(32, getTouchDistance(firstTouch, secondTouch)),
+          startZoom: zoomRef.current,
+          worldX: focusPoint.worldX,
+          worldY: focusPoint.worldY,
+        }
+        return
+      }
+
+      const [touch] = touches
+      if (!touch) return
+      touchGestureRef.current = {
+        kind: 'pan',
+        touchId: touch.identifier,
+        startClientX: touch.clientX,
+        startClientY: touch.clientY,
+        startPanX: panRef.current.x,
+        startPanY: panRef.current.y,
+        moved: false,
+      }
+    },
+    [officeState, onHoverChange, onUserInteraction, panRef, screenToWorld],
+  )
+
+  const handleTouchMove = useCallback(
+    (event: React.TouchEvent) => {
+      const gesture = touchGestureRef.current
+      const touches = listTouches(event.touches)
+      if (touches.length === 0) return
+
+      if (touches.length >= 2) {
+        const currentFirst =
+          gesture.kind === 'pinch' ? getTouchPoint(touches, gesture.firstTouchId) : touches[0]
+        const currentSecond =
+          gesture.kind === 'pinch' ? getTouchPoint(touches, gesture.secondTouchId) : touches[1]
+        if (!currentFirst || !currentSecond) return
+
+        if (gesture.kind !== 'pinch') {
+          const center = getTouchCenter(currentFirst, currentSecond)
+          const focusPoint = screenToWorld(center.clientX, center.clientY)
+          if (!focusPoint) return
+          touchGestureRef.current = {
+            kind: 'pinch',
+            firstTouchId: currentFirst.identifier,
+            secondTouchId: currentSecond.identifier,
+            startDistance: Math.max(32, getTouchDistance(currentFirst, currentSecond)),
+            startZoom: zoomRef.current,
+            worldX: focusPoint.worldX,
+            worldY: focusPoint.worldY,
+          }
+        }
+
+        const resolvedGesture = touchGestureRef.current
+        if (resolvedGesture.kind !== 'pinch') return
+
+        event.preventDefault()
+        const center = getTouchCenter(currentFirst, currentSecond)
+        const currentDistance = Math.max(32, getTouchDistance(currentFirst, currentSecond))
+        const nextZoom = normalizeZoom(
+          Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, resolvedGesture.startZoom * (currentDistance / resolvedGesture.startDistance))),
+        )
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const rect = canvas.getBoundingClientRect()
+        const dpr = getCanvasScale()
+        const screenX = (center.clientX - rect.left) * dpr
+        const screenY = (center.clientY - rect.top) * dpr
+        panRef.current = computePanFromFocus(resolvedGesture.worldX, resolvedGesture.worldY, screenX, screenY, nextZoom)
+        onZoomChange(nextZoom)
+        return
+      }
+
+      if (gesture.kind !== 'pan') return
+      const touch = getTouchPoint(touches, gesture.touchId)
+      if (!touch) return
+
+      event.preventDefault()
+      const dpr = getCanvasScale()
+      const dx = (touch.clientX - gesture.startClientX) * dpr
+      const dy = (touch.clientY - gesture.startClientY) * dpr
+      const moved = Math.hypot(dx, dy) > TOUCH_DRAG_THRESHOLD_PX * dpr
+      touchGestureRef.current = {
+        ...gesture,
+        moved: gesture.moved || moved,
+      }
+      panRef.current = clampPan(gesture.startPanX + dx, gesture.startPanY + dy)
+    },
+    [clampPan, computePanFromFocus, onZoomChange, panRef, screenToWorld],
+  )
+
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent) => {
+      const remainingTouches = listTouches(event.touches)
+      const changedTouches = listTouches(event.changedTouches)
+      const gesture = touchGestureRef.current
+
+      if (gesture.kind === 'pan') {
+        const endedTouch = getTouchPoint(changedTouches, gesture.touchId)
+        if (endedTouch && !gesture.moved) {
+          onUserInteraction?.()
+          toggleSelectionAtPoint(endedTouch.clientX, endedTouch.clientY)
+        }
+      }
+
+      if (remainingTouches.length >= 2) {
+        const [firstTouch, secondTouch] = remainingTouches
+        const center = getTouchCenter(firstTouch, secondTouch)
+        const focusPoint = screenToWorld(center.clientX, center.clientY)
+        touchGestureRef.current = focusPoint
+          ? {
+              kind: 'pinch',
+              firstTouchId: firstTouch.identifier,
+              secondTouchId: secondTouch.identifier,
+              startDistance: Math.max(32, getTouchDistance(firstTouch, secondTouch)),
+              startZoom: zoomRef.current,
+              worldX: focusPoint.worldX,
+              worldY: focusPoint.worldY,
+            }
+          : { kind: 'idle' }
+        return
+      }
+
+      if (remainingTouches.length === 1) {
+        const [touch] = remainingTouches
+        touchGestureRef.current = {
+          kind: 'pan',
+          touchId: touch.identifier,
+          startClientX: touch.clientX,
+          startClientY: touch.clientY,
+          startPanX: panRef.current.x,
+          startPanY: panRef.current.y,
+          moved: false,
+        }
+        return
+      }
+
+      touchGestureRef.current = { kind: 'idle' }
+    },
+    [onUserInteraction, panRef, screenToWorld, toggleSelectionAtPoint],
+  )
+
+  const handleTouchCancel = useCallback(() => {
+    touchGestureRef.current = { kind: 'idle' }
+  }, [])
+
   return (
     <div
       ref={containerRef}
@@ -404,6 +661,7 @@ export function OfficeCanvas({
         position: 'relative',
         overflow: 'hidden',
         background: '#1E1E2E',
+        touchAction: 'none',
       }}
     >
       <canvas
@@ -415,8 +673,12 @@ export function OfficeCanvas({
         onAuxClick={handleAuxClick}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         onContextMenu={(e) => e.preventDefault()}
-        style={{ display: 'block' }}
+        style={{ display: 'block', touchAction: 'none' }}
       />
     </div>
   )

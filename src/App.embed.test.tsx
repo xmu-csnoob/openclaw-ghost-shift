@@ -72,7 +72,7 @@ test('renders the embed summary card and uses the /office API base on mobile pat
   })
 
   vi.resetModules()
-  const { default: App } = await import('./App.js')
+  const { default: App } = await import('./App.tsx')
 
   render(<App />)
 

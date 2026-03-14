@@ -10,7 +10,10 @@ var openAPISpec []byte
 
 func (h *Handler) OpenAPI(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		WriteJSONError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", ErrorDetail{
+			"allowed":  http.MethodGet,
+			"received": r.Method,
+		})
 		return
 	}
 

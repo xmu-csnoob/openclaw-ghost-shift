@@ -1,0 +1,103 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/xmu-csnoob/openclaw-ghost-shift
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "3002"
+
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3002
+  annotations: {}
+  nameOverride: ""
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://portfolio.example.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, X-Request-ID"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+  hosts:
+    - host: ghostshift.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: ghost-shift-tls
+      hosts:
+        - ghostshift.example.com
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClassName: ""
+  mountPath: /var/lib/ghost-shift
+
+config:
+  BIND_ADDR: "0.0.0.0"
+  PORT: "3002"
+  STATIC_DIR: /app/dist
+  GATEWAY_URL: wss://gateway.example.com/ws
+  GHOST_SHIFT_INSTANCE_ID: ghost-shift-production
+  GHOST_SHIFT_USER_AGENT: ghost-shift-server/0.1.0
+  GHOST_SHIFT_VERSION: 0.1.0
+  DEVICE_IDENTITY_PATH: /var/lib/ghost-shift/device-identity.json
+  PUBLIC_HISTORY_PATH: /var/lib/ghost-shift/public-history.jsonl
+  PUBLIC_HISTORY_RETENTION_HOURS: "24"
+  PUBLIC_HISTORY_INTERVAL_SECONDS: "30"
+  REDIS_URL: ""
+  CACHE_TTL_SECONDS: "5"
+  CACHE_MEMORY_MAX_ENTRIES: "512"
+  CACHE_WARM_ON_STARTUP: "true"
+  LOG_LEVEL: info
+  REQUEST_SLOW_THRESHOLD_MS: "250"
+  ENABLE_INTERNAL_API: "false"
+
+secretEnv:
+  GATEWAY_TOKEN: replace-with-gateway-token
+  PUBLIC_ID_SALT: replace-with-public-id-salt
+  INTERNAL_API_TOKEN: ""
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+  prometheusRule:
+    enabled: false
+    namespace: ""
+    labels: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

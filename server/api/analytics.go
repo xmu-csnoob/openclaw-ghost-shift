@@ -13,10 +13,7 @@ import (
 	"time"
 )
 
-const (
-	defaultAnalyticsCacheTTL   = 2 * time.Second
-	defaultLiveMetricsCacheTTL = 2 * time.Second
-)
+const defaultTrendWindowHours = 6
 
 var errPublicStatsNotFound = errors.New("public stats not found")
 
@@ -95,6 +92,83 @@ type PublicLiveMetricsResponse struct {
 	UpdatedAt    string  `json:"updatedAt"`
 }
 
+type PublicTrendPoint struct {
+	CapturedAt      string  `json:"capturedAt"`
+	OnlineAgents    int     `json:"onlineAgents"`
+	RunningAgents   int     `json:"runningAgents"`
+	MessageCount    int     `json:"messageCount"`
+	TotalTokens     int     `json:"totalTokens"`
+	DeltaMessages   int     `json:"deltaMessages"`
+	DeltaToolCalls  int     `json:"deltaToolCalls"`
+	DeltaTokens     int     `json:"deltaTokens"`
+	AvgResponseTime float64 `json:"avgResponseTime"`
+}
+
+type PublicTrendSummary struct {
+	SampleCount        int     `json:"sampleCount"`
+	OnlineAgentsDelta  int     `json:"onlineAgentsDelta"`
+	RunningAgentsDelta int     `json:"runningAgentsDelta"`
+	MessageCountDelta  int     `json:"messageCountDelta"`
+	ToolCallCount      int     `json:"toolCallCount"`
+	TotalTokensDelta   int     `json:"totalTokensDelta"`
+	AvgResponseTime    float64 `json:"avgResponseTime"`
+}
+
+type PublicTrendResponse struct {
+	Hours   int                `json:"hours"`
+	Since   string             `json:"since"`
+	Until   string             `json:"until"`
+	Points  []PublicTrendPoint `json:"points"`
+	Summary PublicTrendSummary `json:"summary"`
+}
+
+type PublicComparisonWindow struct {
+	Label             string  `json:"label"`
+	Date              string  `json:"date"`
+	From              string  `json:"from"`
+	To                string  `json:"to"`
+	SampleCount       int     `json:"sampleCount"`
+	AvgOnlineAgents   float64 `json:"avgOnlineAgents"`
+	AvgRunningAgents  float64 `json:"avgRunningAgents"`
+	MessageCountDelta int     `json:"messageCountDelta"`
+	ToolCallCount     int     `json:"toolCallCount"`
+	TotalTokensDelta  int     `json:"totalTokensDelta"`
+	AvgResponseTime   float64 `json:"avgResponseTime"`
+}
+
+type PublicComparisonDelta struct {
+	AvgOnlineAgents   float64 `json:"avgOnlineAgents"`
+	AvgRunningAgents  float64 `json:"avgRunningAgents"`
+	MessageCountDelta int     `json:"messageCountDelta"`
+	ToolCallCount     int     `json:"toolCallCount"`
+	TotalTokensDelta  int     `json:"totalTokensDelta"`
+	AvgResponseTime   float64 `json:"avgResponseTime"`
+}
+
+type PublicComparisonResponse struct {
+	Timezone   string                 `json:"timezone"`
+	ComparedAt string                 `json:"comparedAt"`
+	Today      PublicComparisonWindow `json:"today"`
+	Yesterday  PublicComparisonWindow `json:"yesterday"`
+	Delta      PublicComparisonDelta  `json:"delta"`
+}
+
+type analyticsSample struct {
+	capturedAt      time.Time
+	frame           PublicHistoryFrame
+	sessionsByID    map[string]recordedPublicSession
+	onlineAgents    int
+	runningAgents   int
+	messageCount    int
+	totalTokens     int
+	deltaMessages   int
+	deltaTokens     int
+	toolCallCount   int
+	avgResponseTime float64
+	responseSumMs   float64
+	responseCount   int
+}
+
 func newLiveMetricsTracker(now func() time.Time) *liveMetricsTracker {
 	return &liveMetricsTracker{
 		now:            now,
@@ -153,24 +227,29 @@ func cachedCompute[T any](ctx context.Context, h *Handler, route, key string, tt
 }
 
 func (h *Handler) PublicAgentStats(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_agent_stats"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
 	publicID, ok := parseAgentStatsPath(r.URL.Path)
 	if !ok {
-		http.NotFound(w, r)
+		h.respondError(w, r, route, http.StatusNotFound, "invalid_path", "public agent path not found", nil, ErrorDetail{
+			"path": r.URL.Path,
+		})
 		return
 	}
 
 	since, until, err := parseHistoryWindow(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"publicId": publicID,
+			"query":    r.URL.RawQuery,
+		})
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_agent_stats", h.analyticsCacheKey("agent-stats", r.URL.Path, r.URL.RawQuery), defaultAnalyticsCacheTTL, func() (*PublicAgentStatsResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("agent-stats", "/api/public/agent/"+publicID, r.URL.RawQuery), h.analyticsTTL(since, until), func() (*PublicAgentStatsResponse, error) {
 		stats, found := h.computeAgentStats(publicID, since, until)
 		if !found {
 			return nil, errPublicStatsNotFound
@@ -178,11 +257,15 @@ func (h *Handler) PublicAgentStats(w http.ResponseWriter, r *http.Request) {
 		return &stats, nil
 	})
 	if errors.Is(err, errPublicStatsNotFound) {
-		http.NotFound(w, r)
+		h.respondError(w, r, route, http.StatusNotFound, "agent_not_found", "public agent not found", err, ErrorDetail{
+			"publicId": publicID,
+		})
 		return
 	}
 	if err != nil {
-		http.Error(w, "failed to build agent stats", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "agent_stats_build_failed", "failed to build agent stats", err, ErrorDetail{
+			"publicId": publicID,
+		})
 		return
 	}
 
@@ -191,22 +274,24 @@ func (h *Handler) PublicAgentStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicZonesHeatmap(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_zones_heatmap"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
 	since, until, err := parseHistoryWindow(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"query": r.URL.RawQuery,
+		})
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_zones_heatmap", h.analyticsCacheKey("zones-heatmap", r.URL.Path, r.URL.RawQuery), defaultAnalyticsCacheTTL, func() (PublicZonesHeatmapResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("zones-heatmap", r.URL.Path, r.URL.RawQuery), h.analyticsTTL(since, until), func() (PublicZonesHeatmapResponse, error) {
 		return h.computeZonesHeatmap(since, until), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build zone heatmap", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "zones_heatmap_build_failed", "failed to build zone heatmap", err, nil)
 		return
 	}
 
@@ -215,22 +300,24 @@ func (h *Handler) PublicZonesHeatmap(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicModelsDistribution(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_models_distribution"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
 	since, until, err := parseHistoryWindow(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"query": r.URL.RawQuery,
+		})
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_models_distribution", h.analyticsCacheKey("models-distribution", r.URL.Path, r.URL.RawQuery), defaultAnalyticsCacheTTL, func() (PublicModelsDistributionResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("models-distribution", r.URL.Path, r.URL.RawQuery), h.analyticsTTL(since, until), func() (PublicModelsDistributionResponse, error) {
 		return h.computeModelsDistribution(since, until), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build model distribution", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "models_distribution_build_failed", "failed to build model distribution", err, nil)
 		return
 	}
 
@@ -239,16 +326,60 @@ func (h *Handler) PublicModelsDistribution(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *Handler) PublicMetricsLive(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_metrics_live"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_metrics_live", "metrics-live", defaultLiveMetricsCacheTTL, func() (PublicLiveMetricsResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, "metrics-live", h.liveMetricsCacheTTL(), func() (PublicLiveMetricsResponse, error) {
 		return h.live.compute(h.publicSessions()), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build live metrics", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "live_metrics_build_failed", "failed to build live metrics", err, nil)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
+}
+
+func (h *Handler) PublicAnalyticsTrends(w http.ResponseWriter, r *http.Request) {
+	const route = "api_public_analytics_trends"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
+		return
+	}
+
+	since, until, hours, err := h.parseTrendWindow(r)
+	if err != nil {
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"query": r.URL.RawQuery,
+		})
+		return
+	}
+
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("trends", r.URL.Path, r.URL.RawQuery), h.analyticsTTL(since, until), func() (PublicTrendResponse, error) {
+		return h.computeTrend(since, until, hours), nil
+	})
+	if err != nil {
+		h.respondError(w, r, route, http.StatusInternalServerError, "trend_build_failed", "failed to build analytics trend", err, nil)
+		return
+	}
+
+	w.Header().Set("X-Cache", cacheStatus)
+	writeJSON(w, http.StatusOK, payload)
+}
+
+func (h *Handler) PublicAnalyticsCompare(w http.ResponseWriter, r *http.Request) {
+	const route = "api_public_analytics_compare"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
+		return
+	}
+
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("compare", r.URL.Path, r.URL.RawQuery), h.analyticsHotCacheTTL(), func() (PublicComparisonResponse, error) {
+		return h.computeTodayVsYesterday(), nil
+	})
+	if err != nil {
+		h.respondError(w, r, route, http.StatusInternalServerError, "comparison_build_failed", "failed to build today vs yesterday comparison", err, nil)
 		return
 	}
 
@@ -258,16 +389,19 @@ func (h *Handler) PublicMetricsLive(w http.ResponseWriter, r *http.Request) {
 
 func parseAgentStatsPath(path string) (string, bool) {
 	const prefix = "/api/public/agent/"
-	const suffix = "/stats"
-	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, suffix) {
+	if !strings.HasPrefix(path, prefix) {
 		return "", false
 	}
 
-	publicID := strings.Trim(strings.TrimSuffix(strings.TrimPrefix(path, prefix), suffix), "/")
-	if publicID == "" || strings.Contains(publicID, "/") {
+	parts := strings.Split(strings.Trim(strings.TrimPrefix(path, prefix), "/"), "/")
+	switch {
+	case len(parts) == 1 && parts[0] != "" && parts[0] != "stats":
+		return parts[0], true
+	case len(parts) == 2 && parts[0] != "" && parts[1] == "stats":
+		return parts[0], true
+	default:
 		return "", false
 	}
-	return publicID, true
 }
 
 func (h *Handler) analyticsCacheKey(kind, path, rawQuery string) string {
@@ -288,8 +422,8 @@ func (h *Handler) analyticsFrames(since, until time.Time) []PublicHistoryFrame {
 }
 
 func (h *Handler) computeAgentStats(publicID string, since, until time.Time) (PublicAgentStatsResponse, bool) {
-	frames := h.analyticsFrames(since, until)
-	if len(frames) == 0 {
+	samples := h.analyticsSamples(since, until)
+	if len(samples) == 0 {
 		return PublicAgentStatsResponse{}, false
 	}
 
@@ -308,13 +442,8 @@ func (h *Handler) computeAgentStats(publicID string, since, until time.Time) (Pu
 
 	periodCounts := make(map[string]int)
 
-	for _, frame := range frames {
-		capturedAt, err := time.Parse(time.RFC3339, frame.CapturedAt)
-		if err != nil {
-			continue
-		}
-
-		session, ok := findRecordedSession(frame.Sessions, publicID)
+	for _, sample := range samples {
+		session, ok := sample.sessionsByID[publicID]
 		if !ok {
 			continue
 		}
@@ -329,13 +458,13 @@ func (h *Handler) computeAgentStats(publicID string, since, until time.Time) (Pu
 
 		isActive := recordedSessionIsActive(session)
 		if isActive {
-			label := activePeriodLabel(capturedAt)
+			label := activePeriodLabel(sample.capturedAt)
 			periodCounts[label]++
 			activeSampleCount++
 		}
 
 		if lastSession != nil {
-			interval := capturedAt.Sub(lastCapturedAt)
+			interval := sample.capturedAt.Sub(lastCapturedAt)
 			if interval > 0 && (recordedSessionIsActive(*lastSession) || isActive) {
 				workTime += interval
 			}
@@ -352,7 +481,7 @@ func (h *Handler) computeAgentStats(publicID string, since, until time.Time) (Pu
 
 		sessionCopy := session
 		lastSession = &sessionCopy
-		lastCapturedAt = capturedAt
+		lastCapturedAt = sample.capturedAt
 	}
 
 	if sampleCount == 0 {
@@ -435,8 +564,8 @@ func (h *Handler) computeZonesHeatmap(since, until time.Time) PublicZonesHeatmap
 }
 
 func (h *Handler) computeModelsDistribution(since, until time.Time) PublicModelsDistributionResponse {
-	frames := h.analyticsFrames(since, until)
-	if len(frames) == 0 {
+	samples := h.analyticsSamples(since, until)
+	if len(samples) == 0 {
 		return PublicModelsDistributionResponse{Models: []PublicModelDistributionEntry{}}
 	}
 
@@ -453,24 +582,13 @@ func (h *Handler) computeModelsDistribution(since, until time.Time) PublicModels
 	aggregates := make(map[string]*modelAggregate)
 	totalSamples := 0
 
-	for index, frame := range frames {
-		currAt, err := time.Parse(time.RFC3339, frame.CapturedAt)
-		if err != nil {
-			continue
-		}
-
-		var (
-			prevFrame *PublicHistoryFrame
-			prevAt    time.Time
-			prevIndex map[string]recordedPublicSession
-		)
+	for index, sample := range samples {
+		var prev *analyticsSample
 		if index > 0 {
-			prevFrame = &frames[index-1]
-			prevAt, _ = time.Parse(time.RFC3339, prevFrame.CapturedAt)
-			prevIndex = recordedSessionIndex(prevFrame.Sessions)
+			prev = &samples[index-1]
 		}
 
-		for _, session := range frame.Sessions {
+		for _, session := range sample.frame.Sessions {
 			model := normalizeModelLabel(session.Model)
 			agg := aggregates[model]
 			if agg == nil {
@@ -482,16 +600,16 @@ func (h *Handler) computeModelsDistribution(since, until time.Time) PublicModels
 			agg.agents[session.PublicID] = struct{}{}
 			totalSamples++
 
-			if prevFrame == nil || prevAt.IsZero() {
+			if prev == nil {
 				continue
 			}
 
-			prevSession, ok := prevIndex[session.PublicID]
+			prevSession, ok := prev.sessionsByID[session.PublicID]
 			if !ok {
 				continue
 			}
 
-			interval := currAt.Sub(prevAt)
+			interval := sample.capturedAt.Sub(prev.capturedAt)
 			if interval <= 0 {
 				continue
 			}
@@ -532,6 +650,226 @@ func (h *Handler) computeModelsDistribution(since, until time.Time) PublicModels
 	})
 
 	return PublicModelsDistributionResponse{Models: models}
+}
+
+func (h *Handler) analyticsSamples(since, until time.Time) []analyticsSample {
+	return buildAnalyticsSamples(h.analyticsFrames(since, until))
+}
+
+func buildAnalyticsSamples(frames []PublicHistoryFrame) []analyticsSample {
+	samples := make([]analyticsSample, 0, len(frames))
+
+	var (
+		prevSample analyticsSample
+		hasPrev    bool
+	)
+
+	for _, frame := range frames {
+		capturedAt, err := time.Parse(time.RFC3339, frame.CapturedAt)
+		if err != nil {
+			continue
+		}
+
+		sample := analyticsSample{
+			capturedAt:    capturedAt,
+			frame:         frame,
+			sessionsByID:  recordedSessionIndex(frame.Sessions),
+			onlineAgents:  frame.Status.Displayed,
+			runningAgents: frame.Status.Running,
+			messageCount:  totalMessageCount(frame.Sessions),
+			totalTokens:   totalTokenCount(frame.Sessions),
+		}
+
+		if hasPrev {
+			interval := sample.capturedAt.Sub(prevSample.capturedAt)
+			if interval > 0 {
+				for publicID, session := range sample.sessionsByID {
+					prevSession, ok := prevSample.sessionsByID[publicID]
+					if !ok {
+						continue
+					}
+
+					messageDelta, tokenDelta := sessionDeltas(prevSession, session)
+					sample.deltaMessages += messageDelta
+					sample.deltaTokens += tokenDelta
+					if messageDelta == 0 && tokenDelta == 0 {
+						continue
+					}
+
+					sample.responseSumMs += float64(interval.Milliseconds())
+					sample.responseCount++
+					sample.toolCallCount += estimatedToolCalls(messageDelta, tokenDelta)
+				}
+				sample.avgResponseTime = averageOrZero(sample.responseSumMs, sample.responseCount)
+			}
+		}
+
+		samples = append(samples, sample)
+		prevSample = sample
+		hasPrev = true
+	}
+
+	return samples
+}
+
+func (h *Handler) parseTrendWindow(r *http.Request) (time.Time, time.Time, int, error) {
+	since, until, err := parseHistoryWindow(r)
+	if err != nil {
+		return time.Time{}, time.Time{}, 0, err
+	}
+
+	maxHours := 0
+	if h.history != nil {
+		maxHours = h.history.retentionHours
+	}
+	hours, err := parsePositiveQueryInt("hours", r.URL.Query().Get("hours"), defaultTrendWindowHours, maxHours)
+	if err != nil {
+		return time.Time{}, time.Time{}, 0, err
+	}
+
+	if until.IsZero() {
+		until = h.now()
+	}
+	if since.IsZero() {
+		since = until.Add(-time.Duration(hours) * time.Hour)
+	}
+	if until.Before(since) {
+		return time.Time{}, time.Time{}, 0, fmt.Errorf("invalid time window: until must be greater than or equal to since")
+	}
+
+	return since, until, hours, nil
+}
+
+func (h *Handler) defaultTrendWindow() (time.Time, time.Time) {
+	until := h.now()
+	return until.Add(-time.Duration(defaultTrendWindowHours) * time.Hour), until
+}
+
+func (h *Handler) computeTrend(since, until time.Time, hours int) PublicTrendResponse {
+	samples := h.analyticsSamples(since, until)
+	points := make([]PublicTrendPoint, 0, len(samples))
+	summary := PublicTrendSummary{
+		SampleCount: len(samples),
+	}
+
+	var (
+		first       *analyticsSample
+		last        *analyticsSample
+		responseSum float64
+		responseCnt int
+	)
+
+	for index := range samples {
+		sample := &samples[index]
+		if first == nil {
+			first = sample
+		}
+		last = sample
+
+		points = append(points, PublicTrendPoint{
+			CapturedAt:      sample.capturedAt.Format(time.RFC3339),
+			OnlineAgents:    sample.onlineAgents,
+			RunningAgents:   sample.runningAgents,
+			MessageCount:    sample.messageCount,
+			TotalTokens:     sample.totalTokens,
+			DeltaMessages:   sample.deltaMessages,
+			DeltaToolCalls:  sample.toolCallCount,
+			DeltaTokens:     sample.deltaTokens,
+			AvgResponseTime: sample.avgResponseTime,
+		})
+
+		summary.MessageCountDelta += sample.deltaMessages
+		summary.ToolCallCount += sample.toolCallCount
+		summary.TotalTokensDelta += sample.deltaTokens
+		responseSum += sample.responseSumMs
+		responseCnt += sample.responseCount
+	}
+
+	if first != nil && last != nil {
+		summary.OnlineAgentsDelta = last.onlineAgents - first.onlineAgents
+		summary.RunningAgentsDelta = last.runningAgents - first.runningAgents
+	}
+	summary.AvgResponseTime = averageOrZero(responseSum, responseCnt)
+
+	return PublicTrendResponse{
+		Hours:   hours,
+		Since:   since.UTC().Format(time.RFC3339),
+		Until:   until.UTC().Format(time.RFC3339),
+		Points:  points,
+		Summary: summary,
+	}
+}
+
+func (h *Handler) computeTodayVsYesterday() PublicComparisonResponse {
+	now := h.now().UTC()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	yesterdayStart := todayStart.Add(-24 * time.Hour)
+	yesterdayEnd := todayStart.Add(-time.Nanosecond)
+
+	var (
+		today     PublicComparisonWindow
+		yesterday PublicComparisonWindow
+		wg        sync.WaitGroup
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		today = h.computeComparisonWindow("today", todayStart, now)
+	}()
+	go func() {
+		defer wg.Done()
+		yesterday = h.computeComparisonWindow("yesterday", yesterdayStart, yesterdayEnd)
+	}()
+	wg.Wait()
+
+	return PublicComparisonResponse{
+		Timezone:   "UTC",
+		ComparedAt: now.Format(time.RFC3339),
+		Today:      today,
+		Yesterday:  yesterday,
+		Delta: PublicComparisonDelta{
+			AvgOnlineAgents:   round2(today.AvgOnlineAgents - yesterday.AvgOnlineAgents),
+			AvgRunningAgents:  round2(today.AvgRunningAgents - yesterday.AvgRunningAgents),
+			MessageCountDelta: today.MessageCountDelta - yesterday.MessageCountDelta,
+			ToolCallCount:     today.ToolCallCount - yesterday.ToolCallCount,
+			TotalTokensDelta:  today.TotalTokensDelta - yesterday.TotalTokensDelta,
+			AvgResponseTime:   round2(today.AvgResponseTime - yesterday.AvgResponseTime),
+		},
+	}
+}
+
+func (h *Handler) computeComparisonWindow(label string, since, until time.Time) PublicComparisonWindow {
+	samples := h.analyticsSamples(since, until)
+	window := PublicComparisonWindow{
+		Label:       label,
+		Date:        since.UTC().Format("2006-01-02"),
+		From:        since.UTC().Format(time.RFC3339),
+		To:          until.UTC().Format(time.RFC3339),
+		SampleCount: len(samples),
+	}
+
+	var (
+		onlineSum   float64
+		runningSum  float64
+		responseSum float64
+		responseCnt int
+	)
+
+	for _, sample := range samples {
+		onlineSum += float64(sample.onlineAgents)
+		runningSum += float64(sample.runningAgents)
+		window.MessageCountDelta += sample.deltaMessages
+		window.ToolCallCount += sample.toolCallCount
+		window.TotalTokensDelta += sample.deltaTokens
+		responseSum += sample.responseSumMs
+		responseCnt += sample.responseCount
+	}
+
+	window.AvgOnlineAgents = averageOrZero(onlineSum, len(samples))
+	window.AvgRunningAgents = averageOrZero(runningSum, len(samples))
+	window.AvgResponseTime = averageOrZero(responseSum, responseCnt)
+	return window
 }
 
 func (t *liveMetricsTracker) compute(sessions []PublicSession) PublicLiveMetricsResponse {
@@ -577,15 +915,6 @@ func recordedSessionIndex(sessions []recordedPublicSession) map[string]recordedP
 		index[session.PublicID] = session
 	}
 	return index
-}
-
-func findRecordedSession(sessions []recordedPublicSession, publicID string) (recordedPublicSession, bool) {
-	for _, session := range sessions {
-		if session.PublicID == publicID {
-			return session, true
-		}
-	}
-	return recordedPublicSession{}, false
 }
 
 func recordedSessionIsActive(session recordedPublicSession) bool {
@@ -787,6 +1116,14 @@ func totalMessageCount(sessions []recordedPublicSession) int {
 	total := 0
 	for _, session := range sessions {
 		total += session.MessageCount
+	}
+	return total
+}
+
+func totalTokenCount(sessions []recordedPublicSession) int {
+	total := 0
+	for _, session := range sessions {
+		total += session.TotalTokens
 	}
 	return total
 }

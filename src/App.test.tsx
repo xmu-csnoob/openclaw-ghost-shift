@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import App from './App.js'
+import App from './App.tsx'
 import type {
   AgentSession,
   PublicOfficeSnapshot,
@@ -11,10 +11,17 @@ import type {
 vi.mock('./office/components/OfficeCanvas.js', () => ({
   OfficeCanvas: ({
     onUserInteraction,
+    heatmapEnabled,
+    heatmapSources,
   }: {
     onUserInteraction?: () => void
+    heatmapEnabled?: boolean
+    heatmapSources?: Array<{ agentId: number; zone: string; intensity: number }>
   }) => (
     <div data-testid="office-canvas">
+      <div data-testid="heatmap-state">
+        {heatmapEnabled ? 'heatmap:on' : 'heatmap:off'}:{heatmapSources?.length ?? 0}
+      </div>
       <button type="button" onClick={() => onUserInteraction?.()}>
         Canvas interaction
       </button>
@@ -142,7 +149,7 @@ function installFetchMock({
 }
 
 beforeEach(() => {
-  window.history.replaceState({}, '', '/')
+  window.history.replaceState({}, '', '/live')
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 })
   vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
 })
@@ -204,9 +211,65 @@ describe('App replay controls', () => {
       expect(screen.queryByRole('button', { name: 'Resume tour' })).not.toBeInTheDocument()
     })
   })
+
+  test('toggles heatmap and telemetry from the live stage', async () => {
+    const history = makeHistory([2, 4, 5])
+    installFetchMock({
+      snapshots: makeSnapshot(5),
+      timeline: history.timeline,
+      replay: history.replay,
+    })
+
+    render(<App />)
+
+    await screen.findByText((_, node) => node?.textContent === '5 visible')
+    expect(screen.getByTestId('heatmap-state')).toHaveTextContent('heatmap:off:5')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Heatmap' }))
+    expect(screen.getByTestId('heatmap-state')).toHaveTextContent('heatmap:on:5')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Telemetry' }))
+    expect(await screen.findByText('Office Telemetry')).toBeInTheDocument()
+  })
+
+  test('falls back to the offline state when the snapshot API is unavailable', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url.includes('/public/snapshot')) {
+        throw new Error('snapshot unavailable')
+      }
+      return jsonResponse({
+        retentionHours: 24,
+        intervalSeconds: 30,
+        points: [],
+        frames: [],
+      })
+    })
+
+    render(<App />)
+
+    await screen.findByText('Offline')
+    expect(screen.getAllByText('API unavailable').length).toBeGreaterThan(0)
+  })
+
+  test('switches to the compact mobile layout on narrow viewports', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+    const history = makeHistory([3, 4])
+    installFetchMock({
+      snapshots: makeSnapshot(4),
+      timeline: history.timeline,
+      replay: history.replay,
+    })
+
+    render(<App />)
+
+    await screen.findByText((_, node) => node?.textContent === '4 visible')
+    expect(screen.queryByText('Live Roster')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Scrub the timeline to replay the public office/i)).not.toBeInTheDocument()
+  })
 })
 
-describe.each([0, 5, 20, 100])('App integration at %i sessions', (count) => {
+describe.each([0, 5, 20, 100, 250])('App integration at %i sessions', (count) => {
   test('renders the public office scenario without collapsing', async () => {
     const history = makeHistory([count])
     installFetchMock({

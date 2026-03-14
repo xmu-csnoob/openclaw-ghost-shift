@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import {
   clampReplayWindow,
+  cloneCharacter,
+  cloneSessions,
   findClosestFrameIndex,
+  formatPlaybackBoundary,
+  formatPlaybackTimestamp,
   formatRelativeAge,
+  getPlaybackWindowMs,
   getPlaybackFreshness,
   replayFramesToTimeline,
   type ReplayFrame,
@@ -47,6 +52,10 @@ describe('replay helpers', () => {
     expect(findClosestFrameIndex(frames, 7_900)).toBe(2)
   })
 
+  test('returns -1 when no replay frames exist', () => {
+    expect(findClosestFrameIndex([], 1_000)).toBe(-1)
+  })
+
   test('getPlaybackFreshness returns expected tones', () => {
     const now = Date.parse('2026-03-14T12:00:00Z')
 
@@ -72,5 +81,32 @@ describe('replay helpers', () => {
     expect(formatRelativeAge(3_000)).toBe('just now')
     expect(formatRelativeAge(25_000)).toBe('25s ago')
     expect(formatRelativeAge(2 * 60 * 60_000)).toBe('2h ago')
+  })
+
+  test('clones sessions and characters without sharing nested references', () => {
+    const sessions = [{ sessionKey: 'pub_1', signalScore: 0.9 } as any]
+    const characters = [{
+      id: 1,
+      path: [{ x: 1, y: 2 }],
+      matrixEffectSeeds: [4, 5],
+    } as any]
+
+    const clonedSessions = cloneSessions(sessions)
+    const clonedCharacter = cloneCharacter(characters[0])
+
+    expect(clonedSessions).toEqual(sessions)
+    expect(clonedSessions[0]).not.toBe(sessions[0])
+    expect(clonedCharacter).toEqual(characters[0])
+    expect(clonedCharacter.path).not.toBe(characters[0].path)
+    expect(clonedCharacter.matrixEffectSeeds).not.toBe(characters[0].matrixEffectSeeds)
+  })
+
+  test('exposes basic playback window and formatting helpers', () => {
+    const timestamp = Date.parse('2026-03-14T12:00:00Z')
+
+    expect(getPlaybackWindowMs(1)).toBe(60 * 60 * 1000)
+    expect(getPlaybackWindowMs(24)).toBe(24 * 60 * 60 * 1000)
+    expect(formatPlaybackTimestamp(timestamp)).toMatch(/\d/)
+    expect(formatPlaybackBoundary(timestamp)).toMatch(/\d/)
   })
 })

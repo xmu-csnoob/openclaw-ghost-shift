@@ -17,6 +17,7 @@ type MetricsSnapshot struct {
 	AppVersion       string
 	GatewayConnected bool
 	CacheEntries     map[string]int
+	CustomSamples    []MetricSample
 }
 
 type Registry struct {
@@ -26,6 +27,14 @@ type Registry struct {
 	httpDurations    map[httpDurationKey]*histogram
 	cacheOperations  map[cacheOperationKey]uint64
 	durationBuckets  []float64
+}
+
+type MetricSample struct {
+	Name   string
+	Help   string
+	Type   string
+	Labels map[string]string
+	Value  float64
 }
 
 type httpRequestKey struct {
@@ -208,6 +217,8 @@ func (r *Registry) Render(snapshot MetricsSnapshot) string {
 		))
 	}
 
+	appendCustomMetrics(&builder, snapshot.CustomSamples)
+
 	return builder.String()
 }
 
@@ -221,6 +232,120 @@ func sanitizeMetricLabel(value string) string {
 
 func formatPrometheusNumber(value float64) string {
 	return strconv.FormatFloat(value, 'f', -1, 64)
+}
+
+func appendCustomMetrics(builder *strings.Builder, samples []MetricSample) {
+	if len(samples) == 0 {
+		return
+	}
+
+	grouped := make(map[string][]MetricSample)
+	metadata := make(map[string]MetricSample)
+	for _, sample := range samples {
+		name := sanitizeMetricLabel(sample.Name)
+		if name == "unknown" {
+			continue
+		}
+
+		normalized := MetricSample{
+			Name:   name,
+			Help:   strings.TrimSpace(sample.Help),
+			Type:   normalizeMetricType(sample.Type),
+			Labels: sanitizeMetricLabels(sample.Labels),
+			Value:  sample.Value,
+		}
+		if normalized.Help == "" {
+			normalized.Help = "Custom Ghost Shift metric."
+		}
+
+		grouped[name] = append(grouped[name], normalized)
+		if _, ok := metadata[name]; !ok {
+			metadata[name] = normalized
+		}
+	}
+
+	names := make([]string, 0, len(grouped))
+	for name := range grouped {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		builder.WriteString(fmt.Sprintf("# HELP %s %s\n", name, metadata[name].Help))
+		builder.WriteString(fmt.Sprintf("# TYPE %s %s\n", name, metadata[name].Type))
+
+		series := grouped[name]
+		sort.Slice(series, func(i, j int) bool {
+			return compareMetricSamples(series[i], series[j]) < 0
+		})
+		for _, sample := range series {
+			builder.WriteString(name)
+			if len(sample.Labels) > 0 {
+				builder.WriteString("{")
+				builder.WriteString(formatPrometheusLabels(sample.Labels))
+				builder.WriteString("}")
+			}
+			builder.WriteString(" ")
+			builder.WriteString(formatPrometheusNumber(sample.Value))
+			builder.WriteString("\n")
+		}
+	}
+}
+
+func normalizeMetricType(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "counter":
+		return "counter"
+	default:
+		return "gauge"
+	}
+}
+
+func sanitizeMetricLabels(labels map[string]string) map[string]string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	sanitized := make(map[string]string, len(labels))
+	for key, value := range labels {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		sanitized[key] = sanitizeMetricLabel(value)
+	}
+	if len(sanitized) == 0 {
+		return nil
+	}
+	return sanitized
+}
+
+func formatPrometheusLabels(labels map[string]string) string {
+	keys := make([]string, 0, len(labels))
+	for key := range labels {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%q", key, labels[key]))
+	}
+	return strings.Join(parts, ",")
+}
+
+func compareMetricSamples(left, right MetricSample) int {
+	leftLabels := formatPrometheusLabels(left.Labels)
+	rightLabels := formatPrometheusLabels(right.Labels)
+
+	switch {
+	case leftLabels < rightLabels:
+		return -1
+	case leftLabels > rightLabels:
+		return 1
+	default:
+		return 0
+	}
 }
 
 func newHistogram(buckets []float64) *histogram {

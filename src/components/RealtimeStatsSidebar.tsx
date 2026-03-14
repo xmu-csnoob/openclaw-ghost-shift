@@ -78,7 +78,7 @@ export function RealtimeStatsSidebar({
   const latestLatency = responseTrend[responseTrend.length - 1]?.value ?? 0
 
   return (
-    <article className="gs-side-card gs-stats-sidebar">
+    <article className="gs-side-card gs-stats-sidebar gs-animate-rise">
       <div className="gs-side-card__eyebrow">Realtime stats</div>
       <h3>Live mix, zone pressure, and surface latency.</h3>
       <div className="gs-stats-sidebar__meta">Freshness: {freshnessLabel}</div>
@@ -94,6 +94,7 @@ export function RealtimeStatsSidebar({
               {donutSegments.map((segment) => (
                 <path
                   key={segment.label}
+                  className="gs-stats-sidebar__segment"
                   d={segment.path}
                   fill="none"
                   stroke={segment.color}
@@ -150,7 +151,14 @@ export function RealtimeStatsSidebar({
           <>
             <div className="gs-stats-sidebar__latency">{Math.round(latestLatency)}ms</div>
             <svg viewBox="0 0 220 56" width="100%" height="58" preserveAspectRatio="none">
-              <path d={responsePath} fill="none" stroke="#f6c978" strokeWidth="2.8" strokeLinecap="round" />
+              <path
+                className="gs-stats-sidebar__trend-line"
+                d={responsePath}
+                fill="none"
+                stroke="#f6c978"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              />
             </svg>
           </>
         )}

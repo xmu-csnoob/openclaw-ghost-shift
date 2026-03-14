@@ -182,7 +182,7 @@ If you want to mount Ghost Shift inside another site:
 
 See [docs/deployment.md](./docs/deployment.md) for the full deployment guide, Docker Compose, Kubernetes manifests, GitHub Actions workflow, and reverse-proxy examples for Nginx and Caddy.
 
-See [docs/api.md](./docs/api.md) for the embedded OpenAPI workflow and [docs/performance-tuning.md](./docs/performance-tuning.md) for cache, metrics, and logging guidance.
+See [docs/api.md](./docs/api.md) for the embedded OpenAPI workflow, [docs/performance-tuning.md](./docs/performance-tuning.md) for cache, CDN, and load-balancer guidance, and [docs/troubleshooting.md](./docs/troubleshooting.md) for the operational runbook.
 
 ## Development Commands
 

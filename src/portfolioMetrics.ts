@@ -29,6 +29,31 @@ export interface TodayVsYesterdaySummary {
   partialYesterday: boolean
 }
 
+export interface WindowComparisonSummary {
+  currentAverage: number
+  previousAverage: number
+  currentPeak: number
+  previousPeak: number
+  deltaRatio: number
+  currentSamples: number
+  previousSamples: number
+}
+
+export interface ForecastPoint {
+  timestamp: number
+  value: number
+}
+
+export interface LinearForecastSummary {
+  history: ForecastPoint[]
+  projection: ForecastPoint[]
+  latestValue: number
+  projectedValue: number
+  deltaRatio: number
+  confidence: number
+  slope: number
+}
+
 export interface TopAgentEntry {
   sessionKey: string
   label: string
@@ -129,6 +154,115 @@ export function computeTodayVsYesterday(points: TimelinePoint[], now: number = D
     todayPeak: todayValues.length > 0 ? Math.max(...todayValues) : 0,
     yesterdayPeak: yesterdayValues.length > 0 ? Math.max(...yesterdayValues) : 0,
     partialYesterday: earliestTimestamp > startYesterdayMs,
+  }
+}
+
+export function computeWindowComparison(
+  points: TimelinePoint[],
+  now: number = Date.now(),
+  windowHours = 6,
+  metric: keyof Pick<TimelinePoint, 'running' | 'displayed'> = 'running',
+): WindowComparisonSummary {
+  const windowMs = Math.max(1, windowHours) * 60 * 60 * 1000
+  const currentStart = now - windowMs
+  const previousStart = currentStart - windowMs
+
+  const currentValues = points
+    .filter((point) => point.timestamp > currentStart && point.timestamp <= now)
+    .map((point) => point[metric])
+  const previousValues = points
+    .filter((point) => point.timestamp > previousStart && point.timestamp <= currentStart)
+    .map((point) => point[metric])
+
+  const currentAverage = average(currentValues)
+  const previousAverage = average(previousValues)
+
+  return {
+    currentAverage,
+    previousAverage,
+    currentPeak: currentValues.length > 0 ? Math.max(...currentValues) : 0,
+    previousPeak: previousValues.length > 0 ? Math.max(...previousValues) : 0,
+    deltaRatio: previousAverage <= 0 ? (currentAverage > 0 ? 1 : 0) : (currentAverage - previousAverage) / previousAverage,
+    currentSamples: currentValues.length,
+    previousSamples: previousValues.length,
+  }
+}
+
+export function computeLinearForecast(
+  points: TimelinePoint[],
+  metric: keyof Pick<TimelinePoint, 'running' | 'displayed'> = 'running',
+  sampleSize = 12,
+  futureSteps = 6,
+): LinearForecastSummary {
+  const historyPoints = points.slice(-Math.max(2, sampleSize)).map((point) => ({
+    timestamp: point.timestamp,
+    value: point[metric],
+  }))
+
+  if (historyPoints.length === 0) {
+    return {
+      history: [],
+      projection: [],
+      latestValue: 0,
+      projectedValue: 0,
+      deltaRatio: 0,
+      confidence: 0,
+      slope: 0,
+    }
+  }
+
+  if (historyPoints.length === 1) {
+    return {
+      history: historyPoints,
+      projection: [],
+      latestValue: historyPoints[0].value,
+      projectedValue: historyPoints[0].value,
+      deltaRatio: 0,
+      confidence: 0,
+      slope: 0,
+    }
+  }
+
+  const values = historyPoints.map((point) => point.value)
+  const xValues = historyPoints.map((_, index) => index)
+  const xAverage = average(xValues)
+  const yAverage = average(values)
+
+  let numerator = 0
+  let denominator = 0
+  for (let index = 0; index < historyPoints.length; index += 1) {
+    const dx = xValues[index] - xAverage
+    numerator += dx * (values[index] - yAverage)
+    denominator += dx * dx
+  }
+
+  const slope = denominator === 0 ? 0 : numerator / denominator
+  const intercept = yAverage - (slope * xAverage)
+  const fittedValues = xValues.map((x) => intercept + (slope * x))
+  const totalVariance = values.reduce((sum, value) => sum + ((value - yAverage) ** 2), 0)
+  const residualVariance = values.reduce((sum, value, index) => sum + ((value - fittedValues[index]) ** 2), 0)
+  const confidence = totalVariance <= 0 ? 1 : Math.max(0, Math.min(1, 1 - (residualVariance / totalVariance)))
+  const intervalMs = estimateIntervalSeconds(points.slice(-Math.max(2, sampleSize))) * 1000
+  const latestValue = historyPoints[historyPoints.length - 1].value
+
+  const projection = Array.from({ length: Math.max(0, futureSteps) }, (_, index) => {
+    const projectedIndex = historyPoints.length + index
+    return {
+      timestamp: historyPoints[historyPoints.length - 1].timestamp + ((index + 1) * intervalMs),
+      value: Math.max(0, intercept + (slope * projectedIndex)),
+    }
+  })
+
+  const projectedValue = projection[projection.length - 1]?.value ?? latestValue
+
+  return {
+    history: historyPoints,
+    projection,
+    latestValue,
+    projectedValue,
+    deltaRatio: latestValue <= 0 ? (projectedValue > 0 ? 1 : 0) : (projectedValue - latestValue) / latestValue,
+    confidence,
+    slope,
   }
 }
 

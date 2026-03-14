@@ -1,13 +1,59 @@
 # Root deployment: https://ghostshift.example.com/
 ghostshift.example.com {
-	reverse_proxy 127.0.0.1:3002
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	@metrics path /metrics
+	handle @metrics {
+		@private not remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+		respond @private "forbidden" 403
+		reverse_proxy 127.0.0.1:3002
+	}
+
+	@assets path /assets/*
+	handle @assets {
+		header Cache-Control "public, max-age=31536000, immutable"
+		reverse_proxy 127.0.0.1:3002
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3002
+	}
 }
 
 # Subpath deployment: https://portfolio.example.com/office/
-# handle_path strips the /office prefix before proxying to Ghost Shift.
+# Caddy automatically provisions HTTPS certificates. Apply rate limits at the CDN,
+# ingress controller, or upstream load balancer because stock Caddy has no built-in limiter.
 portfolio.example.com {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+	}
+
 	@officeNoSlash path /office
 	redir @officeNoSlash /office/ 308
+
+	@officeAPI path /office/api/*
+	@officePreflight {
+		path /office/api/*
+		method OPTIONS
+	}
+	header @officeAPI Access-Control-Allow-Origin "https://portfolio.example.com"
+	header @officeAPI Access-Control-Allow-Methods "GET, OPTIONS"
+	header @officeAPI Access-Control-Allow-Headers "Authorization, Content-Type, X-Request-ID"
+	respond @officePreflight "" 204
+
+	handle @officeAPI {
+		uri strip_prefix /office
+		reverse_proxy 127.0.0.1:3002
+	}
 
 	handle_path /office/* {
 		reverse_proxy 127.0.0.1:3002

@@ -1,0 +1,72 @@
+groups:
+  - name: ghost-shift
+    rules:
+      - alert: GhostShiftDown
+        expr: up{job="ghost-shift"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ghost Shift scrape target is down
+          description: Prometheus has not been able to scrape the Ghost Shift instance for at least 2 minutes.
+
+      - alert: GhostShiftGatewayDisconnected
+        expr: max_over_time(ghost_shift_gateway_connected[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ghost Shift gateway is disconnected
+          description: The backend has reported no gateway connectivity for 5 minutes.
+
+      - alert: GhostShiftApiErrorRateHigh
+        expr: |
+          sum(rate(ghost_shift_http_requests_total{route=~"api_.*",status=~"5.."}[10m]))
+          /
+          clamp_min(sum(rate(ghost_shift_http_requests_total{route=~"api_.*"}[10m])), 0.001)
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ghost Shift API 5xx rate is elevated
+          description: More than 5% of public API traffic has returned 5xx responses over the last 10 minutes.
+
+      - alert: GhostShiftApiLatencyP95High
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(ghost_shift_http_request_duration_seconds_bucket{route=~"api_.*"}[10m])
+            )
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ghost Shift API p95 latency is high
+          description: The p95 latency across public API routes has exceeded 1 second for 10 minutes.
+
+      - alert: GhostShiftCacheMissRatioHigh
+        expr: |
+          sum(rate(ghost_shift_cache_operations_total{operation="lookup",result="miss"}[15m]))
+          /
+          clamp_min(
+            sum(rate(ghost_shift_cache_operations_total{operation="lookup",result=~"hit|miss"}[15m])),
+            0.001
+          ) > 0.40
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ghost Shift cache miss ratio is high
+          description: Cache misses are above 40% over the last 15 minutes. Review warmup, TTL, and Redis availability.
+
+      - alert: GhostShiftNoPublicAgents
+        expr: max_over_time(ghost_shift_public_agents[15m]) == 0 and max_over_time(ghost_shift_gateway_connected[15m]) == 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ghost Shift is connected but has no public agents
+          description: The backend is healthy and connected, but no public-facing sessions have been visible for 15 minutes.

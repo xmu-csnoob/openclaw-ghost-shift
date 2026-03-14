@@ -38,4 +38,47 @@ describe('ApiClient base resolution', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/custom-api/status')
   })
+
+  test('defaults to /api outside the embedded office path', async () => {
+    window.history.replaceState({}, '', '/portfolio')
+
+    const { resolveAPIBase } = await import('./ApiClient.js')
+
+    expect(resolveAPIBase()).toBe('/api')
+  })
+
+  test('adds query parameters for timeline and replay requests', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        new Response(JSON.stringify({ retentionHours: 24, intervalSeconds: 30, points: [], frames: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+
+    const { createApiClient } = await import('./ApiClient.js')
+    const client = createApiClient('/custom-api')
+
+    await client.getTimeline('2026-03-14T10:00:00Z', '2026-03-14T12:00:00Z')
+    await client.getReplay(undefined, '2026-03-14T12:00:00Z')
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/custom-api/public/timeline?since=2026-03-14T10%3A00%3A00Z&until=2026-03-14T12%3A00%3A00Z',
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/custom-api/public/replay?until=2026-03-14T12%3A00%3A00Z',
+    )
+  })
+
+  test('throws a descriptive error for non-OK responses', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('unavailable', { status: 503 }))
+
+    const { createApiClient } = await import('./ApiClient.js')
+    const client = createApiClient('/custom-api')
+
+    await expect(client.getSnapshot()).rejects.toThrow('API request failed: 503')
+  })
 })

@@ -24,6 +24,7 @@ export interface ReplayControlBarProps {
     zoneLabel: string
     accent: string
     isCurrent: boolean
+    previewBars: number[]
   }>
   eventMarkers: Array<{
     id: string
@@ -39,6 +40,7 @@ export interface ReplayControlBarProps {
   onJumpToLive: () => void
   onResumeTour: () => void
   onPlaybackRateChange: (rate: PlaybackState['playbackRate']) => void
+  compact?: boolean
 }
 
 const windowOptions: PlaybackWindowHours[] = [1, 6, 24]
@@ -83,17 +85,31 @@ export function ReplayControlBar({
   onJumpToLive,
   onResumeTour,
   onPlaybackRateChange,
+  compact = false,
 }: ReplayControlBarProps): React.ReactElement {
   const scrubberDisabled = !hasFrames || scrubberMin === scrubberMax
+  const visibleMarkers = compact ? eventMarkers.slice(0, 3) : eventMarkers
+  const activeMarkerId =
+    visibleMarkers.reduce<{ id: string | null; distance: number }>(
+      (closest, marker) => {
+        const distance = Math.abs(marker.timestamp - scrubberValue)
+        if (distance < closest.distance) {
+          return { id: marker.id, distance }
+        }
+        return closest
+      },
+      { id: null, distance: Number.POSITIVE_INFINITY },
+    ).id
 
   return (
     <div
+      className={`gs-replay-bar ${compact ? 'is-compact' : ''}`}
       style={{
         position: 'absolute',
-        top: 64,
+        top: compact ? 104 : 64,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(760px, calc(100vw - 32px))',
+        width: compact ? 'calc(100% - 20px)' : 'min(760px, calc(100vw - 32px))',
         padding: 14,
         display: 'flex',
         flexDirection: 'column',
@@ -161,12 +177,22 @@ export function ReplayControlBar({
       </div>
 
       {previewFrames.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${previewFrames.length}, minmax(0, 1fr))`, gap: 8 }}>
+        <div
+          className="gs-replay-bar__preview-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: compact ? 'repeat(3, minmax(180px, 1fr))' : `repeat(${previewFrames.length}, minmax(0, 1fr))`,
+            gap: 8,
+            overflowX: compact ? 'auto' : 'visible',
+            paddingBottom: compact ? 4 : 0,
+          }}
+        >
           {previewFrames.map((preview) => (
             <button
               key={preview.id}
               type="button"
               onClick={() => onScrub(preview.timestamp)}
+              className={`gs-replay-bar__thumbnail ${preview.isCurrent ? 'is-current' : ''}`}
               style={{
                 padding: 10,
                 border: '1px solid',
@@ -175,6 +201,7 @@ export function ReplayControlBar({
                 color: '#CDD6F4',
                 textAlign: 'left',
                 cursor: 'pointer',
+                minWidth: compact ? 180 : undefined,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
@@ -184,19 +211,28 @@ export function ReplayControlBar({
                 <span style={{ fontSize: 10, color: '#9399B2' }}>{preview.label}</span>
               </div>
               <div
+                className="gs-replay-bar__thumbnail-preview"
                 style={{
                   height: 38,
                   border: `1px solid ${preview.accent}`,
                   background: `linear-gradient(135deg, ${preview.accent}22, rgba(17, 24, 39, 0.22))`,
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: `repeat(${preview.previewBars.length}, 1fr)`,
                   gap: 4,
                   padding: 6,
+                  alignItems: 'end',
                 }}
               >
-                <span style={{ background: `${preview.accent}66` }} />
-                <span style={{ background: `${preview.accent}44` }} />
-                <span style={{ background: `${preview.accent}22` }} />
+                {preview.previewBars.map((value, index) => (
+                  <span
+                    key={`${preview.id}-${index}`}
+                    className="gs-replay-bar__thumbnail-bar"
+                    style={{
+                      height: `${Math.max(18, value * 100)}%`,
+                      background: `${preview.accent}${index === 0 ? 'aa' : index === 1 ? '72' : '42'}`,
+                    }}
+                  />
+                ))}
               </div>
               <div style={{ marginTop: 8, fontSize: 11, color: '#CDD6F4' }}>
                 {preview.running}/{preview.displayed} active
@@ -268,6 +304,7 @@ export function ReplayControlBar({
                 type="button"
                 title={marker.label}
                 onClick={() => onScrub(marker.timestamp)}
+                className={`gs-replay-bar__event-dot ${activeMarkerId === marker.id ? 'is-active' : ''}`}
                 style={{
                   position: 'absolute',
                   left: `calc(${Math.min(100, Math.max(0, marker.position * 100))}% - 5px)`,
@@ -302,6 +339,50 @@ export function ReplayControlBar({
           <span style={{ color: '#6C7086' }}>{coverageLabel}</span>
           <span>{endLabel}</span>
         </div>
+
+        {visibleMarkers.length > 0 ? (
+          <div
+            className="gs-replay-bar__events"
+            style={{
+              display: 'flex',
+              gap: 8,
+              overflowX: 'auto',
+              paddingBottom: 2,
+            }}
+          >
+            {visibleMarkers.map((marker) => (
+              <button
+                key={marker.id}
+                type="button"
+                onClick={() => onScrub(marker.timestamp)}
+                className={`gs-replay-bar__event-chip ${activeMarkerId === marker.id ? 'is-active' : ''}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 9px',
+                  borderRadius: 999,
+                  border: `1px solid ${marker.tone}44`,
+                  background: activeMarkerId === marker.id ? `${marker.tone}22` : 'rgba(17, 24, 39, 0.42)',
+                  color: '#CDD6F4',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                }}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: marker.tone,
+                    boxShadow: `0 0 0 4px ${marker.tone}18`,
+                  }}
+                />
+                <span style={{ fontSize: 10 }}>{marker.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   )

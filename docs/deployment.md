@@ -1,31 +1,35 @@
 # Deployment Guide
 
-Ghost Shift ships as a single Go server that serves both the compiled SPA and the public API. In production you usually deploy one backend process on `127.0.0.1:3002` and place Nginx or Caddy in front of it.
+Ghost Shift ships as a single Go server that serves the SPA, public API, health checks, and Prometheus metrics on the same port. The repository now includes three deployment paths:
 
-## 1. Prepare production configuration
+- raw Docker / Compose for single-host delivery
+- raw Kubernetes manifests under [deploy/kubernetes](../deploy/kubernetes)
+- Helm chart under [deploy/helm/ghost-shift](../deploy/helm/ghost-shift)
 
-Copy [`.env.production.example`](../.env.production.example) to `.env.production` and fill in the gateway settings:
+## 1. Prepare runtime configuration
+
+Copy [`.env.production.example`](../.env.production.example) to `.env.production` and fill in the gateway credentials:
 
 ```bash
 cp .env.production.example .env.production
 ```
 
-Required variables:
+Required values:
 
 - `GATEWAY_URL`
 - `GATEWAY_TOKEN` or `GATEWAY_CONFIG_PATH`
+- `PUBLIC_ID_SALT`
 
-Optional but common:
+Recommended production values:
 
-- `REDIS_URL=redis://redis:6379/0` when you want Redis-backed response caching
-- `CACHE_TTL_SECONDS`, `CACHE_MEMORY_MAX_ENTRIES`, and `CACHE_WARM_ON_STARTUP`
-- `LOG_LEVEL` and `REQUEST_SLOW_THRESHOLD_MS` for structured performance logging
-- `VITE_PUBLIC_API_BASE=/office/api` when you publish Ghost Shift under `/office/`
-- `ENABLE_INTERNAL_API=true` and `INTERNAL_API_TOKEN=...` if you need `/internal-api/*`
+- `REDIS_URL=redis://redis:6379/0` for shared response caching
+- `CACHE_WARM_ON_STARTUP=true` for Kubernetes and blue/green cutovers
+- `REQUEST_SLOW_THRESHOLD_MS=250` or lower if you want aggressive slow-request logging
+- `ENABLE_INTERNAL_API=true` and `INTERNAL_API_TOKEN=...` only when you need internal control-plane endpoints
 
 ## 2. Local release verification
 
-Before shipping, verify the same commands the CI workflow runs:
+Before shipping, run the same checks the deployment scripts assume:
 
 ```bash
 npm ci
@@ -35,48 +39,20 @@ go test ./...
 go build -trimpath -o ghost-shift-server .
 ```
 
-## 3. Docker image
+If the local environment does not have Go installed, perform the validation in CI or your release image instead.
 
-The root [Dockerfile](../Dockerfile) uses three stages:
+## 3. Docker and Compose
 
-- Node stage for the frontend asset build
-- Go stage for the backend binary
-- Alpine runtime stage with only the binary, static assets, and CA certificates
+The root [Dockerfile](../Dockerfile) builds both frontend and backend into one runtime image.
 
-Build a local image:
+Build and run locally:
 
 ```bash
 docker build -t ghost-shift:local .
-```
-
-For subpath deployments, bake the public API base into the frontend build:
-
-```bash
-docker build --build-arg VITE_PUBLIC_API_BASE=/office/api -t ghost-shift:local .
-```
-
-Run the container:
-
-```bash
 docker run --env-file .env.production -p 3002:3002 ghost-shift:local
 ```
 
-The container already defaults to:
-
-- `BIND_ADDR=0.0.0.0`
-- `PORT=3002`
-- `STATIC_DIR=/app/dist`
-
-The runtime now also exposes:
-
-- `/healthz` for liveness checks
-- `/readyz` for readiness checks
-- `/metrics` for Prometheus scraping
-- `/openapi.yaml` for the embedded OpenAPI spec
-
-## 4. Docker Compose
-
-The full local-or-single-host stack lives in [deploy/docker-compose.yml](../deploy/docker-compose.yml).
+The single-host stack lives in [deploy/docker-compose.yml](../deploy/docker-compose.yml).
 
 Examples:
 
@@ -86,46 +62,78 @@ docker compose -f deploy/docker-compose.yml --profile cache up --build
 docker compose -f deploy/docker-compose.yml --profile cache --profile observability up --build
 ```
 
-Supporting files:
+When the `observability` profile is enabled you get:
 
-- [deploy/prometheus/prometheus.yml](../deploy/prometheus/prometheus.yml)
-- [scripts/warm-cache.sh](../scripts/warm-cache.sh)
+- Prometheus on `http://127.0.0.1:9090`
+- Grafana on `http://127.0.0.1:3000`
+- default Grafana login `admin` / `admin`
+- dashboard provisioning from [deploy/grafana/dashboards/ghost-shift-overview.json](../deploy/grafana/dashboards/ghost-shift-overview.json)
+- alert rule loading from [deploy/prometheus/alerts.yml](../deploy/prometheus/alerts.yml)
 
-If you enable the `cache` profile, set `REDIS_URL=redis://redis:6379/0` in `.env.production`.
+## 4. Helm
 
-## 5. Reverse proxy
+The Helm chart lives in [deploy/helm/ghost-shift](../deploy/helm/ghost-shift).
 
-Example configs live in:
+Minimal install:
 
-- [deploy/nginx/ghost-shift.conf](../deploy/nginx/ghost-shift.conf)
-- [deploy/Caddyfile](../deploy/Caddyfile)
+```bash
+helm upgrade --install ghost-shift deploy/helm/ghost-shift \
+  --namespace ghost-shift \
+  --create-namespace \
+  --set secretEnv.GATEWAY_TOKEN=replace-me \
+  --set secretEnv.PUBLIC_ID_SALT=replace-me \
+  --set config.GATEWAY_URL=wss://gateway.example.com/ws \
+  --set ingress.enabled=true
+```
 
-Both examples include:
+Recommended workflow uses the helper script:
 
-- root deployment on its own domain
-- `/office/` subpath deployment on an existing site
+```bash
+RELEASE=ghost-shift \
+NAMESPACE=ghost-shift \
+VALUES_FILE=deploy/helm/ghost-shift/values.yaml \
+IMAGE_TAG=latest \
+./scripts/deploy-helm.sh
+```
 
-Subpath deployments must strip the `/office` prefix before requests reach Ghost Shift. That keeps SPA assets resolving correctly while the frontend continues to call `/office/api`.
+Useful chart features:
 
-## 6. Kubernetes
+- ingress TLS, CORS, and rate limiting annotations
+- persistent storage for public history and device identity
+- optional `ServiceMonitor`
+- optional `PrometheusRule`
 
-Sample manifests live in:
+## 5. Blue-Green Deployments
 
-- [deploy/kubernetes/ghost-shift.yaml](../deploy/kubernetes/ghost-shift.yaml)
-- [deploy/kubernetes/redis-optional.yaml](../deploy/kubernetes/redis-optional.yaml)
+Blue-green support is driven by [scripts/blue-green-deploy.sh](../scripts/blue-green-deploy.sh). It deploys color-coded Helm releases and switches a stable Service selector between them.
 
-The main manifest includes:
+Deploy the inactive color:
 
-- `ConfigMap` and `Secret` templates
-- persistent storage for device identity and public history
-- liveness probe on `/healthz`
-- readiness probe on `/readyz`
-- Prometheus scrape annotations
-- a sample `Ingress`
+```bash
+./scripts/blue-green-deploy.sh deploy green 2026.03.14
+```
 
-Use the optional Redis manifest only when you want an in-cluster cache instead of an external managed Redis instance.
+Inspect active state:
 
-## 7. Health, Metrics, and Cache Warming
+```bash
+./scripts/blue-green-deploy.sh status
+```
+
+Cut traffic to the new color:
+
+```bash
+HOST=ghostshift.example.com ./scripts/blue-green-deploy.sh switch green
+```
+
+Rollback is just another switch:
+
+```bash
+HOST=ghostshift.example.com ./scripts/blue-green-deploy.sh switch blue
+```
+
+For blue-green deployments, disable the chart-managed ingress on the color releases and let the stable Service or ingress created by the script own the public hostname.
+
+## 6. Monitoring and Alerts
 
 Operational endpoints:
 
@@ -134,28 +142,61 @@ Operational endpoints:
 - `GET /metrics`
 - `GET /openapi.yaml`
 
-Cache pre-warming:
+Prometheus and Grafana assets:
+
+- [deploy/prometheus/prometheus.yml](../deploy/prometheus/prometheus.yml)
+- [deploy/prometheus/alerts.yml](../deploy/prometheus/alerts.yml)
+- [deploy/grafana/dashboards/ghost-shift-overview.json](../deploy/grafana/dashboards/ghost-shift-overview.json)
+
+Kubernetes monitoring add-ons:
+
+- [deploy/kubernetes/monitoring-optional.yaml](../deploy/kubernetes/monitoring-optional.yaml)
+- Helm values `monitoring.serviceMonitor.enabled=true`
+- Helm values `monitoring.prometheusRule.enabled=true`
+
+The metrics endpoint now exports both platform and business metrics, including:
+
+- request rate and latency histograms
+- cache hit/miss/store counters
+- gateway connectivity
+- public agent counts by status, zone, role, origin, and model
+- public token and message totals
+- average activity score by zone
+
+## 7. Security Hardening
+
+Production examples now include HTTPS, CORS, and rate-limiting examples:
+
+- [deploy/nginx/ghost-shift.conf](../deploy/nginx/ghost-shift.conf)
+- [deploy/Caddyfile](../deploy/Caddyfile)
+- [deploy/kubernetes/ghost-shift.yaml](../deploy/kubernetes/ghost-shift.yaml)
+
+Recommended defaults:
+
+- publish only `443`; redirect `80` to HTTPS
+- keep `/metrics` private to the cluster, VPN, or bastion
+- allow CORS only for the exact portfolio or embed origins that need cross-origin API access
+- apply edge rate limits to `/api/*` and `/internal-api/*`
+- put Redis behind private networking if you use it for shared cache state
+
+## 8. Post-Deploy Checks
+
+Cache warmup:
 
 ```bash
-./scripts/warm-cache.sh
 ./scripts/warm-cache.sh https://ghostshift.example.com
 ```
 
-The warmup script hits the public status, snapshot, timeline, replay, and analytics endpoints so the first real request does not pay the full compute cost.
+Smoke test:
 
-## 8. GitHub Actions CI/CD
+```bash
+./scripts/ops-smoke-test.sh https://ghostshift.example.com
+```
 
-The workflow lives at [`.github/workflows/ci-cd.yml`](../.github/workflows/ci-cd.yml).
-
-It does the following:
-
-- `pull_request`: `npm run build`, `go test ./...`, and `go build`
-- `push` to `main` or `v*` tags: the same checks plus a multi-arch image publish to GHCR
-- `workflow_dispatch`: manual run with the same image publishing path
-
-Published image tags include branch or tag refs, Git SHA tags, and `latest` for the default branch.
+The smoke test validates `healthz`, `readyz`, public API routes, OpenAPI export, and the presence of Prometheus business metrics.
 
 ## 9. Related Docs
 
 - [docs/api.md](./api.md)
 - [docs/performance-tuning.md](./performance-tuning.md)
+- [docs/troubleshooting.md](./troubleshooting.md)

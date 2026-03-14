@@ -82,11 +82,7 @@ func main() {
 	}
 
 	handle("/metrics", "metrics", metricsRegistry.Handler(func() observability.MetricsSnapshot {
-		return observability.MetricsSnapshot{
-			AppVersion:       version,
-			GatewayConnected: source.GetStatus().Connected,
-			CacheEntries:     cacheManager.Stats(context.Background()).Entries,
-		}
+		return h.MetricsSnapshot(version, source.GetStatus().Connected, cacheManager.Stats(context.Background()).Entries)
 	}))
 	handle("/healthz", "healthz", http.HandlerFunc(health.Liveness))
 	handle("/readyz", "readyz", http.HandlerFunc(health.Readiness))
@@ -98,6 +94,8 @@ func main() {
 	handle("/api/public/timeline", "api_public_timeline", http.HandlerFunc(h.PublicTimeline))
 	handle("/api/public/replay", "api_public_replay", http.HandlerFunc(h.PublicReplay))
 	handle("/api/public/agent/", "api_public_agent_stats", http.HandlerFunc(h.PublicAgentStats))
+	handle("/api/public/analytics/trends", "api_public_analytics_trends", http.HandlerFunc(h.PublicAnalyticsTrends))
+	handle("/api/public/analytics/compare", "api_public_analytics_compare", http.HandlerFunc(h.PublicAnalyticsCompare))
 	handle("/api/public/zones/heatmap", "api_public_zones_heatmap", http.HandlerFunc(h.PublicZonesHeatmap))
 	handle("/api/public/models/distribution", "api_public_models_distribution", http.HandlerFunc(h.PublicModelsDistribution))
 	handle("/api/public/metrics/live", "api_public_metrics_live", http.HandlerFunc(h.PublicMetricsLive))
@@ -280,7 +278,9 @@ func requireInternalToken(token string, next http.Handler) http.Handler {
 			candidate = strings.TrimSpace(r.Header.Get("X-Internal-API-Token"))
 		}
 		if subtle.ConstantTimeCompare([]byte(candidate), []byte(token)) != 1 {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			api.WriteJSONError(w, r, http.StatusUnauthorized, "unauthorized", "missing or invalid internal API token", api.ErrorDetail{
+				"path": r.URL.Path,
+			})
 			return
 		}
 		next.ServeHTTP(w, r)

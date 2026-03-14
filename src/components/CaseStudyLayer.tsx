@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import { getPublicAgentLabel, getZoneLabel } from '../publicDisplay.js'
 
@@ -8,17 +8,17 @@ const faqItems = [
   {
     question: 'Why does Ghost Shift hide session keys and raw model names?',
     answer:
-      'The portfolio surface is meant to tell the public story, not mirror the operator console. Stable public aliases and model families preserve continuity without exposing internal handles.',
+      'The public surface tells a product story, not an operator story. Stable aliases and model families preserve continuity while removing handles that could leak internals or confuse casual viewers.',
   },
   {
     question: 'Why are the timeline and share links timestamped?',
     answer:
-      'Timestamped links let people land on the same replay frame you are discussing, which makes product reviews and async sharing much easier.',
+      'Timestamped links keep review conversations anchored to a single frame. That matters in async design reviews because everyone lands on the same evidence instead of a moving live edge.',
   },
   {
-    question: 'Why are some yesterday bars marked as partial?',
+    question: 'Why is the sanitization flow visualized in the product surface?',
     answer:
-      'The comparison chart only uses retained public history. If the server only keeps the last 24 hours, the yesterday side may be incomplete until retention is extended.',
+      'Privacy boundaries are easier to trust when people can inspect them. The case study layer shows what gets removed, what survives, and why the resulting view is safe to share.',
   },
 ]
 
@@ -34,12 +34,48 @@ const rawExample = {
   model: 'gpt-5-codex-2026-03-12',
 }
 
+const flowSteps: Array<{ id: CaseStudyView; label: string; detail: string }> = [
+  {
+    id: 'raw',
+    label: '1. Raw gateway',
+    detail: 'Identity, prompts, and tool arguments still exist here.',
+  },
+  {
+    id: 'public',
+    label: '2. Public snapshot',
+    detail: 'Sensitive fields are stripped and only public-safe metadata remains.',
+  },
+  {
+    id: 'surface',
+    label: '3. Product surface',
+    detail: 'The browser renders from the reduced contract only.',
+  },
+]
+
 export interface CaseStudyLayerProps {
   exampleSession: DisplaySession | null
 }
 
 export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
   const [activeView, setActiveView] = useState<CaseStudyView>('public')
+  const [activeStep, setActiveStep] = useState(1)
+  const [activeField, setActiveField] = useState(0)
+  const [openFaqIndex, setOpenFaqIndex] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(true)
+
+  useEffect(() => {
+    if (!isAnimating) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setActiveStep((previous) => {
+        const nextStep = (previous + 1) % flowSteps.length
+        setActiveView(flowSteps[nextStep].id)
+        return nextStep
+      })
+    }, 2200)
+
+    return () => window.clearInterval(intervalId)
+  }, [isAnimating])
 
   const publicExample = {
     publicId: exampleSession?.publicId || 'pub_demo_214',
@@ -50,29 +86,83 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
     activityWindow: exampleSession?.signalWindow || 'live',
   }
 
+  const fieldCards = [
+    {
+      title: 'Identity',
+      raw: rawExample.user,
+      public: 'hidden',
+      surface: publicExample.agentId,
+      note: 'Personal identifiers are removed before the browser receives the payload.',
+    },
+    {
+      title: 'Prompt context',
+      raw: rawExample.prompt,
+      public: 'prompt hidden',
+      surface: 'activity window only',
+      note: 'Prompt text becomes coarse activity metadata instead of display content.',
+    },
+    {
+      title: 'Tool arguments',
+      raw: rawExample.toolArgs.command,
+      public: 'tool args hidden',
+      surface: 'not rendered',
+      note: 'Operational commands never enter the public contract.',
+    },
+    {
+      title: 'Model detail',
+      raw: rawExample.model,
+      public: publicExample.modelFamily,
+      surface: publicExample.modelFamily,
+      note: 'Model families stay visible because they explain capability without exposing raw deployment strings.',
+    },
+  ]
+
+  const selectedField = fieldCards[activeField] || fieldCards[0]
+
+  const handleSelectView = (view: CaseStudyView, index: number) => {
+    setActiveView(view)
+    setActiveStep(index)
+    setIsAnimating(false)
+  }
+
+  const stepProgress = `${((activeStep + 1) / flowSteps.length) * 100}%`
+
   return (
     <section className="gs-case-study" id="case-study-layer">
       <div className="gs-case-study__head">
         <span className="gs-section-kicker">Case Study Layer</span>
-        <h2>Show the data boundary instead of asking viewers to infer it.</h2>
+        <h2>Show the transformation, animate the privacy boundary, and answer trust questions in place.</h2>
         <p>
-          This layer makes the privacy contract explicit: what enters Ghost Shift, what gets stripped, and what the
-          public surface finally renders.
+          This layer turns the sanitization contract into a guided demo: click through each data boundary, watch the
+          flow animate, and expand the FAQ without leaving the product surface.
         </p>
       </div>
 
       <div className="gs-case-study__layout">
         <article className="gs-case-study__example">
           <div className="gs-case-study__tabs" role="tablist" aria-label="Case study examples">
-            <button type="button" className={activeView === 'raw' ? 'is-active' : ''} onClick={() => setActiveView('raw')}>
-              Raw input
-            </button>
-            <button type="button" className={activeView === 'public' ? 'is-active' : ''} onClick={() => setActiveView('public')}>
-              Public snapshot
-            </button>
-            <button type="button" className={activeView === 'surface' ? 'is-active' : ''} onClick={() => setActiveView('surface')}>
-              Surface output
-            </button>
+            {flowSteps.map((step, index) => (
+              <button
+                type="button"
+                key={step.id}
+                className={activeView === step.id ? 'is-active' : ''}
+                onClick={() => handleSelectView(step.id, index)}
+              >
+                {step.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="gs-case-study__timeline">
+            <div className="gs-case-study__timeline-track">
+              <div className="gs-case-study__timeline-progress" style={{ width: stepProgress }} />
+            </div>
+            <div className="gs-case-study__timeline-meta">
+              <span>{flowSteps[activeStep].detail}</span>
+              <button type="button" onClick={() => setIsAnimating((previous) => !previous)}>
+                {isAnimating ? 'Pause animation' : 'Play animation'}
+              </button>
+            </div>
           </div>
 
           {activeView === 'raw' ? (
@@ -108,39 +198,72 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
                 <span>{publicExample.activityWindow}</span>
               </div>
               <p>
-                The office scene, summary card, and share card all render from this narrower contract instead of from the
-                raw gateway payload.
+                The office scene, analytics cards, and social share card all render from this narrower contract instead
+                of from the raw gateway payload.
               </p>
             </div>
           ) : null}
+
+          <div className="gs-case-study__interactive">
+            <div className="gs-case-study__label">Interactive example</div>
+            <div className="gs-case-study__field-grid">
+              {fieldCards.map((field, index) => (
+                <button
+                  type="button"
+                  key={field.title}
+                  className={activeField === index ? 'is-active' : ''}
+                  onClick={() => setActiveField(index)}
+                >
+                  <span>{field.title}</span>
+                  <strong>{field[activeView]}</strong>
+                </button>
+              ))}
+            </div>
+
+            <div className="gs-case-study__field-detail">
+              <span>{selectedField.title}</span>
+              <p>{selectedField.note}</p>
+            </div>
+          </div>
         </article>
 
         <div className="gs-case-study__stack">
           <div className="gs-case-grid">
             <article className="gs-case-card">
               <div className="gs-case-card__eyebrow">Interactive example</div>
-              <h3>Click through the transformation.</h3>
-              <p>Raw gateway context becomes a public snapshot, then becomes a portfolio-safe product surface.</p>
+              <h3>Inspect one rule at a time.</h3>
+              <p>Each field card updates with the current stage so visitors can compare raw, public, and rendered states.</p>
             </article>
             <article className="gs-case-card">
-              <div className="gs-case-card__eyebrow">Data masking</div>
-              <h3>Visible enough to explain, narrow enough to share.</h3>
-              <p>Identity, prompts, transcripts, tool arguments, and internal paths are removed before the browser gets the data.</p>
+              <div className="gs-case-card__eyebrow">Animation demo</div>
+              <h3>Play the privacy flow during live demos.</h3>
+              <p>The animated track keeps the sanitization story moving when you are presenting the product in person.</p>
             </article>
             <article className="gs-case-card">
-              <div className="gs-case-card__eyebrow">FAQ</div>
-              <h3>Answer the trust questions in-place.</h3>
-              <p>Use collapsible notes so viewers can inspect the privacy boundary without leaving the product surface.</p>
+              <div className="gs-case-card__eyebrow">FAQ accordion</div>
+              <h3>Collapse detail until the viewer asks for it.</h3>
+              <p>Trust questions stay nearby, but the explanation layer avoids overwhelming the primary narrative.</p>
             </article>
           </div>
 
           <div className="gs-faq">
-            {faqItems.map((item) => (
-              <details key={item.question}>
-                <summary>{item.question}</summary>
-                <p>{item.answer}</p>
-              </details>
-            ))}
+            {faqItems.map((item, index) => {
+              const isOpen = openFaqIndex === index
+              return (
+                <article className={`gs-faq__item ${isOpen ? 'is-open' : ''}`} key={item.question}>
+                  <button
+                    type="button"
+                    className="gs-faq__trigger"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenFaqIndex((previous) => (previous === index ? -1 : index))}
+                  >
+                    <span>{item.question}</span>
+                    <strong>{isOpen ? '−' : '+'}</strong>
+                  </button>
+                  {isOpen ? <p>{item.answer}</p> : null}
+                </article>
+              )
+            })}
           </div>
         </div>
       </div>

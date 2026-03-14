@@ -1,12 +1,14 @@
 import type { DisplaySession } from '../publicDisplay.js'
-import { formatRatio } from '../publicDisplay.js'
+import { formatRatio, getZoneColor, summarizeModelMix, summarizeZones } from '../publicDisplay.js'
 import type { TimelinePoint } from '../replay.js'
 import type { PublicOfficeStatus } from '../services/types.js'
 import {
   clampRecentTimeline,
+  computeLinearForecast,
   computeTodayVsYesterday,
   computeTrendSummary,
   computeUptimeStats,
+  computeWindowComparison,
   formatDelta,
   type HistoryMeta,
 } from '../portfolioMetrics.js'
@@ -42,9 +44,43 @@ export function ProductDashboard({
   const visibleTrend = computeTrendSummary(recentTimeline.map((point) => point.displayed))
   const uptime = computeUptimeStats(recentTimeline, historyMeta)
   const comparison = computeTodayVsYesterday(comparisonTimeline, displayTimestamp)
+  const runningWindowComparison = computeWindowComparison(comparisonTimeline, displayTimestamp, 6, 'running')
+  const visibleWindowComparison = computeWindowComparison(comparisonTimeline, displayTimestamp, 6, 'displayed')
+  const forecast = computeLinearForecast(recentTimeline, 'running', 14, 6)
   const averageSignal =
     sessions.length > 0 ? sessions.reduce((sum, session) => sum + session.signalScore, 0) / sessions.length : 0
   const peakLoad = recentTimeline.length > 0 ? Math.max(...recentTimeline.map((point) => point.displayed)) : 0
+  const zoneMix = summarizeZones(sessions)
+  const modelMix = summarizeModelMix(sessions)
+  const topZone = zoneMix[0]
+  const activeShare = (status?.displayed ?? sessions.length) > 0
+    ? (status?.running ?? sessions.filter((session) => session.status === 'running').length) / Math.max(status?.displayed ?? sessions.length, 1)
+    : 0
+  const concentration = topZone ? topZone.count / Math.max(sessions.length, 1) : 0
+  const sameHourDelta =
+    comparison.yesterdayAverage <= 0
+      ? (comparison.todayAverage > 0 ? 1 : 0)
+      : (comparison.todayAverage - comparison.yesterdayAverage) / comparison.yesterdayAverage
+  const radarMetrics = [
+    { label: 'Activity', value: averageSignal, color: '#7db3ff' },
+    { label: 'Live share', value: activeShare, color: '#f6c978' },
+    { label: 'Stability', value: uptime.ratio, color: '#9bffb4' },
+    { label: 'Diversity', value: Math.min(1, modelMix.length / 5), color: '#ff9fb2' },
+    { label: 'Balance', value: Math.max(0, Math.min(1, 1 - concentration)), color: '#8fc0ff' },
+    { label: 'Forecast', value: Math.max(0, Math.min(1, 0.3 + (forecast.confidence * 0.7))), color: '#cba6f7' },
+  ]
+  const scatterPoints = sessions
+    .slice()
+    .sort((a, b) => b.signalScore - a.signalScore)
+    .slice(0, 18)
+    .map((session) => ({
+      label: session.agentId,
+      zone: session.zone,
+      xMinutes: Math.max(0, (displayTimestamp - session.lastChangedAt) / 60_000),
+      ySignal: session.signalScore,
+      radius: session.status === 'running' ? 7 : 5,
+    }))
+  const maxScatterMinutes = Math.max(1, ...scatterPoints.map((point) => point.xMinutes))
   const maxBar = Math.max(
     1,
     ...comparison.buckets.map((bucket) => Math.max(bucket.today, bucket.yesterday)),
@@ -55,11 +91,11 @@ export function ProductDashboard({
       <div className="gs-dashboard-head">
         <div>
           <span className="gs-section-kicker">Statistics Dashboard</span>
-          <h2>Realtime metrics with 24h context.</h2>
+          <h2>Realtime metrics, comparison baselines, and lightweight prediction in one storytelling layer.</h2>
         </div>
         <p>
-          A compact analytics layer for the product surface: live counts, uptime posture, recent trend direction, and a
-          today-vs-yesterday comparison that stays readable on mobile.
+          The analytics section now combines richer product metrics, 6-hour rolling comparison, same-hour baseline
+          comparison, a simple linear forecast, and complementary chart types for faster pattern recognition.
         </p>
       </div>
 
@@ -79,7 +115,7 @@ export function ProductDashboard({
         <article className="gs-dashboard-card gs-dashboard-card--stat">
           <span className="gs-dashboard-card__label">Uptime</span>
           <strong>{uptime.label}</strong>
-          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} connected in the retained window</span>
+          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} connected inside the retained window</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--trend">
@@ -117,6 +153,60 @@ export function ProductDashboard({
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
+            <span className="gs-dashboard-card__label">6h rolling delta</span>
+            <strong className={runningWindowComparison.deltaRatio < 0 ? 'is-down' : runningWindowComparison.deltaRatio > 0 ? 'is-up' : ''}>
+              {formatDelta(runningWindowComparison.deltaRatio)}
+            </strong>
+          </div>
+          <div className="gs-dashboard-card__meta">
+            {runningWindowComparison.currentAverage.toFixed(1)} avg now vs {runningWindowComparison.previousAverage.toFixed(1)} in the previous 6h
+          </div>
+        </article>
+
+        <article className="gs-dashboard-card gs-dashboard-card--metric">
+          <div className="gs-dashboard-card__row">
+            <span className="gs-dashboard-card__label">Same-hour baseline</span>
+            <strong className={sameHourDelta < 0 ? 'is-down' : sameHourDelta > 0 ? 'is-up' : ''}>
+              {formatDelta(sameHourDelta)}
+            </strong>
+          </div>
+          <div className="gs-dashboard-card__meta">
+            today avg {comparison.todayAverage.toFixed(1)} vs yesterday {comparison.yesterdayAverage.toFixed(1)}
+          </div>
+        </article>
+
+        <article className="gs-dashboard-card gs-dashboard-card--metric">
+          <div className="gs-dashboard-card__row">
+            <span className="gs-dashboard-card__label">Prediction</span>
+            <strong className={forecast.deltaRatio < 0 ? 'is-down' : forecast.deltaRatio > 0 ? 'is-up' : ''}>
+              {formatDelta(forecast.deltaRatio)}
+            </strong>
+          </div>
+          <div className="gs-dashboard-card__meta">
+            next projection {forecast.projectedValue.toFixed(1)} live with {formatRatio(forecast.confidence)} confidence fit
+          </div>
+        </article>
+
+        <article className="gs-dashboard-card gs-dashboard-card--metric">
+          <div className="gs-dashboard-card__row">
+            <span className="gs-dashboard-card__label">Zone concentration</span>
+            <strong>{topZone ? formatRatio(topZone.count / Math.max(sessions.length, 1)) : '0%'}</strong>
+          </div>
+          <div className="gs-dashboard-card__meta">
+            {topZone ? `${topZone.label} leads the visible mix` : 'waiting for visible sessions'}
+          </div>
+        </article>
+
+        <article className="gs-dashboard-card gs-dashboard-card--metric">
+          <div className="gs-dashboard-card__row">
+            <span className="gs-dashboard-card__label">Model diversity</span>
+            <strong>{modelMix.length}</strong>
+          </div>
+          <div className="gs-dashboard-card__meta">families visible in the current frame</div>
+        </article>
+
+        <article className="gs-dashboard-card gs-dashboard-card--metric">
+          <div className="gs-dashboard-card__row">
             <span className="gs-dashboard-card__label">Freshness</span>
             <strong>{formatTimestamp(displayTimestamp)}</strong>
           </div>
@@ -132,39 +222,231 @@ export function ProductDashboard({
         </article>
       </div>
 
-      <article className="gs-dashboard-compare">
-        <div className="gs-dashboard-compare__head">
-          <div>
-            <span className="gs-dashboard-card__label">Today vs yesterday</span>
-            <h3>Running-agent compare chart</h3>
-          </div>
-          <div className="gs-dashboard-compare__summary">
-            <span>Today avg {comparison.todayAverage.toFixed(1)}</span>
-            <span>Yesterday avg {comparison.yesterdayAverage.toFixed(1)}</span>
-            {comparison.partialYesterday ? <span>Yesterday is partial because retention is limited</span> : null}
-          </div>
-        </div>
-
-        <div className="gs-dashboard-compare__chart" role="img" aria-label="Today versus yesterday running agent comparison chart">
-          {comparison.buckets.map((bucket) => (
-            <div className="gs-dashboard-compare__bucket" key={bucket.hour}>
-              <div className="gs-dashboard-compare__bars">
-                <span
-                  className="gs-dashboard-compare__bar gs-dashboard-compare__bar--today"
-                  style={{ height: `${(bucket.today / maxBar) * 100}%` }}
-                  title={`Today ${bucket.hour}:00 - ${bucket.today.toFixed(1)}`}
-                />
-                <span
-                  className="gs-dashboard-compare__bar gs-dashboard-compare__bar--yesterday"
-                  style={{ height: `${(bucket.yesterday / maxBar) * 100}%` }}
-                  title={`Yesterday ${bucket.hour}:00 - ${bucket.yesterday.toFixed(1)}`}
-                />
-              </div>
-              <span className="gs-dashboard-compare__label">{bucket.hour}</span>
+      <div className="gs-dashboard-analytics">
+        <article className="gs-dashboard-compare">
+          <div className="gs-dashboard-compare__head">
+            <div>
+              <span className="gs-dashboard-card__label">Comparison chart</span>
+              <h3>Today vs yesterday running-agent profile</h3>
             </div>
-          ))}
-        </div>
-      </article>
+            <div className="gs-dashboard-compare__summary">
+              <span>6h rolling {formatDelta(runningWindowComparison.deltaRatio)}</span>
+              <span>Visible {formatDelta(visibleWindowComparison.deltaRatio)}</span>
+              <span>Same-hour {formatDelta(sameHourDelta)}</span>
+              {comparison.partialYesterday ? <span>Yesterday is partial because retention is limited</span> : null}
+            </div>
+          </div>
+
+          <div className="gs-dashboard-compare__legend">
+            <span><i className="is-today" />Today</span>
+            <span><i className="is-yesterday" />Yesterday</span>
+          </div>
+
+          <div className="gs-dashboard-compare__chart" role="img" aria-label="Today versus yesterday running agent comparison chart">
+            {comparison.buckets.map((bucket) => (
+              <div className="gs-dashboard-compare__bucket" key={bucket.hour}>
+                <div className="gs-dashboard-compare__bars">
+                  <span
+                    className="gs-dashboard-compare__bar gs-dashboard-compare__bar--today"
+                    style={{ height: `${(bucket.today / maxBar) * 100}%` }}
+                    title={`Today ${bucket.hour}:00 - ${bucket.today.toFixed(1)}`}
+                  />
+                  <span
+                    className="gs-dashboard-compare__bar gs-dashboard-compare__bar--yesterday"
+                    style={{ height: `${(bucket.yesterday / maxBar) * 100}%` }}
+                    title={`Yesterday ${bucket.hour}:00 - ${bucket.yesterday.toFixed(1)}`}
+                  />
+                </div>
+                <span className="gs-dashboard-compare__label">{bucket.hour}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="gs-dashboard-visual gs-dashboard-visual--forecast">
+          <div className="gs-dashboard-visual__head">
+            <div>
+              <span className="gs-dashboard-card__label">Simple linear forecast</span>
+              <h3>Projected live-agent trajectory</h3>
+            </div>
+            <strong className={forecast.slope < 0 ? 'is-down' : forecast.slope > 0 ? 'is-up' : ''}>
+              {forecast.projectedValue.toFixed(1)} projected
+            </strong>
+          </div>
+          <svg viewBox="0 0 360 180" className="gs-dashboard-chart" role="img" aria-label="Forecast chart">
+            <path className="gs-dashboard-chart__grid" d="M24 24H336 M24 78H336 M24 132H336" />
+            <path className="gs-dashboard-chart__actual" d={buildSeriesPath(forecast.history, 24, 24, 312, 132, forecast)} />
+            <path className="gs-dashboard-chart__forecast" d={buildForecastPath(forecast, 24, 24, 312, 132)} />
+            {forecast.projection.map((point, index) => (
+              <circle
+                key={point.timestamp}
+                className="gs-dashboard-chart__dot gs-dashboard-chart__dot--forecast"
+                cx={projectPointX(index + forecast.history.length, forecast.history.length + forecast.projection.length, 24, 312)}
+                cy={projectPointY(point.value, forecast, 24, 132)}
+                r="3.5"
+              />
+            ))}
+          </svg>
+          <div className="gs-dashboard-card__meta">
+            Uses the latest retained samples to extend a straight-line trend. Lightweight, explainable, and useful for short-range momentum cues.
+          </div>
+        </article>
+      </div>
+
+      <div className="gs-dashboard-visual-grid">
+        <article className="gs-dashboard-visual">
+          <div className="gs-dashboard-visual__head">
+            <div>
+              <span className="gs-dashboard-card__label">Radar chart</span>
+              <h3>Surface health profile</h3>
+            </div>
+            <strong>{topZone?.label || 'No zone lead yet'}</strong>
+          </div>
+          <svg viewBox="0 0 260 240" className="gs-dashboard-radar" role="img" aria-label="Radar chart">
+            {Array.from({ length: 4 }, (_, layer) => (
+              <polygon
+                key={layer}
+                className="gs-dashboard-radar__ring"
+                points={buildRadarPolygon(radarMetrics.map(() => (layer + 1) / 4), 74, 130, 112)}
+              />
+            ))}
+            {radarMetrics.map((metric, index) => (
+              <line
+                key={metric.label}
+                className="gs-dashboard-radar__axis"
+                x1="130"
+                y1="112"
+                x2={polarPoint(index, radarMetrics.length, 74, 130, 112).x}
+                y2={polarPoint(index, radarMetrics.length, 74, 130, 112).y}
+              />
+            ))}
+            <polygon className="gs-dashboard-radar__shape" points={buildRadarPolygon(radarMetrics.map((metric) => metric.value), 74, 130, 112)} />
+            {radarMetrics.map((metric, index) => {
+              const point = polarPoint(index, radarMetrics.length, 92, 130, 112)
+              return (
+                <text key={metric.label} x={point.x} y={point.y} className="gs-dashboard-radar__label">
+                  {metric.label}
+                </text>
+              )
+            })}
+          </svg>
+          <div className="gs-dashboard-radar__legend">
+            {radarMetrics.map((metric) => (
+              <span key={metric.label}>
+                <i style={{ background: metric.color }} />
+                {metric.label} {formatRatio(metric.value)}
+              </span>
+            ))}
+          </div>
+        </article>
+
+        <article className="gs-dashboard-visual">
+          <div className="gs-dashboard-visual__head">
+            <div>
+              <span className="gs-dashboard-card__label">Scatter plot</span>
+              <h3>Signal vs status-change latency</h3>
+            </div>
+            <strong>{scatterPoints.length} tracked agents</strong>
+          </div>
+          <svg viewBox="0 0 360 220" className="gs-dashboard-chart" role="img" aria-label="Scatter plot">
+            <path className="gs-dashboard-chart__grid" d="M36 28V182 M148 28V182 M260 28V182 M36 182H332 M36 105H332 M36 28H332" />
+            {scatterPoints.map((point) => (
+              <circle
+                key={`${point.label}-${point.zone}`}
+                className="gs-dashboard-chart__dot"
+                cx={36 + ((point.xMinutes / maxScatterMinutes) * 296)}
+                cy={182 - (point.ySignal * 154)}
+                r={point.radius}
+                fill={getZoneColor(point.zone)}
+              >
+                <title>{`${point.label} • ${point.xMinutes.toFixed(0)}m since status change • ${formatRatio(point.ySignal)}`}</title>
+              </circle>
+            ))}
+          </svg>
+          <div className="gs-dashboard-card__meta">
+            X-axis shows minutes since the last status change. Y-axis shows signal score. Larger dots are currently running agents.
+          </div>
+        </article>
+      </div>
     </section>
   )
+}
+
+function buildSeriesPath(
+  points: Array<{ timestamp: number; value: number }>,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  forecast: ReturnType<typeof computeLinearForecast>,
+): string {
+  if (points.length === 0) return ''
+
+  const totalLength = forecast.history.length + forecast.projection.length
+  return points
+    .map((point, index) => {
+      const px = projectPointX(index, totalLength, x, width)
+      const py = projectPointY(point.value, forecast, y, height)
+      return `${index === 0 ? 'M' : 'L'}${px.toFixed(2)},${py.toFixed(2)}`
+    })
+    .join(' ')
+}
+
+function buildForecastPath(
+  forecast: ReturnType<typeof computeLinearForecast>,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): string {
+  if (forecast.history.length === 0) return ''
+
+  const totalLength = forecast.history.length + forecast.projection.length
+  const firstPoint = forecast.history[forecast.history.length - 1]
+  const points = [firstPoint, ...forecast.projection]
+
+  return points
+    .map((point, index) => {
+      const offset = index === 0 ? forecast.history.length - 1 : forecast.history.length - 1 + index
+      const px = projectPointX(offset, totalLength, x, width)
+      const py = projectPointY(point.value, forecast, y, height)
+      return `${index === 0 ? 'M' : 'L'}${px.toFixed(2)},${py.toFixed(2)}`
+    })
+    .join(' ')
+}
+
+function projectPointX(index: number, total: number, offsetX: number, width: number): number {
+  if (total <= 1) return offsetX + (width / 2)
+  return offsetX + ((index / (total - 1)) * width)
+}
+
+function projectPointY(
+  value: number,
+  forecast: ReturnType<typeof computeLinearForecast>,
+  offsetY: number,
+  height: number,
+): number {
+  const maxValue = Math.max(
+    1,
+    ...forecast.history.map((point) => point.value),
+    ...forecast.projection.map((point) => point.value),
+  )
+  return offsetY + height - ((value / maxValue) * height)
+}
+
+function buildRadarPolygon(values: number[], radius: number, centerX: number, centerY: number): string {
+  return values
+    .map((value, index) => {
+      const point = polarPoint(index, values.length, radius * value, centerX, centerY)
+      return `${point.x.toFixed(2)},${point.y.toFixed(2)}`
+    })
+    .join(' ')
+}
+
+function polarPoint(index: number, count: number, radius: number, centerX: number, centerY: number) {
+  const angle = ((Math.PI * 2) / count) * index - (Math.PI / 2)
+  return {
+    x: centerX + (Math.cos(angle) * radius),
+    y: centerY + (Math.sin(angle) * radius),
+  }
 }

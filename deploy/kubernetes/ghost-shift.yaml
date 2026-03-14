@@ -107,6 +107,8 @@ kind: Service
 metadata:
   name: ghost-shift
   namespace: ghost-shift
+  labels:
+    app: ghost-shift
 spec:
   selector:
     app: ghost-shift
@@ -120,7 +122,22 @@ kind: Ingress
 metadata:
   name: ghost-shift
   namespace: ghost-shift
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://portfolio.example.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, X-Request-ID"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ghostshift.example.com
+      secretName: ghost-shift-tls
   rules:
     - host: ghostshift.example.com
       http:

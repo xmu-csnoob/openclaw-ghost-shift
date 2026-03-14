@@ -8,7 +8,9 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	cachepkg "github.com/xmu-csnoob/openclaw-ghost-shift/server/cache"
@@ -111,16 +113,16 @@ func (h *Handler) StartBackground(ctx context.Context) {
 }
 
 func (h *Handler) PublicSessions(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_sessions"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_sessions", "public:sessions", h.cacheTTL, func() ([]PublicSession, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, "public:sessions", h.cacheTTL, func() ([]PublicSession, error) {
 		return h.publicSessions(), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build sessions", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "sessions_build_failed", "failed to build sessions", err, nil)
 		return
 	}
 
@@ -129,16 +131,16 @@ func (h *Handler) PublicSessions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicStatus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_status"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_status", "public:status", h.cacheTTL, func() (PublicStatus, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, "public:status", h.cacheTTL, func() (PublicStatus, error) {
 		return h.publicStatus(), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build status", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "status_build_failed", "failed to build status", err, nil)
 		return
 	}
 
@@ -147,16 +149,16 @@ func (h *Handler) PublicStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_snapshot"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_snapshot", "public:snapshot", h.cacheTTL, func() (PublicSnapshot, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, "public:snapshot", h.cacheTTL, func() (PublicSnapshot, error) {
 		return h.buildPublicSnapshot(), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build snapshot", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "snapshot_build_failed", "failed to build snapshot", err, nil)
 		return
 	}
 
@@ -165,25 +167,30 @@ func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicTimeline(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_timeline"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
 	since, until, err := parseHistoryWindow(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"query": r.URL.RawQuery,
+		})
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_timeline", h.analyticsCacheKey("timeline", r.URL.Path, r.URL.RawQuery), h.cacheTTL, func() (PublicTimelineResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("timeline", r.URL.Path, r.URL.RawQuery), h.analyticsTTL(since, until), func() (PublicTimelineResponse, error) {
 		if h.history == nil {
 			return PublicTimelineResponse{}, nil
 		}
 		return h.history.Timeline(since, until), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build timeline", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "timeline_build_failed", "failed to build timeline", err, ErrorDetail{
+			"since": since.Format(time.RFC3339),
+			"until": until.Format(time.RFC3339),
+		})
 		return
 	}
 
@@ -192,25 +199,30 @@ func (h *Handler) PublicTimeline(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PublicReplay(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	const route = "api_public_replay"
+	if !h.requireMethod(w, r, route, http.MethodGet) {
 		return
 	}
 
 	since, until, err := parseHistoryWindow(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.respondError(w, r, route, http.StatusBadRequest, "invalid_query", err.Error(), err, ErrorDetail{
+			"query": r.URL.RawQuery,
+		})
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, "api_public_replay", h.analyticsCacheKey("replay", r.URL.Path, r.URL.RawQuery), h.cacheTTL, func() (PublicReplayResponse, error) {
+	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, h.analyticsCacheKey("replay", r.URL.Path, r.URL.RawQuery), h.analyticsTTL(since, until), func() (PublicReplayResponse, error) {
 		if h.history == nil {
 			return PublicReplayResponse{}, nil
 		}
 		return h.history.Replay(since, until), nil
 	})
 	if err != nil {
-		http.Error(w, "failed to build replay", http.StatusInternalServerError)
+		h.respondError(w, r, route, http.StatusInternalServerError, "replay_build_failed", "failed to build replay", err, ErrorDetail{
+			"since": since.Format(time.RFC3339),
+			"until": until.Format(time.RFC3339),
+		})
 		return
 	}
 
@@ -219,40 +231,35 @@ func (h *Handler) PublicReplay(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) InternalHealth(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !h.requireMethod(w, r, "internal_health", http.MethodGet) {
 		return
 	}
 	writeJSON(w, http.StatusOK, h.gc.GetHealth())
 }
 
 func (h *Handler) InternalPresence(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !h.requireMethod(w, r, "internal_presence", http.MethodGet) {
 		return
 	}
 	writeJSON(w, http.StatusOK, h.gc.GetPresence())
 }
 
 func (h *Handler) InternalChannels(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !h.requireMethod(w, r, "internal_channels", http.MethodGet) {
 		return
 	}
 	writeJSON(w, http.StatusOK, h.gc.GetChannels())
 }
 
 func (h *Handler) InternalNodes(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !h.requireMethod(w, r, "internal_nodes", http.MethodGet) {
 		return
 	}
 	writeJSON(w, http.StatusOK, h.gc.GetNodes())
 }
 
 func (h *Handler) InternalCron(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !h.requireMethod(w, r, "internal_cron", http.MethodGet) {
 		return
 	}
 	writeJSON(w, http.StatusOK, h.gc.GetCronJobs())
@@ -325,7 +332,9 @@ func (h *Handler) publicStatusFromSessions(sessions []PublicSession) PublicStatu
 func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
 	body, err := marshalJSON(payload)
 	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		WriteJSONError(w, nil, http.StatusInternalServerError, "encode_error", "failed to encode response", ErrorDetail{
+			"status": statusCode,
+		})
 		return
 	}
 
@@ -355,26 +364,31 @@ func (h *Handler) WarmCache(ctx context.Context) error {
 	entries := []struct {
 		key   string
 		route string
+		ttl   time.Duration
 		build func() (any, error)
 	}{
 		{
 			key:   "public:status",
 			route: "api_status",
+			ttl:   h.cacheTTL,
 			build: func() (any, error) { return h.publicStatus(), nil },
 		},
 		{
 			key:   "public:sessions",
 			route: "api_sessions",
+			ttl:   h.cacheTTL,
 			build: func() (any, error) { return h.publicSessions(), nil },
 		},
 		{
 			key:   "public:snapshot",
 			route: "api_public_snapshot",
+			ttl:   h.cacheTTL,
 			build: func() (any, error) { return h.buildPublicSnapshot(), nil },
 		},
 		{
 			key:   "public:timeline",
 			route: "api_public_timeline",
+			ttl:   h.analyticsHotCacheTTL(),
 			build: func() (any, error) {
 				if h.history == nil {
 					return PublicTimelineResponse{}, nil
@@ -385,6 +399,7 @@ func (h *Handler) WarmCache(ctx context.Context) error {
 		{
 			key:   "public:replay",
 			route: "api_public_replay",
+			ttl:   h.analyticsHotCacheTTL(),
 			build: func() (any, error) {
 				if h.history == nil {
 					return PublicReplayResponse{}, nil
@@ -395,44 +410,89 @@ func (h *Handler) WarmCache(ctx context.Context) error {
 		{
 			key:   h.analyticsCacheKey("zones-heatmap", "/api/public/zones/heatmap", ""),
 			route: "api_public_zones_heatmap",
+			ttl:   h.analyticsHotCacheTTL(),
 			build: func() (any, error) { return h.computeZonesHeatmap(time.Time{}, time.Time{}), nil },
 		},
 		{
 			key:   h.analyticsCacheKey("models-distribution", "/api/public/models/distribution", ""),
 			route: "api_public_models_distribution",
+			ttl:   h.analyticsHotCacheTTL(),
 			build: func() (any, error) { return h.computeModelsDistribution(time.Time{}, time.Time{}), nil },
+		},
+		{
+			key:   h.analyticsCacheKey("trends", "/api/public/analytics/trends", ""),
+			route: "api_public_analytics_trends",
+			ttl:   h.analyticsHotCacheTTL(),
+			build: func() (any, error) {
+				since, until := h.defaultTrendWindow()
+				return h.computeTrend(since, until, defaultTrendWindowHours), nil
+			},
+		},
+		{
+			key:   h.analyticsCacheKey("compare", "/api/public/analytics/compare", ""),
+			route: "api_public_analytics_compare",
+			ttl:   h.analyticsHotCacheTTL(),
+			build: func() (any, error) { return h.computeTodayVsYesterday(), nil },
 		},
 		{
 			key:   "metrics-live",
 			route: "api_public_metrics_live",
+			ttl:   h.liveMetricsCacheTTL(),
 			build: func() (any, error) { return h.live.compute(h.publicSessions()), nil },
 		},
 	}
 
-	for _, entry := range entries {
-		payload, err := entry.build()
-		if err != nil {
-			return err
-		}
-		body, err := marshalJSON(payload)
-		if err != nil {
-			return err
-		}
+	var (
+		wg       sync.WaitGroup
+		firstErr error
+		errMu    sync.Mutex
+	)
 
-		storeName, err := h.cache.Set(ctx, entry.key, body, h.cacheTTL)
-		if h.metrics != nil {
+	for _, entry := range entries {
+		entry := entry
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			payload, err := entry.build()
 			if err != nil {
-				h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "error")
-			} else {
-				h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "success")
+				errMu.Lock()
+				if firstErr == nil {
+					firstErr = err
+				}
+				errMu.Unlock()
+				return
 			}
-		}
-		if err != nil {
-			return err
-		}
+			body, err := marshalJSON(payload)
+			if err != nil {
+				errMu.Lock()
+				if firstErr == nil {
+					firstErr = err
+				}
+				errMu.Unlock()
+				return
+			}
+
+			storeName, err := h.cache.Set(ctx, entry.key, body, entry.ttl)
+			if h.metrics != nil {
+				if err != nil {
+					h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "error")
+				} else {
+					h.metrics.ObserveCacheOperation(storeName, entry.route, "warm", "success")
+				}
+			}
+			if err != nil {
+				errMu.Lock()
+				if firstErr == nil {
+					firstErr = err
+				}
+				errMu.Unlock()
+			}
+		}()
 	}
 
-	return nil
+	wg.Wait()
+	return firstErr
 }
 
 func (h *Handler) recordCacheMetric(cacheName, route, operation, result string) {
@@ -452,7 +512,68 @@ func parseHistoryWindow(r *http.Request) (time.Time, time.Time, error) {
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid until: %w", err)
 	}
+	if !since.IsZero() && !until.IsZero() && until.Before(since) {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid time window: until must be greater than or equal to since")
+	}
 	return since, until, nil
+}
+
+func parsePositiveQueryInt(name, value string, fallback, max int) (int, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fallback, nil
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return 0, fmt.Errorf("%s must be a positive integer", name)
+	}
+	if max > 0 && parsed > max {
+		return 0, fmt.Errorf("%s must be less than or equal to %d", name, max)
+	}
+	return parsed, nil
+}
+
+func (h *Handler) analyticsHotCacheTTL() time.Duration {
+	if h.cacheTTL <= 0 {
+		return 0
+	}
+	return h.cacheTTL
+}
+
+func (h *Handler) analyticsColdCacheTTL() time.Duration {
+	hotTTL := h.analyticsHotCacheTTL()
+	if hotTTL <= 0 {
+		return 0
+	}
+
+	coldTTL := hotTTL * 6
+	if coldTTL < 15*time.Second {
+		coldTTL = 15 * time.Second
+	}
+	return coldTTL
+}
+
+func (h *Handler) liveMetricsCacheTTL() time.Duration {
+	if h.cacheTTL <= 0 {
+		return 0
+	}
+	return h.cacheTTL
+}
+
+func (h *Handler) analyticsTTL(since, until time.Time) time.Duration {
+	if h.cacheTTL <= 0 {
+		return 0
+	}
+
+	now := h.now()
+	if !until.IsZero() && until.Before(now.Add(-10*time.Minute)) {
+		return h.analyticsColdCacheTTL()
+	}
+	if !since.IsZero() && !until.IsZero() && until.Sub(since) >= 6*time.Hour && until.Before(now.Add(-2*time.Minute)) {
+		return h.analyticsColdCacheTTL()
+	}
+	return h.analyticsHotCacheTTL()
 }
 
 func parseOptionalTimestamp(value string) (time.Time, error) {
