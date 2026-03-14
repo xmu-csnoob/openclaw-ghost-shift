@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ghost Shift">
+  <rect width="64" height="64" rx="12" fill="#111827" />
+  <path d="M14 18h36v10H14zm0 18h18v10H14zm22 0h14v10H36z" fill="#60A5FA" />
+  <path d="M18 22h8v2h-8zm10 0h18v2H28zm10 18h8v2h-8z" fill="#F8FAFC" opacity=".9" />
+</svg>

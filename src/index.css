@@ -1,0 +1,71 @@
+:root {
+  /* Dark theme colors */
+  --pixel-bg: #1E1E2E;
+  --pixel-border: #45475A;
+  --pixel-accent: #89B4FA;
+  --pixel-text: #CDD6F4;
+  --pixel-text-dim: #A6ADC8;
+  --pixel-btn-bg: #313244;
+  --pixel-btn-hover: #45475A;
+  --pixel-btn-disabled-opacity: 0.5;
+  --pixel-danger-bg: #F38BA8;
+  --pixel-success: #A6E3A1;
+  --pixel-warning: #F9E2AF;
+  --pixel-shadow: 2px 2px 0px #0A0A14;
+  --pixel-controls-z: 100;
+  --pixel-vignette: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0,0,0,0.4) 100%);
+  --pixel-reset-text: #F9E2AF;
+  --pixel-hint-bg: rgba(30, 30, 46, 0.9);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--pixel-bg);
+  color: var(--pixel-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pixel art style buttons */
+button {
+  font-family: inherit;
+  border-radius: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+button:focus {
+  outline: 2px solid var(--pixel-accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--pixel-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pixel-border);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pixel-text-dim);
+}
