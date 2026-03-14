@@ -6,6 +6,7 @@ import {
   getActivityColor,
   getActivityLabel,
   getFootprintLabel,
+  getPublicAgentLabel,
   getSignalWindowLabel,
   getZoneColor,
   getZoneLabel,
@@ -147,7 +148,7 @@ export function SessionPanel({
 }: SessionPanelProps): React.ReactElement | null {
   if (!visible) return null
 
-  const label = session?.agentId || 'Agent'
+  const label = getPublicAgentLabel(session?.agentId)
   const activity = session ? getActivityLabel(session.activityBand) : 'Quiet'
   const activityColor = session ? getActivityColor(session.activityBand) : '#6C7086'
   const zoneColor = session ? getZoneColor(session.zone) : '#6C7086'
@@ -225,18 +226,13 @@ export function SessionPanel({
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Display ID</span>
-          <span style={styles.metaValue}>{session?.sessionKey || 'hidden'}</span>
+          <span style={styles.metaLabel}>Public Alias</span>
+          <span style={styles.metaValue}>{label}</span>
         </div>
 
         <div style={styles.metaRow}>
           <span style={styles.metaLabel}>Model Family</span>
           <span style={styles.metaValue}>{session?.modelFamily || 'hidden'}</span>
-        </div>
-
-        <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Model</span>
-          <span style={styles.metaValue}>{session?.model || 'hidden'}</span>
         </div>
 
         <div style={styles.metaRow}>

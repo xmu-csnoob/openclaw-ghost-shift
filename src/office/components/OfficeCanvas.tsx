@@ -2,8 +2,17 @@ import { useRef, useEffect, useCallback } from 'react'
 import type { OfficeState } from '../engine/officeState.js'
 import { startGameLoop } from '../engine/gameLoop.js'
 import { renderFrame } from '../engine/renderer.js'
-import { TILE_SIZE } from '../types.js'
-import { CAMERA_FOLLOW_LERP, CAMERA_FOLLOW_SNAP_THRESHOLD, ZOOM_MIN, ZOOM_MAX, PAN_MARGIN_FRACTION } from '../../constants.js'
+import { CharacterState, TILE_SIZE, type Character } from '../types.js'
+import {
+  CAMERA_FOLLOW_LERP,
+  CAMERA_FOLLOW_SNAP_THRESHOLD,
+  CHARACTER_HIT_HALF_WIDTH,
+  CHARACTER_HIT_HEIGHT,
+  CHARACTER_SITTING_OFFSET_PX,
+  ZOOM_MIN,
+  ZOOM_MAX,
+  PAN_MARGIN_FRACTION,
+} from '../../constants.js'
 
 interface OfficeCanvasProps {
   officeState: OfficeState
@@ -11,14 +20,60 @@ interface OfficeCanvasProps {
   zoom: number
   onZoomChange: (zoom: number) => void
   panRef: React.MutableRefObject<{ x: number; y: number }>
+  replayCharacters?: Character[] | null
+  replayCharacterMap?: Map<number, Character> | null
+  tourTargetAgentId?: number | null
+  onUserInteraction?: () => void
 }
 
-export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef }: OfficeCanvasProps) {
+function getCharacterAtPosition(characters: Character[], worldX: number, worldY: number): number | null {
+  const sortedCharacters = [...characters].sort((a, b) => b.y - a.y)
+  for (const character of sortedCharacters) {
+    if (character.matrixEffect === 'despawn') continue
+    const sittingOffset = character.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0
+    const anchorY = character.y + sittingOffset
+    const left = character.x - CHARACTER_HIT_HALF_WIDTH
+    const right = character.x + CHARACTER_HIT_HALF_WIDTH
+    const top = anchorY - CHARACTER_HIT_HEIGHT
+    const bottom = anchorY
+    if (worldX >= left && worldX <= right && worldY >= top && worldY <= bottom) {
+      return character.id
+    }
+  }
+  return null
+}
+
+export function OfficeCanvas({
+  officeState,
+  onClick,
+  zoom,
+  onZoomChange,
+  panRef,
+  replayCharacters = null,
+  replayCharacterMap = null,
+  tourTargetAgentId = null,
+  onUserInteraction,
+}: OfficeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const offsetRef = useRef({ x: 0, y: 0 })
   const isPanningRef = useRef(false)
   const panStartRef = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 })
+  const renderCharactersRef = useRef<Character[] | null>(replayCharacters)
+  const renderCharacterMapRef = useRef<Map<number, Character> | null>(replayCharacterMap)
+  const tourTargetAgentIdRef = useRef<number | null>(tourTargetAgentId)
+
+  useEffect(() => {
+    renderCharactersRef.current = replayCharacters
+  }, [replayCharacters])
+
+  useEffect(() => {
+    renderCharacterMapRef.current = replayCharacterMap
+  }, [replayCharacterMap])
+
+  useEffect(() => {
+    tourTargetAgentIdRef.current = tourTargetAgentId
+  }, [tourTargetAgentId])
 
   // Clamp pan so the map edge can't go past a margin inside the viewport
   const clampPan = useCallback((px: number, py: number): { x: number; y: number } => {
@@ -68,10 +123,13 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
       render: (ctx) => {
         const w = canvas.width
         const h = canvas.height
+        const renderCharacters = renderCharactersRef.current ?? officeState.getCharacters()
+        const renderCharacterMap = renderCharacterMapRef.current ?? officeState.characters
 
-        // Camera follow: smoothly center on followed agent
-        if (officeState.cameraFollowId !== null) {
-          const followCh = officeState.characters.get(officeState.cameraFollowId)
+        // Camera follow: selected agents take priority, then auto-tour targets.
+        const activeCameraTargetId = officeState.cameraFollowId ?? tourTargetAgentIdRef.current
+        if (activeCameraTargetId !== null) {
+          const followCh = renderCharacterMap.get(activeCameraTargetId)
           if (followCh) {
             const layout = officeState.getLayout()
             const mapW = layout.cols * TILE_SIZE * zoom
@@ -96,7 +154,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
           hoveredAgentId: officeState.hoveredAgentId,
           hoveredTile: officeState.hoveredTile,
           seats: officeState.seats,
-          characters: officeState.characters,
+          characters: renderCharacterMap,
         }
 
         const { offsetX, offsetY } = renderFrame(
@@ -105,7 +163,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
           h,
           officeState.tileMap,
           officeState.furniture,
-          officeState.getCharacters(),
+          renderCharacters,
           zoom,
           panRef.current.x,
           panRef.current.y,
@@ -158,7 +216,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
 
       const pos = screenToWorld(e.clientX, e.clientY)
       if (!pos) return
-      const hitId = officeState.getCharacterAt(pos.worldX, pos.worldY)
+      const hitId = getCharacterAtPosition(renderCharactersRef.current ?? officeState.getCharacters(), pos.worldX, pos.worldY)
       const canvas = canvasRef.current
       if (canvas) {
         canvas.style.cursor = hitId !== null ? 'pointer' : 'default'
@@ -172,6 +230,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
     (e: React.MouseEvent) => {
       if (e.button === 1) {
         e.preventDefault()
+        onUserInteraction?.()
         officeState.cameraFollowId = null
         isPanningRef.current = true
         panStartRef.current = {
@@ -185,7 +244,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
         return
       }
     },
-    [officeState, panRef],
+    [officeState, onUserInteraction, panRef],
   )
 
   const handleMouseUp = useCallback(
@@ -202,10 +261,11 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
+      onUserInteraction?.()
       const pos = screenToWorld(e.clientX, e.clientY)
       if (!pos) return
 
-      const hitId = officeState.getCharacterAt(pos.worldX, pos.worldY)
+      const hitId = getCharacterAtPosition(renderCharactersRef.current ?? officeState.getCharacters(), pos.worldX, pos.worldY)
       if (hitId !== null) {
         officeState.dismissBubble(hitId)
         if (officeState.selectedAgentId === hitId) {
@@ -221,7 +281,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
         officeState.cameraFollowId = null
       }
     },
-    [officeState, onClick, screenToWorld],
+    [officeState, onClick, onUserInteraction, screenToWorld],
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -233,6 +293,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault()
+      onUserInteraction?.()
       if (e.ctrlKey || e.metaKey) {
         const delta = e.deltaY < 0 ? 1 : -1
         const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + delta))
@@ -248,7 +309,7 @@ export function OfficeCanvas({ officeState, onClick, zoom, onZoomChange, panRef 
         )
       }
     },
-    [zoom, onZoomChange, officeState, panRef, clampPan],
+    [zoom, onZoomChange, officeState, panRef, clampPan, onUserInteraction],
   )
 
   const handleAuxClick = useCallback((e: React.MouseEvent) => {

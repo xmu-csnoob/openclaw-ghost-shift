@@ -16,11 +16,24 @@ Repository: [`xmu-csnoob/openclaw-ghost-shift`](https://github.com/xmu-csnoob/op
 - Supports a secure standalone deployment on a single port or same-origin mounting under a portfolio site
 - Keeps internal control-plane endpoints disabled by default
 
+## Product Surfaces
+
+Ghost Shift now ships with three presentation layers:
+
+- `public office demo`: the primary live product surface
+- `summary card`: a compact iframe-friendly card for portfolio sites such as `me.wenfei4288.com`
+- `case study layer`: copy that explains what the demo is, what stays hidden, and how frequently it refreshes
+
+The summary card is available at `/embed/card` or `/office/embed/card` when mounted under `/office/`.
+
+See [docs/portfolio-surface.md](./docs/portfolio-surface.md) for recommended copy and the portfolio embed snippet.
+
 ## Architecture
 
 ```text
 Browser
   -> public snapshot API (/api/public/snapshot)
+  -> public history API (/api/public/timeline, /api/public/replay)
   -> Go backend
   -> OpenClaw Gateway (ws://...)
 ```
@@ -32,6 +45,7 @@ The browser never talks directly to the gateway in the default architecture.
 The public UI intentionally renders only coarse, presentation-oriented fields:
 
 - anonymous agent aliases such as `Agent 01`
+- stable `publicId` values derived from a salted hash, so timelines and replays can follow the same public actor safely
 - coarse room assignment such as `code-studio` or `chat-lounge`
 - coarse role labels such as `coding-agent` or `webchat`
 - public activity signals such as `activityScore`, `activityWindow`, and `footprint`
@@ -110,6 +124,8 @@ npm run proxy:local
 
 Copy [`.env.example`](./.env.example) and override what you need.
 
+For production builds and container deployment, start from [`.env.production.example`](./.env.production.example).
+
 ### Backend
 
 | Variable | Default | Purpose |
@@ -125,6 +141,10 @@ Copy [`.env.example`](./.env.example) and override what you need.
 | `GHOST_SHIFT_USER_AGENT` | `ghost-shift-server/0.1.0` | User agent sent to the gateway |
 | `GHOST_SHIFT_VERSION` | `0.1.0` | Public backend version string |
 | `DEVICE_IDENTITY_PATH` | OS config dir | Explicit path for device identity persistence |
+| `PUBLIC_ID_SALT` | empty | Required salt for stable public-facing IDs |
+| `PUBLIC_HISTORY_PATH` | `public-history.jsonl` | File used to persist public timeline snapshots |
+| `PUBLIC_HISTORY_RETENTION_HOURS` | `24` | How much public history remains queryable |
+| `PUBLIC_HISTORY_INTERVAL_SECONDS` | `30` | Snapshot cadence for the public history recorder |
 | `ENABLE_INTERNAL_API` | `false` | Enables `/internal-api/*` |
 | `INTERNAL_API_TOKEN` | empty | Required bearer token when internal API is enabled |
 
@@ -149,14 +169,18 @@ Use the Go server as the published surface:
 - reverse proxy `https://your-domain` to `127.0.0.1:3002`
 - keep the dev server private
 - keep `/internal-api/*` disabled unless you really need it
+- use the root [Dockerfile](./Dockerfile) if you want a single image containing both the backend and compiled frontend
 
 ### Portfolio subpath deployment
 
 If you want to mount Ghost Shift inside another site:
 
-- proxy `/office/` to the Ghost Shift backend
-- proxy `/office/api/*` to the same backend
+- strip the `/office` prefix before proxying requests to the Ghost Shift backend
+- proxy `/office/api/*` to the same backend with the same prefix stripping rule
 - set `VITE_PUBLIC_API_BASE=/office/api` at build time if you want an explicit API base instead of auto-detection
+- use `/office/embed/card` as the portfolio iframe target for the summary card surface
+
+See [docs/deployment.md](./docs/deployment.md) for the full deployment guide, Docker usage, GitHub Actions workflow, and reverse-proxy examples for Nginx and Caddy.
 
 ## Development Commands
 
@@ -179,11 +203,11 @@ scripts/        Local helper scripts
 
 ## Security Posture
 
-- Public endpoints are limited to `/api/status`, `/api/sessions`, and `/api/public/snapshot`
+- Public endpoints are limited to `/api/status`, `/api/sessions`, `/api/public/snapshot`, `/api/public/timeline`, and `/api/public/replay`
 - Internal control-plane endpoints are opt-in and token-protected
 - The backend binds to loopback by default
 - Gateway tokens are loaded from environment variables or local config files, not hardcoded in source
-- The public snapshot intentionally anonymizes and coarsens session data before returning it to the browser
+- The public snapshot and public history intentionally anonymize and coarsen session data before returning it to the browser or persisting it on disk
 
 ## Attribution
 

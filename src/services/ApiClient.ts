@@ -1,10 +1,16 @@
-import type { AgentSession, PublicOfficeSnapshot, PublicOfficeStatus } from './types'
+import type {
+  AgentSession,
+  PublicOfficeSnapshot,
+  PublicOfficeStatus,
+  PublicReplayResponse,
+  PublicTimelineResponse,
+} from './types'
 
-function normalizeAPIBase(value: string): string {
+export function normalizeAPIBase(value: string): string {
   return value.replace(/\/+$/, '')
 }
 
-function resolveAPIBase(): string {
+export function resolveAPIBase(): string {
   const envBase = normalizeAPIBase(import.meta.env.VITE_PUBLIC_API_BASE?.trim() || '')
   if (envBase) {
     return envBase
@@ -34,9 +40,11 @@ export const API_BASE = resolveAPIBase()
 export type Session = AgentSession
 export type APIStatus = PublicOfficeStatus
 
-class ApiClient {
+export class ApiClient {
+  constructor(private readonly base: string = API_BASE) {}
+
   private async getJSON<T>(path: string): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`)
+    const res = await fetch(`${this.base}${path}`)
     if (!res.ok) {
       throw new Error(`API request failed: ${res.status}`)
     }
@@ -54,6 +62,26 @@ class ApiClient {
   async getSnapshot(): Promise<PublicOfficeSnapshot> {
     return this.getJSON<PublicOfficeSnapshot>('/public/snapshot')
   }
+
+  async getTimeline(since?: string, until?: string): Promise<PublicTimelineResponse> {
+    const query = new URLSearchParams()
+    if (since) query.set('since', since)
+    if (until) query.set('until', until)
+    const suffix = query.size > 0 ? `?${query.toString()}` : ''
+    return this.getJSON<PublicTimelineResponse>(`/public/timeline${suffix}`)
+  }
+
+  async getReplay(since?: string, until?: string): Promise<PublicReplayResponse> {
+    const query = new URLSearchParams()
+    if (since) query.set('since', since)
+    if (until) query.set('until', until)
+    const suffix = query.size > 0 ? `?${query.toString()}` : ''
+    return this.getJSON<PublicReplayResponse>(`/public/replay${suffix}`)
+  }
 }
 
-export const apiClient = new ApiClient()
+export function createApiClient(base: string = API_BASE): ApiClient {
+  return new ApiClient(base)
+}
+
+export const apiClient = createApiClient()

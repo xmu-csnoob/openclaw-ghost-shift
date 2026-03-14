@@ -1,30 +1,37 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/xmu-csnoob/openclaw-ghost-shift/server/gateway"
 	"github.com/xmu-csnoob/openclaw-ghost-shift/server/models"
 )
 
-type Handler struct {
-	gc *gateway.Client
+type DataSource interface {
+	GetStatus() models.GatewayConnectionStatus
+	GetSessions() []models.Session
+	GetHealth() *models.HealthStatus
+	GetPresence() []models.PresenceEntry
+	GetChannels() []models.ChannelStatus
+	GetNodes() []models.NodeInfo
+	GetCronJobs() []models.CronJob
+}
 
-	mu          sync.Mutex
-	publicIDs   map[string]string
-	publicOrder map[string]int
-	nextAlias   int
+type Handler struct {
+	gc           DataSource
+	publicIDSalt string
+	history      *PublicHistoryRecorder
 }
 
 type PublicSession struct {
-	SessionKey     string  `json:"sessionKey"`
+	PublicID       string  `json:"publicId"`
+	SessionKey     string  `json:"sessionKey,omitempty"`
 	AgentID        string  `json:"agentId"`
 	Status         string  `json:"status"`
 	Model          string  `json:"model,omitempty"`
@@ -49,12 +56,24 @@ type PublicSnapshot struct {
 	Sessions []PublicSession `json:"sessions"`
 }
 
-func NewHandler(gc *gateway.Client) *Handler {
-	return &Handler{
-		gc:          gc,
-		publicIDs:   make(map[string]string),
-		publicOrder: make(map[string]int),
+func NewHandler(gc DataSource, cfg Config) (*Handler, error) {
+	history, err := NewPublicHistoryRecorder(cfg)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Handler{
+		gc:           gc,
+		publicIDSalt: cfg.PublicIDSalt,
+		history:      history,
+	}, nil
+}
+
+func (h *Handler) StartBackground(ctx context.Context) {
+	if h.history == nil {
+		return
+	}
+	go h.history.Start(ctx, h.buildPublicSnapshot)
 }
 
 func (h *Handler) PublicSessions(w http.ResponseWriter, r *http.Request) {
@@ -72,22 +91,7 @@ func (h *Handler) PublicStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions := h.publicSessions()
-	running := 0
-	for _, session := range sessions {
-		if session.Status == "running" {
-			running++
-		}
-	}
-
-	gwStatus := h.gc.GetStatus()
-	writeJSON(w, http.StatusOK, PublicStatus{
-		Connected:     gwStatus.Connected,
-		Status:        gwStatus.Status,
-		Displayed:     len(sessions),
-		Running:       running,
-		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
-	})
+	writeJSON(w, http.StatusOK, h.publicStatus())
 }
 
 func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -96,25 +100,37 @@ func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions := h.publicSessions()
-	running := 0
-	for _, session := range sessions {
-		if session.Status == "running" {
-			running++
-		}
+	writeJSON(w, http.StatusOK, h.buildPublicSnapshot())
+}
+
+func (h *Handler) PublicTimeline(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
-	gwStatus := h.gc.GetStatus()
-	writeJSON(w, http.StatusOK, PublicSnapshot{
-		Status: PublicStatus{
-			Connected:     gwStatus.Connected,
-			Status:        gwStatus.Status,
-			Displayed:     len(sessions),
-			Running:       running,
-			LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
-		},
-		Sessions: sessions,
-	})
+	since, until, err := parseHistoryWindow(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, h.history.Timeline(since, until))
+}
+
+func (h *Handler) PublicReplay(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	since, until, err := parseHistoryWindow(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, h.history.Replay(since, until))
 }
 
 func (h *Handler) InternalHealth(w http.ResponseWriter, r *http.Request) {
@@ -157,24 +173,31 @@ func (h *Handler) InternalCron(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, h.gc.GetCronJobs())
 }
 
+func (h *Handler) buildPublicSnapshot() PublicSnapshot {
+	sessions := h.publicSessions()
+	return PublicSnapshot{
+		Status:   h.publicStatusFromSessions(sessions),
+		Sessions: sessions,
+	}
+}
+
+func (h *Handler) publicStatus() PublicStatus {
+	return h.publicStatusFromSessions(h.publicSessions())
+}
+
 func (h *Handler) publicSessions() []PublicSession {
 	raw := h.gc.GetSessions()
 	now := time.Now().UTC()
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	activeKeys := make(map[string]struct{}, len(raw))
 	publicSessions := make([]PublicSession, 0, len(raw))
 	for _, session := range raw {
-		activeKeys[session.SessionKey] = struct{}{}
-
-		id, order := h.publicIdentity(session.SessionKey)
+		identity := derivePublicIdentity(session.SessionKey, h.publicIDSalt)
 		activity := classifyActivity(session, now)
 
 		publicSessions = append(publicSessions, PublicSession{
-			SessionKey:     id,
-			AgentID:        fmt.Sprintf("Agent %02d", order),
+			PublicID:       identity.PublicID,
+			SessionKey:     identity.PublicID,
+			AgentID:        identity.AgentID,
 			Status:         activity.Status,
 			Model:          session.Model,
 			Zone:           classifyZone(session),
@@ -186,30 +209,28 @@ func (h *Handler) publicSessions() []PublicSession {
 		})
 	}
 
-	for key := range h.publicIDs {
-		if _, ok := activeKeys[key]; !ok {
-			delete(h.publicIDs, key)
-			delete(h.publicOrder, key)
-		}
-	}
-
 	sort.Slice(publicSessions, func(i, j int) bool {
 		return publicSessions[i].AgentID < publicSessions[j].AgentID
 	})
 	return publicSessions
 }
 
-func (h *Handler) publicIdentity(sessionKey string) (string, int) {
-	if id, ok := h.publicIDs[sessionKey]; ok {
-		return id, h.publicOrder[sessionKey]
+func (h *Handler) publicStatusFromSessions(sessions []PublicSession) PublicStatus {
+	running := 0
+	for _, session := range sessions {
+		if session.Status == "running" {
+			running++
+		}
 	}
 
-	h.nextAlias++
-	order := h.nextAlias
-	id := fmt.Sprintf("agent-%02d", order)
-	h.publicIDs[sessionKey] = id
-	h.publicOrder[sessionKey] = order
-	return id, order
+	gwStatus := h.gc.GetStatus()
+	return PublicStatus{
+		Connected:     gwStatus.Connected,
+		Status:        gwStatus.Status,
+		Displayed:     len(sessions),
+		Running:       running,
+		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	}
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
@@ -217,6 +238,27 @@ func writeJSON(w http.ResponseWriter, statusCode int, payload any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func parseHistoryWindow(r *http.Request) (time.Time, time.Time, error) {
+	query := r.URL.Query()
+	since, err := parseOptionalTimestamp(query.Get("since"))
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid since: %w", err)
+	}
+	until, err := parseOptionalTimestamp(query.Get("until"))
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid until: %w", err)
+	}
+	return since, until, nil
+}
+
+func parseOptionalTimestamp(value string) (time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, nil
+	}
+	return time.Parse(time.RFC3339, value)
 }
 
 func classifyZone(session models.Session) string {

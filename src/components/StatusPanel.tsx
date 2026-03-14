@@ -7,6 +7,7 @@ import {
   getActivityColor,
   getActivityLabel,
   getFootprintLabel,
+  getPublicAgentLabel,
   getSignalWindowLabel,
   getZoneColor,
   getZoneLabel,
@@ -264,7 +265,7 @@ export function StatusPanel({
                 onClick={() => onSelectSession(session.sessionKey)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#CDD6F4', fontWeight: 700 }}>{session.agentId}</span>
+                  <span style={{ color: '#CDD6F4', fontWeight: 700 }}>{getPublicAgentLabel(session.agentId)}</span>
                   <span style={{ color: getActivityColor(session.activityBand), fontSize: 11 }}>
                     {getActivityLabel(session.activityBand)}
                   </span>

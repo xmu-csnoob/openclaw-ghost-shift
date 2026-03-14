@@ -1,0 +1,15 @@
+# Root deployment: https://ghostshift.example.com/
+ghostshift.example.com {
+	reverse_proxy 127.0.0.1:3002
+}
+
+# Subpath deployment: https://portfolio.example.com/office/
+# handle_path strips the /office prefix before proxying to Ghost Shift.
+portfolio.example.com {
+	@officeNoSlash path /office
+	redir @officeNoSlash /office/ 308
+
+	handle_path /office/* {
+		reverse_proxy 127.0.0.1:3002
+	}
+}

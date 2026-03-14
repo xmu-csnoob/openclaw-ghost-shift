@@ -218,6 +218,18 @@ export function getFootprintLabel(footprint: string | undefined): string {
   }
 }
 
+export function getPublicAgentLabel(agentLabel?: string, numericId?: number): string {
+  if (agentLabel && agentLabel.trim()) {
+    return agentLabel.trim()
+  }
+
+  if (typeof numericId === 'number' && Number.isFinite(numericId)) {
+    return `Agent ${String(numericId).padStart(2, '0')}`
+  }
+
+  return 'Agent'
+}
+
 export function summarizeModelMix(sessions: DisplaySession[]): ModelMixEntry[] {
   const counts = new Map<string, number>()
   for (const session of sessions) {

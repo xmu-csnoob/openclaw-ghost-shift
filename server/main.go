@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -25,15 +27,31 @@ func main() {
 		bindAddr = "127.0.0.1"
 	}
 
-	gc := gateway.NewClient()
-	go gc.Connect()
+	cfg, err := api.LoadConfigFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	h := api.NewHandler(gc)
+	source, startBackground, err := newDataSource()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if startBackground != nil {
+		go startBackground()
+	}
+
+	h, err := api.NewHandler(source, cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	h.StartBackground(context.Background())
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/sessions", h.PublicSessions)
 	mux.HandleFunc("/api/status", h.PublicStatus)
 	mux.HandleFunc("/api/public/snapshot", h.PublicSnapshot)
+	mux.HandleFunc("/api/public/timeline", h.PublicTimeline)
+	mux.HandleFunc("/api/public/replay", h.PublicReplay)
 
 	if enableInternalAPI() {
 		internalToken, err := loadInternalAPIToken()
@@ -144,16 +162,62 @@ func spaHandler(staticDir string) http.Handler {
 }
 
 func securityHeaders(next http.Handler) http.Handler {
+	frameAncestors := frameAncestorsDirective()
+	contentSecurityPolicy := fmt.Sprintf(
+		"default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors %s; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'",
+		frameAncestors,
+	)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
+		if frameAncestors == "'none'" {
+			w.Header().Set("X-Frame-Options", "DENY")
+		}
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'")
+		w.Header().Set("Content-Security-Policy", contentSecurityPolicy)
 		next.ServeHTTP(w, r)
 	})
+}
+
+func newDataSource() (api.DataSource, func(), error) {
+	fixturePath := strings.TrimSpace(os.Getenv("GHOST_SHIFT_FIXTURE_PATH"))
+	if fixturePath != "" {
+		fixtureClient, err := gateway.NewFixtureClientFromFile(fixturePath)
+		if err != nil {
+			return nil, nil, err
+		}
+		return fixtureClient, nil, nil
+	}
+
+	client := gateway.NewClient()
+	return client, client.Connect, nil
+}
+
+func frameAncestorsDirective() string {
+	raw := strings.TrimSpace(os.Getenv("GHOST_SHIFT_EMBED_ALLOWED_ORIGINS"))
+	if raw == "" {
+		return "'none'"
+	}
+
+	parts := make([]string, 0, 4)
+	for _, value := range strings.Split(raw, ",") {
+		candidate := strings.TrimSpace(value)
+		if candidate == "" {
+			continue
+		}
+		if strings.EqualFold(candidate, "self") || candidate == "'self'" {
+			parts = append(parts, "'self'")
+			continue
+		}
+		parts = append(parts, candidate)
+	}
+	if len(parts) == 0 {
+		return "'none'"
+	}
+	return strings.Join(parts, " ")
 }
 
 func requireInternalToken(token string, next http.Handler) http.Handler {

@@ -1,0 +1,10 @@
+.git
+.github
+dist
+node_modules
+npm-debug.log*
+server/ghost-shift-server
+docs
+*.local
+*.log
+.DS_Store
