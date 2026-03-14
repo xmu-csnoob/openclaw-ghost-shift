@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"openclaw-ghost-shift/server/models"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/models"
 )
 
 func TestClassifyRoleOriginAndZone(t *testing.T) {

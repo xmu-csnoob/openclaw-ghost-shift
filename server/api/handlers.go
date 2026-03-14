@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"openclaw-ghost-shift/server/gateway"
-	"openclaw-ghost-shift/server/models"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/gateway"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/models"
 )
 
 type Handler struct {

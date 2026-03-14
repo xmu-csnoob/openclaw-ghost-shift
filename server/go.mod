@@ -1,4 +1,4 @@
-module openclaw-ghost-shift/server
+module github.com/xmu-csnoob/openclaw-ghost-shift/server
 
 go 1.21
 

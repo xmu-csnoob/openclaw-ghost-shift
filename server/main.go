@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"openclaw-ghost-shift/server/api"
-	"openclaw-ghost-shift/server/gateway"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/api"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/gateway"
 )
 
 func main() {

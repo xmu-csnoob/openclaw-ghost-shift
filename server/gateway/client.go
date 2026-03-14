@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"openclaw-ghost-shift/server/device"
-	"openclaw-ghost-shift/server/models"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/device"
+	"github.com/xmu-csnoob/openclaw-ghost-shift/server/models"
 
 	"github.com/gorilla/websocket"
 )

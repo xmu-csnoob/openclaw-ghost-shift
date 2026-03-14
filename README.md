@@ -4,7 +4,7 @@ Ghost Shift is a live pixel office for OpenClaw and other agent backends.
 
 It turns active sessions into a public-facing, privacy-safe scene: coding agents sit in one wing, chat agents in another, automation flows through an ops lab, and the frontend renders only the signals you choose to expose.
 
-Repository: `openclaw-ghost-shift`
+Repository: [`xmu-csnoob/openclaw-ghost-shift`](https://github.com/xmu-csnoob/openclaw-ghost-shift)
 
 ## What It Does
 
@@ -57,7 +57,7 @@ Recommended screenshots for the README once you capture them:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-handle>/openclaw-ghost-shift.git
+git clone https://github.com/xmu-csnoob/openclaw-ghost-shift.git
 cd openclaw-ghost-shift
 ```
 

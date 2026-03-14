@@ -4,6 +4,14 @@
   "version": "0.1.0",
   "description": "A live pixel office for OpenClaw and other agent backends.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xmu-csnoob/openclaw-ghost-shift.git"
+  },
+  "homepage": "https://github.com/xmu-csnoob/openclaw-ghost-shift#readme",
+  "bugs": {
+    "url": "https://github.com/xmu-csnoob/openclaw-ghost-shift/issues"
+  },
   "keywords": [
     "openclaw",
     "agents",
