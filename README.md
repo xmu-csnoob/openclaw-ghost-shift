@@ -6,6 +6,8 @@ It turns active sessions into a public-facing, privacy-safe scene: coding agents
 
 Repository: [`xmu-csnoob/openclaw-ghost-shift`](https://github.com/xmu-csnoob/openclaw-ghost-shift)
 
+![Ghost Shift overview](./docs/ghost-shift-overview.png)
+
 ## What It Does
 
 - Renders a live 2D pixel office with multiple zones such as `Code Studio`, `Chat Lounge`, and `Ops Lab`
@@ -39,7 +41,9 @@ It does not expose session keys, user identifiers, raw prompts, message bodies, 
 
 ## Screenshots
 
-Recommended screenshots for the README once you capture them:
+Current README preview uses the live office overview above.
+
+Additional captures worth adding later:
 
 - full office overview
 - close-up of `Code Studio`
