@@ -26,6 +26,7 @@ export interface GhostShiftSummaryCardProps {
   refreshMs: number
   liveDemoHref?: string
   variant?: 'feature' | 'embed'
+  defaultCollapsed?: boolean
 }
 
 function formatUpdatedAt(value: string | undefined): string {
@@ -51,8 +52,19 @@ export function GhostShiftSummaryCard({
   refreshMs,
   liveDemoHref,
   variant = 'feature',
+  defaultCollapsed = false,
 }: GhostShiftSummaryCardProps) {
   const [activeAgentIndex, setActiveAgentIndex] = useState(0)
+  const [collapsed, setCollapsed] = useState(() => {
+    const stored = localStorage.getItem('gs-summary-card-collapsed')
+    return stored !== null ? stored === 'true' : defaultCollapsed
+  })
+
+  const handleToggleCollapse = () => {
+    const newValue = !collapsed
+    setCollapsed(newValue)
+    localStorage.setItem('gs-summary-card-collapsed', String(newValue))
+  }
 
   const visibleCount = status?.displayed ?? sessions.length
   const runningCount = status?.running ?? sessions.filter((session) => session.status === 'running').length
@@ -94,15 +106,26 @@ export function GhostShiftSummaryCard({
   }, [activeAgentIndex, topAgents.length])
 
   return (
-    <article className={`gs-summary-card gs-summary-card--${variant}`}>
+    <article className={`gs-summary-card gs-summary-card--${variant} ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="gs-summary-card__topline">
         <span className="gs-summary-card__eyebrow">Embeddable summary card</span>
-        <span className="gs-summary-card__status">
-          <span
-            className={`gs-summary-card__status-dot gs-summary-card__status-dot--${connectionState === 'connected' && !backendError ? 'live' : 'idle'}`}
-          />
-          {statusLabel}
-        </span>
+        <div className="gs-summary-card__topline-actions">
+          <span className="gs-summary-card__status">
+            <span
+              className={`gs-summary-card__status-dot gs-summary-card__status-dot--${connectionState === 'connected' && !backendError ? 'live' : 'idle'}`}
+            />
+            {statusLabel}
+          </span>
+          <button
+            type="button"
+            className="gs-panel-toggle"
+            onClick={handleToggleCollapse}
+            aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
+            title={collapsed ? '展开' : '折叠'}
+          >
+            {collapsed ? '▼' : '▲'}
+          </button>
+        </div>
       </div>
 
       <div className="gs-summary-card__brand">{i18n.brand.zh}</div>
@@ -111,9 +134,9 @@ export function GhostShiftSummaryCard({
           ? i18n.summaryCard.title.embed
           : i18n.summaryCard.title.feature}
       </h2>
-      <p className="gs-summary-card__body">
-        {i18n.summaryCard.body}
-      </p>
+
+      {!collapsed && (
+        <>
 
       <div className="gs-summary-card__metrics">
         <div className="gs-summary-card__metric">
@@ -234,6 +257,9 @@ export function GhostShiftSummaryCard({
           </div>
         ) : null}
       </div>
+
+        </>
+      )}
 
       <div className="gs-summary-card__footer">
         <span>{i18n.summaryCard.footer.refreshesEvery} {refreshMs / 1000}s</span>

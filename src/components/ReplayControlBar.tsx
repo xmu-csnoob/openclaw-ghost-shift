@@ -107,10 +107,8 @@ export function ReplayControlBar({
       className={`gs-replay-bar ${compact ? 'is-compact' : ''}`}
       style={{
         position: 'absolute',
-        top: compact ? 104 : 64,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: compact ? 'calc(100% - 20px)' : 'min(760px, calc(100vw - 32px))',
         padding: 14,
         display: 'flex',
         flexDirection: 'column',

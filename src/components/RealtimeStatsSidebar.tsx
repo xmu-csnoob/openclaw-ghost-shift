@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export interface RealtimeStatsModelSlice {
   label: string
@@ -26,6 +26,7 @@ export interface RealtimeStatsSidebarProps {
   modelMix: RealtimeStatsModelSlice[]
   zoneBars: RealtimeStatsZoneBar[]
   responseTrend: RealtimeTrendPoint[]
+  defaultCollapsed?: boolean
 }
 
 function polarToCartesian(cx: number, cy: number, radius: number, angle: number): { x: number; y: number } {
@@ -62,7 +63,19 @@ export function RealtimeStatsSidebar({
   modelMix,
   zoneBars,
   responseTrend,
+  defaultCollapsed = true,
 }: RealtimeStatsSidebarProps): React.ReactElement {
+  const [collapsed, setCollapsed] = useState(() => {
+    const stored = localStorage.getItem('gs-stats-sidebar-collapsed')
+    return stored !== null ? stored === 'true' : defaultCollapsed
+  })
+
+  const handleToggleCollapse = () => {
+    const newValue = !collapsed
+    setCollapsed(newValue)
+    localStorage.setItem('gs-stats-sidebar-collapsed', String(newValue))
+  }
+
   let cumulativeAngle = -Math.PI / 2
   const donutSegments = modelMix.map((slice) => {
     const nextAngle = cumulativeAngle + Math.max(slice.share, 0.04) * Math.PI * 2
@@ -78,13 +91,28 @@ export function RealtimeStatsSidebar({
   const latestLatency = responseTrend[responseTrend.length - 1]?.value ?? 0
 
   return (
-    <article className="gs-side-card gs-stats-sidebar gs-animate-rise">
-      <div className="gs-side-card__eyebrow">Realtime stats</div>
-      <h3>Live mix, zone pressure, and surface latency.</h3>
+    <article className={`gs-side-card gs-stats-sidebar gs-animate-rise ${collapsed ? 'is-collapsed' : ''}`}>
+      <div className="gs-side-card__header">
+        <div>
+          <div className="gs-side-card__eyebrow">Realtime stats</div>
+          <h3>Live mix, zone pressure, and surface latency.</h3>
+        </div>
+        <button
+          type="button"
+          className="gs-panel-toggle"
+          onClick={handleToggleCollapse}
+          aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
+          title={collapsed ? '展开' : '折叠'}
+        >
+          {collapsed ? '▼' : '▲'}
+        </button>
+      </div>
       <div className="gs-stats-sidebar__meta">Freshness: {freshnessLabel}</div>
 
-      <div className="gs-stats-sidebar__section">
-        <div className="gs-stats-sidebar__section-title">Model usage</div>
+      {!collapsed && (
+        <>
+          <div className="gs-stats-sidebar__section">
+            <div className="gs-stats-sidebar__section-title">Model usage</div>
         {loading ? (
           <div className="gs-skeleton gs-skeleton--donut" />
         ) : (
@@ -133,8 +161,8 @@ export function RealtimeStatsSidebar({
                     className="gs-stats-sidebar__bar-fill"
                     style={{
                       width: `${Math.round(bar.value * 100)}%`,
-                      background: `linear-gradient(90deg, ${bar.color}, rgba(255,255,255,0.78))`,
-                    }}
+                      '--bar-color': bar.color,
+                    } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -163,6 +191,8 @@ export function RealtimeStatsSidebar({
           </>
         )}
       </div>
+        </>
+      )}
     </article>
   )
 }

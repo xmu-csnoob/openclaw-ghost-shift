@@ -106,11 +106,6 @@ function getConnectionLabel(state: ConnectionState): string {
   }
 }
 
-function getConnectionTone(state: ConnectionState, backendError: string | null): string {
-  if (backendError) return '#ff8a8a'
-  return state === 'connected' ? '#9bffb4' : '#ffd36d'
-}
-
 export function LiveOfficeStage({
   officeState,
   panRef,
@@ -236,7 +231,8 @@ export function LiveOfficeStage({
         <div className="gs-stage-panel gs-stage-panel--status">
           <span
             className="gs-stage-status-dot"
-            style={{ background: getConnectionTone(connectionState, backendError) }}
+            data-connection-tone={connectionState}
+            data-has-error={backendError ? 'true' : 'false'}
           />
           <span>{getConnectionLabel(connectionState)}</span>
           {backendError ? <span className="gs-stage-panel__error">{backendError}</span> : null}

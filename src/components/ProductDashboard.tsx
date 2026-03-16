@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import { formatRatio, getZoneColor, summarizeModelMix, summarizeZones } from '../publicDisplay.js'
 import type { TimelinePoint } from '../replay.js'
@@ -21,6 +22,7 @@ export interface ProductDashboardProps {
   timeline: TimelinePoint[]
   historyMeta: HistoryMeta | null
   displayTimestamp: number
+  defaultCollapsed?: boolean
 }
 
 function formatTimestamp(timestamp: number): string {
@@ -38,7 +40,19 @@ export function ProductDashboard({
   timeline,
   historyMeta,
   displayTimestamp,
+  defaultCollapsed = false,
 }: ProductDashboardProps) {
+  const [collapsed, setCollapsed] = useState(() => {
+    const stored = localStorage.getItem('gs-dashboard-collapsed')
+    return stored !== null ? stored === 'true' : defaultCollapsed
+  })
+
+  const handleToggleCollapse = () => {
+    const newValue = !collapsed
+    setCollapsed(newValue)
+    localStorage.setItem('gs-dashboard-collapsed', String(newValue))
+  }
+
   const recentTimeline = clampRecentTimeline(timeline, 24, displayTimestamp)
   const comparisonTimeline = clampRecentTimeline(timeline, 48, displayTimestamp)
   const runningTrend = computeTrendSummary(recentTimeline.map((point) => point.running))
@@ -88,17 +102,30 @@ export function ProductDashboard({
   )
 
   return (
-    <section className="gs-dashboard-section" aria-label="Product dashboard">
+    <section className={`gs-dashboard-section ${collapsed ? 'is-collapsed' : ''}`} aria-label="Product dashboard">
       <div className="gs-dashboard-head">
         <div>
           <span className="gs-section-kicker">{i18n.dashboard.title}</span>
           <h2>{i18n.dashboard.subtitle}</h2>
         </div>
-        <p>
-          {i18n.dashboard.description}
-        </p>
+        <div className="gs-dashboard-head__actions">
+          <p>
+            {i18n.dashboard.description}
+          </p>
+          <button
+            type="button"
+            className="gs-panel-toggle"
+            onClick={handleToggleCollapse}
+            aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
+            title={collapsed ? '展开' : '折叠'}
+          >
+            {collapsed ? '▼' : '▲'}
+          </button>
+        </div>
       </div>
 
+      {!collapsed && (
+        <>
       <div className="gs-dashboard-grid">
         <article className="gs-dashboard-card gs-dashboard-card--stat">
           <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.agents}</span>
@@ -368,6 +395,8 @@ export function ProductDashboard({
           </div>
         </article>
       </div>
+        </>
+      )}
     </section>
   )
 }

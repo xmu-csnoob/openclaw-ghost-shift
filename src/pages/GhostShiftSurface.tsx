@@ -5,15 +5,12 @@ import { ExperiencePanel, type SurfaceExperiencePreferences } from '../component
 import { GhostShiftSummaryCard } from '../components/GhostShiftSummaryCard.js'
 import { LiveOfficeStage } from '../components/LiveOfficeStage.js'
 import { Modal } from '../components/Modal.js'
-import { ProductDashboard } from '../components/ProductDashboard.js'
 import { RealtimeStatsSidebar } from '../components/RealtimeStatsSidebar.js'
 import { SettingsContent } from '../components/SettingsContent.js'
 import { SharePanel } from '../components/SharePanel.js'
 import {
   demoSidebarNotes,
   documentationPoints,
-  heroPills,
-  surfaceCards,
 } from '../content/ghostShiftContent.js'
 import { i18n } from '../content/i18n.js'
 import { OfficeState } from '../office/engine/officeState.js'
@@ -41,7 +38,6 @@ import {
   type TimelinePoint,
 } from '../replay.js'
 import { apiClient } from '../services/ApiClient.js'
-import type { HistoryMeta } from '../portfolioMetrics.js'
 import type {
   AgentSession,
   PublicOfficeSnapshot,
@@ -495,12 +491,12 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shortcutNotice, setShortcutNotice] = useState<string | null>(null)
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
   const [liveSnapshot, setLiveSnapshot] = useState<PublicOfficeSnapshot | null>(null)
   const [liveSessions, setLiveSessions] = useState<DisplaySession[]>([])
   const [timelineSeries, setTimelineSeries] = useState<TimelinePoint[]>([])
-  const [historyMeta, setHistoryMeta] = useState<HistoryMeta | null>(null)
   const [replayFrames, setReplayFrames] = useState<ReplayFrame[]>([])
   const [playbackState, setPlaybackState] = useState<PlaybackState>({
     mode: initialMode,
@@ -532,7 +528,6 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const observationsRef = useRef<Map<string, SessionObservation>>(new Map())
   const tourCursorRef = useRef(-1)
   const tourCandidatesRef = useRef<number[]>([])
-  const shareSectionRef = useRef<HTMLDivElement | null>(null)
 
   const liveStatus = liveSnapshot?.status ?? null
   const liveTimestamp = parseTimestamp(liveStatus?.lastUpdatedAt) ?? Date.now()
@@ -652,10 +647,6 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
               })
               .filter((point): point is TimelinePoint => point !== null),
           )
-          setHistoryMeta({
-            intervalSeconds: timelineResponse.intervalSeconds,
-            retentionHours: timelineResponse.retentionHours,
-          })
           setReplayFrames(buildReplayFrames(officeState.getLayout(), replayResponse.frames))
         })
         setIsHistoryLoading(false)
@@ -1259,133 +1250,6 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
     },
   ]
 
-  const liveExperienceSection = (
-    <section className="gs-demo-section">
-      <div className="gs-demo-copy">
-        <span className="gs-section-kicker">{page === 'replay' ? i18n.pages.replay.kicker : i18n.pages.live.kicker}</span>
-        <h2>
-          {page === 'replay'
-            ? i18n.pages.replay.intro
-            : i18n.pages.live.intro}
-        </h2>
-        <p>
-          {page === 'replay'
-            ? i18n.pages.replay.description
-            : i18n.pages.live.description}
-        </p>
-      </div>
-
-      <div className="gs-demo-layout">
-        <div className="gs-demo-stage">
-          <LiveOfficeStage
-            officeState={officeState}
-            panRef={panRef}
-            zoom={zoom}
-            onZoomChange={handleZoomChange}
-            onAgentClick={handleAgentClick}
-            hoveredAgentId={hoverState.agentId}
-            hoverPosition={hoverState.position}
-            hoveredSession={hoveredSession}
-            hoveredPublicId={hoveredInsight?.publicId || hoveredSession?.publicId || hoveredSession?.sessionKey || null}
-            hoveredToolStats={hoveredInsight?.toolStats || []}
-            hoveredActivityPoints={hoveredInsight?.activityPoints || []}
-            hoveredActiveWindow={hoveredInsight?.dominantWindow || hoveredSession?.signalWindow || 'observed'}
-            onCanvasHoverChange={handleCanvasHoverChange}
-            onCanvasInteraction={handleCanvasInteraction}
-            connectionState={connectionState}
-            backendError={backendError}
-            officeStatus={displayStatus}
-            sessions={displaySessions}
-            history={displayHistory}
-            selectedSession={selectedSession}
-            selectedAgentId={selectedAgentId}
-            showStatusPanel={showStatusPanel}
-            showSessionPanel={showSessionPanel}
-            onToggleStatusPanel={() => setShowStatusPanel((previous) => !previous)}
-            onCloseStatusPanel={() => setShowStatusPanel(false)}
-            onCloseSessionPanel={() => setShowSessionPanel(false)}
-            onSelectSession={handleSelectSession}
-            onOpenSession={handleOpenSession}
-            getNumericAgentId={(sessionKey) => sessionToAgentId.get(sessionKey)}
-            compactViewport={compactViewport}
-            playbackState={playbackState}
-            hasReplayFrames={replayFrames.length > 0}
-            isLoading={isLoading}
-            replayCharacters={playbackState.mode === 'replay' ? currentReplayFrame?.characters ?? null : null}
-            replayCharacterMap={currentReplayCharacterMap}
-            tourTargetAgentId={tourTargetAgentId}
-            heatmapEnabled={heatmapEnabled}
-            heatmapSources={heatmapSources}
-            onToggleHeatmap={handleToggleHeatmap}
-            freshness={freshness}
-            scrubberMin={scrubberMin}
-            scrubberMax={scrubberMax}
-            scrubberValue={playbackState.mode === 'replay' ? currentReplayFrame?.timestamp ?? scrubberMax : scrubberMax}
-            currentFrameLabel={currentFrameLabel}
-            startLabel={formatPlaybackBoundary(scrubberMin)}
-            endLabel={formatPlaybackBoundary(scrubberMax)}
-            coverageLabel={coverageLabel}
-            autoTourPaused={autoTourPaused}
-            previewFrames={replayPreviewFrames}
-            eventMarkers={replayEventMarkers}
-            onModeChange={handleModeChange}
-            onWindowHoursChange={handleWindowHoursChange}
-            onScrub={handleScrub}
-            onPlayToggle={handlePlayToggle}
-            onJumpToLive={handleJumpToLive}
-            onResumeTour={handleResumeTour}
-            onPlaybackRateChange={handlePlaybackRateChange}
-          />
-        </div>
-
-        <div className="gs-side-stack">
-          <RealtimeStatsSidebar
-            freshnessLabel={freshness.label}
-            loading={isLoading}
-            modelMix={sidebarModelMix}
-            zoneBars={sidebarZoneBars}
-            responseTrend={responseTrend}
-          />
-
-          <article className="gs-side-card">
-            <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayRoster : i18n.liveRoster}</div>
-            <h3>{i18n.sidebar.publicAliases}</h3>
-            <div className="gs-live-roster">
-              {(page === 'replay' ? displaySessions : liveSessions).slice(0, 5).map((session) => {
-                const agentId = sessionToAgentId.get(session.sessionKey)
-                return (
-                  <div key={session.sessionKey} className="gs-live-roster__row">
-                    <div className="gs-live-roster__meta">
-                      <span
-                        className="gs-live-roster__dot"
-                        style={{ background: getZoneColor(session.zone) }}
-                      />
-                      <span className="gs-live-roster__name">
-                        {getPublicAgentLabel(session.agentId, agentId)}
-                      </span>
-                      <span className="gs-live-roster__zone">{getZoneLabel(session.zone)}</span>
-                    </div>
-                    <div className="gs-live-roster__window">{session.signalWindow}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </article>
-
-          <article className="gs-side-card">
-            <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayNotes : i18n.whyThisSurface}</div>
-            <h3>{page === 'replay' ? i18n.sidebar.replayTitle : i18n.sidebar.liveTitle}</h3>
-            <ul className="gs-side-list">
-              {(page === 'replay' ? documentationPoints.slice(0, 4) : demoSidebarNotes).map((note) => (
-                <li key={note}>{note}</li>
-              ))}
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-  )
-
   const docsSection = (
     <>
       <section className="gs-docs-section">
@@ -1468,154 +1332,329 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
     <div className="gs-shell" data-theme={surfacePreferences.theme} data-density={surfacePreferences.density}>
       <main className="gs-page">
         {page === 'landing' ? (
-          <>
-            <section className="gs-hero">
-              <div className="gs-hero-copy">
-                <span className="gs-kicker">{i18n.brand.zh}</span>
-                <h1>{i18n.hero.title}</h1>
-                <p>{i18n.hero.subtitle}</p>
-
-                <div className="gs-hero-actions">
-                  <a className="gs-button gs-button--primary" href={liveHref}>
-                    {i18n.hero.cta.primary}
-                  </a>
-                  <a className="gs-button gs-button--secondary" href={replayHref}>
-                    {i18n.pages.replay.title}
-                  </a>
-                </div>
-
-                <div className="gs-pill-row">
-                  {heroPills.map((pill) => (
-                    <span key={pill}>{pill}</span>
-                  ))}
-                </div>
-
-                <div className="gs-route-grid">
-                  {routeCards.map((card) => (
-                    <a key={card.href} className="gs-route-card" href={card.href}>
-                      <span className="gs-route-card__eyebrow">{card.eyebrow}</span>
-                      <strong>{card.title}</strong>
-                      <p>{card.body}</p>
+          <div className="gs-page__content">
+            <section className="gs-hero--canvas">
+              {/* 像素办公室画布预览区 */}
+              <div className="gs-hero-stage">
+                <LiveOfficeStage
+                  officeState={officeState}
+                  panRef={panRef}
+                  zoom={zoom}
+                  onZoomChange={handleZoomChange}
+                  onAgentClick={handleAgentClick}
+                  hoveredAgentId={hoverState.agentId}
+                  hoverPosition={hoverState.position}
+                  hoveredSession={hoveredSession}
+                  hoveredPublicId={hoveredInsight?.publicId || hoveredSession?.publicId || hoveredSession?.sessionKey || null}
+                  hoveredToolStats={hoveredInsight?.toolStats || []}
+                  hoveredActivityPoints={hoveredInsight?.activityPoints || []}
+                  hoveredActiveWindow={hoveredInsight?.dominantWindow || hoveredSession?.signalWindow || 'observed'}
+                  onCanvasHoverChange={handleCanvasHoverChange}
+                  onCanvasInteraction={handleCanvasInteraction}
+                  connectionState={connectionState}
+                  backendError={backendError}
+                  officeStatus={displayStatus}
+                  sessions={displaySessions}
+                  history={displayHistory}
+                  selectedSession={selectedSession}
+                  selectedAgentId={selectedAgentId}
+                  showStatusPanel={showStatusPanel}
+                  showSessionPanel={showSessionPanel}
+                  onToggleStatusPanel={() => setShowStatusPanel((previous) => !previous)}
+                  onCloseStatusPanel={() => setShowStatusPanel(false)}
+                  onCloseSessionPanel={() => setShowSessionPanel(false)}
+                  onSelectSession={handleSelectSession}
+                  onOpenSession={handleOpenSession}
+                  getNumericAgentId={(sessionKey) => sessionToAgentId.get(sessionKey)}
+                  compactViewport={compactViewport}
+                  playbackState={playbackState}
+                  hasReplayFrames={replayFrames.length > 0}
+                  isLoading={isLoading}
+                  replayCharacters={null}
+                  replayCharacterMap={null}
+                  tourTargetAgentId={tourTargetAgentId}
+                  heatmapEnabled={false}
+                  heatmapSources={[]}
+                  onToggleHeatmap={() => {}}
+                  freshness={freshness}
+                  scrubberMin={scrubberMin}
+                  scrubberMax={scrubberMax}
+                  scrubberValue={scrubberMax}
+                  currentFrameLabel={currentFrameLabel}
+                  startLabel={formatPlaybackBoundary(scrubberMin)}
+                  endLabel={formatPlaybackBoundary(scrubberMax)}
+                  coverageLabel={coverageLabel}
+                  autoTourPaused={autoTourPaused}
+                  previewFrames={[]}
+                  eventMarkers={[]}
+                  onModeChange={() => {}}
+                  onWindowHoursChange={() => {}}
+                  onScrub={() => {}}
+                  onPlayToggle={() => {}}
+                  onJumpToLive={() => {}}
+                  onResumeTour={handleResumeTour}
+                  onPlaybackRateChange={() => {}}
+                />
+                <div className="gs-hero-overlay">
+                  <h1>{i18n.hero.title}</h1>
+                  <p>{i18n.hero.subtitle}</p>
+                  <div className="gs-hero-actions">
+                    <a className="gs-button gs-button--primary" href={liveHref}>
+                      {i18n.hero.cta.primary}
                     </a>
-                  ))}
+                    <a className="gs-button gs-button--secondary" href={replayHref}>
+                      {i18n.pages.replay.title}
+                    </a>
+                  </div>
                 </div>
               </div>
 
-              <GhostShiftSummaryCard
-                status={liveStatus}
-                sessions={liveSessions}
-                timeline={augmentedTimelineSeries}
-                connectionState={connectionState}
-                backendError={backendError}
-                refreshMs={SNAPSHOT_REFRESH_MS}
-                liveDemoHref={liveHref}
-              />
-            </section>
+              {/* 功能卡片 */}
+              <div className="gs-feature-grid">
+                <article className="gs-feature-card">
+                  <div className="gs-feature-card__icon">🏢</div>
+                  <h3>像素办公室</h3>
+                  <p>实时展示 AI Agent 在虚拟办公室中的活动状态，直观了解团队工作动态。</p>
+                </article>
+                <article className="gs-feature-card">
+                  <div className="gs-feature-card__icon">⏱️</div>
+                  <h3>时间线回放</h3>
+                  <p>支持历史回放功能，随时查看过去的工作状态，便于分析和复盘。</p>
+                </article>
+                <article className="gs-feature-card">
+                  <div className="gs-feature-card__icon">🔐</div>
+                  <h3>隐私优先</h3>
+                  <p>只展示公开统计信息，保护敏感数据，安全可靠。</p>
+                </article>
+              </div>
 
-            <section className="gs-dashboard-section">
-              <div className="gs-dashboard-head">
-                <div>
-                  <span className="gs-section-kicker">Product Structure</span>
-                  <h2>Each route has a single primary job.</h2>
+              {/* SummaryCard 嵌入预览 */}
+              <section className="gs-embed-preview">
+                <div className="gs-embed-preview__header">
+                  <span>嵌入式预览卡片</span>
+                  <a className="gs-button gs-button--secondary" href={embedCardHref}>
+                    查看卡片
+                  </a>
                 </div>
-                <p>
-                  The new information architecture mirrors how people actually evaluate the product: quick overview on the
-                  root route, live monitoring under <code>{liveHref}</code>, and replay storytelling under{' '}
-                  <code>{replayHref}</code>.
-                </p>
-              </div>
-              <div className="gs-surface-grid">
-                {surfaceCards.map((card) => (
-                  <article
-                    key={card.title}
-                    className={`gs-surface-card ${card.featured ? 'gs-surface-card--featured' : ''}`}
-                  >
-                    <div className="gs-surface-card__eyebrow">{card.eyebrow}</div>
-                    <h3>{card.title}</h3>
-                    <p>{card.body}</p>
-                    <div className="gs-surface-card__note">{card.note}</div>
-                  </article>
-                ))}
-              </div>
+                <GhostShiftSummaryCard
+                  status={liveStatus}
+                  sessions={liveSessions}
+                  timeline={augmentedTimelineSeries}
+                  connectionState={connectionState}
+                  backendError={backendError}
+                  refreshMs={SNAPSHOT_REFRESH_MS}
+                  liveDemoHref={liveHref}
+                />
+              </section>
             </section>
-          </>
+          </div>
         ) : null}
 
         {page === 'live' || page === 'replay' ? (
-          <>
-            {/* 设置按钮 */}
-            <button
-              type="button"
-              className={`gs-settings-icon ${showSettings ? 'is-active' : ''}`}
-              onClick={() => setShowSettings((previous) => !previous)}
-              aria-label="设置"
-              title="打开设置"
-              style={{
-                position: 'fixed',
-                top: '12px',
-                right: '12px',
-                zIndex: 150,
-              }}
-            >
-              ⚙️
-            </button>
+          <div className="gs-live-shell">
+            {/* 顶部栏 */}
+            <header className="gs-live-topbar">
+              <div className="gs-live-topbar__status">
+                <span
+                  className="gs-stage-status-dot"
+                  style={{ background: freshness.color }}
+                />
+                <span>{freshness.label}</span>
+              </div>
+              <span className="gs-live-topbar__brand">GHOST SHIFT</span>
+              <div className="gs-live-topbar__actions">
+                <button
+                  type="button"
+                  className={`gs-live-topbar__btn ${playbackState.mode === 'live' ? 'is-active' : ''}`}
+                  onClick={() => handleModeChange('live')}
+                >
+                  Live
+                </button>
+                <button
+                  type="button"
+                  className={`gs-live-topbar__btn ${playbackState.mode === 'replay' ? 'is-active' : ''}`}
+                  onClick={() => handleModeChange('replay')}
+                >
+                  Replay
+                </button>
+                <button
+                  type="button"
+                  className="gs-live-topbar__btn"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  分享
+                </button>
+                <button
+                  type="button"
+                  className="gs-live-topbar__btn"
+                  onClick={handleOpenHelp}
+                >
+                  ?
+                </button>
+                <button
+                  type="button"
+                  className={`gs-live-topbar__btn ${showSettings ? 'is-active' : ''}`}
+                  onClick={() => setShowSettings((previous) => !previous)}
+                >
+                  ⚙️
+                </button>
+              </div>
+            </header>
 
-            <ExperiencePanel
-              showGuide={showGuide}
-              shortcutNotice={shortcutNotice}
-              onToggleGuide={() => setShowGuide((previous) => !previous)}
-              onJumpToShare={handleJumpToShare}
-              onOpenHelp={handleOpenHelp}
-            />
-            <ProductDashboard
-              status={displayStatus}
-              sessions={displaySessions}
-              timeline={augmentedTimelineSeries}
-              historyMeta={historyMeta}
-              displayTimestamp={displayTimestamp}
-            />
-            {liveExperienceSection}
-            <div ref={shareSectionRef}>
-              <SharePanel
-                livePath={liveHref}
-                status={displayStatus}
-                sessions={displaySessions}
-                timeline={augmentedTimelineSeries}
-                timestamp={displayTimestamp}
-                freshnessLabel={freshness.label}
-                playbackMode={playbackState.mode}
-                windowHours={playbackState.windowHours}
-                theme={surfacePreferences.theme}
-                autoGeneratePreview={surfacePreferences.autoSharePreview}
-              />
+            {/* 主布局 */}
+            <div className="gs-live-layout">
+              {/* 主内容区 - LiveOfficeStage */}
+              <div className="gs-live-main">
+                <LiveOfficeStage
+                  officeState={officeState}
+                  panRef={panRef}
+                  zoom={zoom}
+                  onZoomChange={handleZoomChange}
+                  onAgentClick={handleAgentClick}
+                  hoveredAgentId={hoverState.agentId}
+                  hoverPosition={hoverState.position}
+                  hoveredSession={hoveredSession}
+                  hoveredPublicId={hoveredInsight?.publicId || hoveredSession?.publicId || hoveredSession?.sessionKey || null}
+                  hoveredToolStats={hoveredInsight?.toolStats || []}
+                  hoveredActivityPoints={hoveredInsight?.activityPoints || []}
+                  hoveredActiveWindow={hoveredInsight?.dominantWindow || hoveredSession?.signalWindow || 'observed'}
+                  onCanvasHoverChange={handleCanvasHoverChange}
+                  onCanvasInteraction={handleCanvasInteraction}
+                  connectionState={connectionState}
+                  backendError={backendError}
+                  officeStatus={displayStatus}
+                  sessions={displaySessions}
+                  history={displayHistory}
+                  selectedSession={selectedSession}
+                  selectedAgentId={selectedAgentId}
+                  showStatusPanel={showStatusPanel}
+                  showSessionPanel={showSessionPanel}
+                  onToggleStatusPanel={() => setShowStatusPanel((previous) => !previous)}
+                  onCloseStatusPanel={() => setShowStatusPanel(false)}
+                  onCloseSessionPanel={() => setShowSessionPanel(false)}
+                  onSelectSession={handleSelectSession}
+                  onOpenSession={handleOpenSession}
+                  getNumericAgentId={(sessionKey) => sessionToAgentId.get(sessionKey)}
+                  compactViewport={compactViewport}
+                  playbackState={playbackState}
+                  hasReplayFrames={replayFrames.length > 0}
+                  isLoading={isLoading}
+                  replayCharacters={playbackState.mode === 'replay' ? currentReplayFrame?.characters ?? null : null}
+                  replayCharacterMap={currentReplayCharacterMap}
+                  tourTargetAgentId={tourTargetAgentId}
+                  heatmapEnabled={heatmapEnabled}
+                  heatmapSources={heatmapSources}
+                  onToggleHeatmap={handleToggleHeatmap}
+                  freshness={freshness}
+                  scrubberMin={scrubberMin}
+                  scrubberMax={scrubberMax}
+                  scrubberValue={playbackState.mode === 'replay' ? currentReplayFrame?.timestamp ?? scrubberMax : scrubberMax}
+                  currentFrameLabel={currentFrameLabel}
+                  startLabel={formatPlaybackBoundary(scrubberMin)}
+                  endLabel={formatPlaybackBoundary(scrubberMax)}
+                  coverageLabel={coverageLabel}
+                  autoTourPaused={autoTourPaused}
+                  previewFrames={replayPreviewFrames}
+                  eventMarkers={replayEventMarkers}
+                  onModeChange={handleModeChange}
+                  onWindowHoursChange={handleWindowHoursChange}
+                  onScrub={handleScrub}
+                  onPlayToggle={handlePlayToggle}
+                  onJumpToLive={handleJumpToLive}
+                  onResumeTour={handleResumeTour}
+                  onPlaybackRateChange={handlePlaybackRateChange}
+                />
+                {/* 侧栏展开按钮 */}
+                <button
+                  type="button"
+                  className="gs-live-sidebar__toggle"
+                  onClick={() => setSidebarOpen((previous) => !previous)}
+                  aria-label={sidebarOpen ? '收起侧栏' : '展开侧栏'}
+                >
+                  {sidebarOpen ? '▶' : '◀'}
+                </button>
+              </div>
+
+              {/* 可折叠侧栏 */}
+              <aside className={`gs-live-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
+                <div className="gs-live-sidebar__content">
+                  <RealtimeStatsSidebar
+                    freshnessLabel={freshness.label}
+                    loading={isLoading}
+                    modelMix={sidebarModelMix}
+                    zoneBars={sidebarZoneBars}
+                    responseTrend={responseTrend}
+                  />
+
+                  <article className="gs-side-card">
+                    <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayRoster : i18n.liveRoster}</div>
+                    <h3>{i18n.sidebar.publicAliases}</h3>
+                    <div className="gs-live-roster">
+                      {(page === 'replay' ? displaySessions : liveSessions).slice(0, 5).map((session) => {
+                        const agentId = sessionToAgentId.get(session.sessionKey)
+                        return (
+                          <div key={session.sessionKey} className="gs-live-roster__row">
+                            <div className="gs-live-roster__meta">
+                              <span
+                                className="gs-live-roster__dot"
+                                style={{ background: getZoneColor(session.zone) }}
+                              />
+                              <span className="gs-live-roster__name">
+                                {getPublicAgentLabel(session.agentId, agentId)}
+                              </span>
+                              <span className="gs-live-roster__zone">{getZoneLabel(session.zone)}</span>
+                            </div>
+                            <div className="gs-live-roster__window">{session.signalWindow}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </article>
+
+                  <article className="gs-side-card">
+                    <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayNotes : i18n.whyThisSurface}</div>
+                    <h3>{page === 'replay' ? i18n.sidebar.replayTitle : i18n.sidebar.liveTitle}</h3>
+                    <ul className="gs-side-list">
+                      {(page === 'replay' ? documentationPoints.slice(0, 4) : demoSidebarNotes).map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  </article>
+
+                  <ExperiencePanel
+                  showGuide={showGuide}
+                  shortcutNotice={shortcutNotice}
+                  onToggleGuide={() => setShowGuide((previous) => !previous)}
+                  onJumpToShare={handleJumpToShare}
+                  onOpenHelp={handleOpenHelp}
+                  defaultCollapsed={true}
+                />
+
+                  {shortcutNotice && (
+                    <div className="gs-experience-panel__notice" style={{ margin: 0 }}>
+                      {shortcutNotice}
+                    </div>
+                  )}
+                </div>
+              </aside>
             </div>
-          </>
+          </div>
         ) : null}
 
         {page === 'embed' ? (
-          <>
+          <div className="gs-page__content">
             {docsSection}
-            <div ref={shareSectionRef}>
-              <SharePanel
-                livePath={liveHref}
-                status={displayStatus}
-                sessions={displaySessions}
-                timeline={augmentedTimelineSeries}
-                timestamp={displayTimestamp}
-                freshnessLabel={freshness.label}
-                playbackMode={playbackState.mode}
-                windowHours={playbackState.windowHours}
-                theme={surfacePreferences.theme}
-                autoGeneratePreview={surfacePreferences.autoSharePreview}
-              />
-            </div>
-          </>
+          </div>
         ) : null}
 
-        {page === 'docs' ? docsSection : null}
+        {page === 'docs' ? (
+          <div className="gs-page__content">
+            {docsSection}
+          </div>
+        ) : null}
 
         {page === 'about' ? (
-          <>
+          <div className="gs-page__content">
             <section className="gs-hero">
               <div className="gs-hero-copy">
                 <span className="gs-kicker">About Ghost Shift</span>
@@ -1697,12 +1736,12 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
                 </article>
               </div>
             </section>
-          </>
+          </div>
         ) : null}
       </main>
 
-      {/* Floating Share Button - only show on live, replay, and embed pages */}
-      {(page === 'live' || page === 'replay' || page === 'embed') && (
+      {/* Floating Share Button - only show on embed page */}
+      {page === 'embed' && (
         <button
           type="button"
           className="gs-share-fab"

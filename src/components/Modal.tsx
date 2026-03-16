@@ -54,7 +54,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
             onClick={onClose}
             aria-label="关闭"
           >
-            ×
+            ✕
           </button>
         </div>
         <div className="gs-modal__content">
