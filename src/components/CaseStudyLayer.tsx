@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import { getPublicAgentLabel, getZoneLabel } from '../publicDisplay.js'
+import { i18n } from '../content/i18n.js'
 
 type CaseStudyView = 'raw' | 'public' | 'surface'
 
 const faqItems = [
   {
-    question: 'Why does Ghost Shift hide session keys and raw model names?',
-    answer:
-      'The public surface tells a product story, not an operator story. Stable aliases and model families preserve continuity while removing handles that could leak internals or confuse casual viewers.',
+    question: i18n.caseStudy.faq.hideSessionKeys.question,
+    answer: i18n.caseStudy.faq.hideSessionKeys.answer,
   },
   {
-    question: 'Why are the timeline and share links timestamped?',
-    answer:
-      'Timestamped links keep review conversations anchored to a single frame. That matters in async design reviews because everyone lands on the same evidence instead of a moving live edge.',
+    question: i18n.caseStudy.faq.timestampedLinks.question,
+    answer: i18n.caseStudy.faq.timestampedLinks.answer,
   },
   {
-    question: 'Why is the sanitization flow visualized in the product surface?',
-    answer:
-      'Privacy boundaries are easier to trust when people can inspect them. The case study layer shows what gets removed, what survives, and why the resulting view is safe to share.',
+    question: i18n.caseStudy.faq.sanitizationVisualized.question,
+    answer: i18n.caseStudy.faq.sanitizationVisualized.answer,
   },
 ]
 
@@ -37,18 +35,18 @@ const rawExample = {
 const flowSteps: Array<{ id: CaseStudyView; label: string; detail: string }> = [
   {
     id: 'raw',
-    label: '1. Raw gateway',
-    detail: 'Identity, prompts, and tool arguments still exist here.',
+    label: `1. ${i18n.caseStudy.flow.rawGateway}`,
+    detail: i18n.caseStudy.flow.rawDetail,
   },
   {
     id: 'public',
-    label: '2. Public snapshot',
-    detail: 'Sensitive fields are stripped and only public-safe metadata remains.',
+    label: `2. ${i18n.caseStudy.flow.publicSnapshot}`,
+    detail: i18n.caseStudy.flow.publicDetail,
   },
   {
     id: 'surface',
-    label: '3. Product surface',
-    detail: 'The browser renders from the reduced contract only.',
+    label: `3. ${i18n.caseStudy.flow.productSurface}`,
+    detail: i18n.caseStudy.flow.surfaceDetail,
   },
 ]
 
@@ -88,32 +86,32 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
 
   const fieldCards = [
     {
-      title: 'Identity',
+      title: i18n.caseStudy.fields.identity,
       raw: rawExample.user,
-      public: 'hidden',
+      public: i18n.caseStudy.fields.hidden,
       surface: publicExample.agentId,
-      note: 'Personal identifiers are removed before the browser receives the payload.',
+      note: i18n.caseStudy.fields.identityNote,
     },
     {
-      title: 'Prompt context',
+      title: i18n.caseStudy.fields.promptContext,
       raw: rawExample.prompt,
-      public: 'prompt hidden',
-      surface: 'activity window only',
-      note: 'Prompt text becomes coarse activity metadata instead of display content.',
+      public: i18n.caseStudy.fields.promptHidden,
+      surface: i18n.caseStudy.fields.activityWindowOnly,
+      note: i18n.caseStudy.fields.promptContextNote,
     },
     {
-      title: 'Tool arguments',
+      title: i18n.caseStudy.fields.toolArguments,
       raw: rawExample.toolArgs.command,
-      public: 'tool args hidden',
-      surface: 'not rendered',
-      note: 'Operational commands never enter the public contract.',
+      public: i18n.caseStudy.fields.toolArgsHidden,
+      surface: i18n.caseStudy.fields.notRendered,
+      note: i18n.caseStudy.fields.toolArgumentsNote,
     },
     {
-      title: 'Model detail',
+      title: i18n.caseStudy.fields.modelDetail,
       raw: rawExample.model,
       public: publicExample.modelFamily,
       surface: publicExample.modelFamily,
-      note: 'Model families stay visible because they explain capability without exposing raw deployment strings.',
+      note: i18n.caseStudy.fields.modelDetailNote,
     },
   ]
 
@@ -130,12 +128,9 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
   return (
     <section className="gs-case-study" id="case-study-layer">
       <div className="gs-case-study__head">
-        <span className="gs-section-kicker">Case Study Layer</span>
-        <h2>Show the transformation, animate the privacy boundary, and answer trust questions in place.</h2>
-        <p>
-          This layer turns the sanitization contract into a guided demo: click through each data boundary, watch the
-          flow animate, and expand the FAQ without leaving the product surface.
-        </p>
+        <span className="gs-section-kicker">{i18n.caseStudy.eyebrow}</span>
+        <h2>{i18n.caseStudy.title}</h2>
+        <p>{i18n.caseStudy.description}</p>
       </div>
 
       <div className="gs-case-study__layout">
@@ -160,36 +155,36 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
             <div className="gs-case-study__timeline-meta">
               <span>{flowSteps[activeStep].detail}</span>
               <button type="button" onClick={() => setIsAnimating((previous) => !previous)}>
-                {isAnimating ? 'Pause animation' : 'Play animation'}
+                {isAnimating ? i18n.caseStudy.flow.pauseAnimation : i18n.caseStudy.flow.playAnimation}
               </button>
             </div>
           </div>
 
           {activeView === 'raw' ? (
             <div className="gs-case-study__panel">
-              <div className="gs-case-study__label">Before sanitization</div>
+              <div className="gs-case-study__label">{i18n.caseStudy.panels.beforeSanitization}</div>
               <pre>{JSON.stringify(rawExample, null, 2)}</pre>
             </div>
           ) : null}
 
           {activeView === 'public' ? (
             <div className="gs-case-study__panel">
-              <div className="gs-case-study__label">After sanitization</div>
+              <div className="gs-case-study__label">{i18n.caseStudy.panels.afterSanitization}</div>
               <pre>{JSON.stringify(publicExample, null, 2)}</pre>
               <div className="gs-case-study__mask-grid">
-                <span className="is-hidden">prompt hidden</span>
-                <span className="is-hidden">transcript hidden</span>
-                <span className="is-hidden">tool args hidden</span>
-                <span className="is-hidden">user identity hidden</span>
-                <span className="is-visible">public alias preserved</span>
-                <span className="is-visible">model family preserved</span>
+                <span className="is-hidden">{i18n.caseStudy.fields.promptHidden}</span>
+                <span className="is-hidden">{i18n.caseStudy.fields.transcriptHidden}</span>
+                <span className="is-hidden">{i18n.caseStudy.fields.toolArgsHidden}</span>
+                <span className="is-hidden">{i18n.caseStudy.fields.userIdentityHidden}</span>
+                <span className="is-visible">{i18n.caseStudy.fields.publicAliasPreserved}</span>
+                <span className="is-visible">{i18n.caseStudy.fields.modelFamilyPreserved}</span>
               </div>
             </div>
           ) : null}
 
           {activeView === 'surface' ? (
             <div className="gs-case-study__panel">
-              <div className="gs-case-study__label">Rendered product surface</div>
+              <div className="gs-case-study__label">{i18n.caseStudy.panels.renderedProductSurface}</div>
               <div className="gs-case-study__surface-card">
                 <strong>{publicExample.agentId}</strong>
                 <span>{publicExample.zone}</span>
@@ -197,15 +192,12 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
                 <span>{publicExample.status}</span>
                 <span>{publicExample.activityWindow}</span>
               </div>
-              <p>
-                The office scene, analytics cards, and social share card all render from this narrower contract instead
-                of from the raw gateway payload.
-              </p>
+              <p>{i18n.caseStudy.panels.surfaceCardExplanation}</p>
             </div>
           ) : null}
 
           <div className="gs-case-study__interactive">
-            <div className="gs-case-study__label">Interactive example</div>
+            <div className="gs-case-study__label">{i18n.caseStudy.cards.interactive.eyebrow}</div>
             <div className="gs-case-study__field-grid">
               {fieldCards.map((field, index) => (
                 <button
@@ -230,19 +222,19 @@ export function CaseStudyLayer({ exampleSession }: CaseStudyLayerProps) {
         <div className="gs-case-study__stack">
           <div className="gs-case-grid">
             <article className="gs-case-card">
-              <div className="gs-case-card__eyebrow">Interactive example</div>
-              <h3>Inspect one rule at a time.</h3>
-              <p>Each field card updates with the current stage so visitors can compare raw, public, and rendered states.</p>
+              <div className="gs-case-card__eyebrow">{i18n.caseStudy.cards.interactive.eyebrow}</div>
+              <h3>{i18n.caseStudy.cards.interactive.title}</h3>
+              <p>{i18n.caseStudy.cards.interactive.body}</p>
             </article>
             <article className="gs-case-card">
-              <div className="gs-case-card__eyebrow">Animation demo</div>
-              <h3>Play the privacy flow during live demos.</h3>
-              <p>The animated track keeps the sanitization story moving when you are presenting the product in person.</p>
+              <div className="gs-case-card__eyebrow">{i18n.caseStudy.cards.animation.eyebrow}</div>
+              <h3>{i18n.caseStudy.cards.animation.title}</h3>
+              <p>{i18n.caseStudy.cards.animation.body}</p>
             </article>
             <article className="gs-case-card">
-              <div className="gs-case-card__eyebrow">FAQ accordion</div>
-              <h3>Collapse detail until the viewer asks for it.</h3>
-              <p>Trust questions stay nearby, but the explanation layer avoids overwhelming the primary narrative.</p>
+              <div className="gs-case-card__eyebrow">{i18n.caseStudy.cards.faq.eyebrow}</div>
+              <h3>{i18n.caseStudy.cards.faq.title}</h3>
+              <p>{i18n.caseStudy.cards.faq.body}</p>
             </article>
           </div>
 

@@ -5,6 +5,7 @@ import type { PublicOfficeStatus } from '../services/types.js'
 import { renderShareCard } from '../shareCard.js'
 import type { SurfaceTheme } from '../surfaceThemes.js'
 import { surfaceThemeOptions } from '../surfaceThemes.js'
+import { i18n } from '../content/i18n.js'
 
 export interface SharePanelProps {
   livePath: string
@@ -51,8 +52,8 @@ export function SharePanel({
   autoGeneratePreview,
 }: SharePanelProps) {
   const [cardTheme, setCardTheme] = useState<SurfaceTheme>(theme)
-  const [headline, setHeadline] = useState('Replayable public telemetry for the current Ghost Shift frame')
-  const [summary, setSummary] = useState('Share the exact office state with proof metrics, preview-safe framing, and a timestamped deep link.')
+  const [headline, setHeadline] = useState(i18n.share.description.split('。')[0])
+  const [summary, setSummary] = useState(i18n.share.description)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [stagePreviewUrl, setStagePreviewUrl] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -96,7 +97,7 @@ export function SharePanel({
     try {
       setPreviewUrl(createPreview())
     } catch {
-      setMessage('Preview unavailable in this environment')
+      setMessage(i18n.share.messages.previewUnavailable)
     }
   }, [
     autoGeneratePreview,
@@ -115,24 +116,24 @@ export function SharePanel({
     const nextPreviewUrl = createPreview()
     setPreviewUrl(nextPreviewUrl)
     setStagePreviewUrl(captureStagePreview())
-    setMessage('Preview refreshed')
+    setMessage(i18n.share.messages.previewRefreshed)
   }
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setMessage('Timestamped link copied')
+      setMessage(i18n.share.messages.linkCopied)
     } catch {
-      setMessage('Clipboard unavailable')
+      setMessage(i18n.share.messages.clipboardUnavailable)
     }
   }
 
   const handleCopySocialCopy = async () => {
     try {
       await navigator.clipboard.writeText(`${socialCopy}\n${shareUrl}`)
-      setMessage('Social copy copied')
+      setMessage(i18n.share.messages.socialCopyCopied)
     } catch {
-      setMessage('Clipboard unavailable')
+      setMessage(i18n.share.messages.clipboardUnavailable)
     }
   }
 
@@ -146,7 +147,7 @@ export function SharePanel({
     link.href = url
     link.download = `ghost-shift-${timestamp}.png`
     link.click()
-    setMessage('PNG downloaded')
+    setMessage(i18n.share.messages.pngDownloaded)
   }
 
   const handleShare = async () => {
@@ -161,29 +162,28 @@ export function SharePanel({
         text: socialCopy,
         url: shareUrl,
       })
-      setMessage('Shared successfully')
+      setMessage(i18n.share.messages.sharedSuccessfully)
     } catch {
-      setMessage('Share cancelled')
+      setMessage(i18n.share.messages.shareCancelled)
     }
   }
 
   const platformChecks = [
-    { label: 'Title length', value: `${headline.length}/70`, status: headline.length <= 70 ? 'is-good' : 'is-warn' },
-    { label: 'Description length', value: `${summary.length}/140`, status: summary.length <= 140 ? 'is-good' : 'is-warn' },
-    { label: 'Deep link', value: playbackMode === 'replay' ? 'Timestamped' : 'Live edge', status: 'is-neutral' },
-    { label: 'Card ratio', value: '1200 × 630', status: 'is-good' },
+    { label: i18n.share.platformChecks.titleLength, value: `${headline.length}/70`, status: headline.length <= 70 ? 'is-good' : 'is-warn' },
+    { label: i18n.share.platformChecks.descriptionLength, value: `${summary.length}/140`, status: summary.length <= 140 ? 'is-good' : 'is-warn' },
+    { label: i18n.share.platformChecks.deepLink, value: playbackMode === 'replay' ? i18n.share.platformChecks.timestamped : i18n.share.platformChecks.liveEdge, status: 'is-neutral' },
+    { label: i18n.share.platformChecks.cardRatio, value: '1200 × 630', status: 'is-good' },
   ]
 
   return (
     <section className="gs-share-section" aria-label="Share tools">
       <div className="gs-share-section__head">
         <div>
-          <span className="gs-section-kicker">Share Surface</span>
-          <h2>Generate a polished social card, inspect the source image, and package the right copy.</h2>
+          <span className="gs-section-kicker">{i18n.panels.share}</span>
+          <h2>{i18n.share.title}</h2>
         </div>
         <p>
-          Theme presets, custom headline and summary fields, live image preview, and platform-length checks keep the
-          share flow production-ready instead of feeling like a debug export.
+          {i18n.share.description}
         </p>
       </div>
 
@@ -191,7 +191,7 @@ export function SharePanel({
         <article className="gs-share-card">
           <div className="gs-share-style-grid">
             <div className="gs-share-style-group">
-              <span className="gs-share-preview__label">Card style</span>
+              <span className="gs-share-preview__label">{i18n.share.cardStyle}</span>
               <div className="gs-share-theme-row" role="list" aria-label="Share card style">
                 {surfaceThemeOptions.map((option) => (
                   <button
@@ -207,22 +207,22 @@ export function SharePanel({
             </div>
 
             <label className="gs-share-field">
-              <span className="gs-share-preview__label">Headline</span>
+              <span className="gs-share-preview__label">{i18n.share.headline}</span>
               <input value={headline} onChange={(event) => setHeadline(event.target.value)} />
             </label>
 
             <label className="gs-share-field">
-              <span className="gs-share-preview__label">Summary</span>
+              <span className="gs-share-preview__label">{i18n.share.summary}</span>
               <textarea value={summary} rows={3} onChange={(event) => setSummary(event.target.value)} />
             </label>
           </div>
 
           <div className="gs-share-card__actions">
-            <button type="button" onClick={handleGeneratePreview}>Generate preview</button>
-            <button type="button" onClick={handleCopyLink}>Copy link</button>
-            <button type="button" onClick={handleCopySocialCopy}>Copy social copy</button>
-            <button type="button" onClick={handleDownload}>Download PNG</button>
-            <button type="button" onClick={handleShare}>Share</button>
+            <button type="button" onClick={handleGeneratePreview}>{i18n.share.buttons.generatePreview}</button>
+            <button type="button" onClick={handleCopyLink}>{i18n.share.buttons.copyLink}</button>
+            <button type="button" onClick={handleCopySocialCopy}>{i18n.share.buttons.copySocialCopy}</button>
+            <button type="button" onClick={handleDownload}>{i18n.share.buttons.downloadPNG}</button>
+            <button type="button" onClick={handleShare}>{i18n.share.buttons.share}</button>
           </div>
 
           <div className="gs-share-card__meta">
@@ -243,24 +243,23 @@ export function SharePanel({
 
         <div className="gs-share-preview-stack">
           <article className="gs-share-preview">
-            <div className="gs-share-preview__label">Social media card preview</div>
+            <div className="gs-share-preview__label">{i18n.share.preview.socialMediaCard}</div>
             {previewUrl ? (
-              <img src={previewUrl} alt="Generated Ghost Shift share preview" />
+              <img src={previewUrl} alt={i18n.share.preview.generatedSharePreview} />
             ) : (
               <div className="gs-share-preview__placeholder">
-                Generate a preview to combine the office frame, product proof points, and a timestamp-safe share link.
+                {i18n.share.preview.placeholderGenerate}
               </div>
             )}
           </article>
 
           <article className="gs-share-preview gs-share-preview--source">
-            <div className="gs-share-preview__label">Source image preview</div>
+            <div className="gs-share-preview__label">{i18n.share.preview.sourceImage}</div>
             {stagePreviewUrl ? (
-              <img src={stagePreviewUrl} alt="Current office stage snapshot" />
+              <img src={stagePreviewUrl} alt={i18n.share.preview.currentStageSnapshot} />
             ) : (
               <div className="gs-share-preview__placeholder">
-                The live stage snapshot appears here when the canvas is available. It is used as the base image for the
-                social card.
+                {i18n.share.preview.placeholderSource}
               </div>
             )}
           </article>

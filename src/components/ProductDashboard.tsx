@@ -13,6 +13,7 @@ import {
   type HistoryMeta,
 } from '../portfolioMetrics.js'
 import { MiniSparkline } from './MiniSparkline.js'
+import { i18n } from '../content/i18n.js'
 
 export interface ProductDashboardProps {
   status: PublicOfficeStatus | null
@@ -62,12 +63,12 @@ export function ProductDashboard({
       ? (comparison.todayAverage > 0 ? 1 : 0)
       : (comparison.todayAverage - comparison.yesterdayAverage) / comparison.yesterdayAverage
   const radarMetrics = [
-    { label: 'Activity', value: averageSignal, color: '#7db3ff' },
-    { label: 'Live share', value: activeShare, color: '#f6c978' },
-    { label: 'Stability', value: uptime.ratio, color: '#9bffb4' },
-    { label: 'Diversity', value: Math.min(1, modelMix.length / 5), color: '#ff9fb2' },
-    { label: 'Balance', value: Math.max(0, Math.min(1, 1 - concentration)), color: '#8fc0ff' },
-    { label: 'Forecast', value: Math.max(0, Math.min(1, 0.3 + (forecast.confidence * 0.7))), color: '#cba6f7' },
+    { label: i18n.dashboard.charts.radarChart, value: averageSignal, color: '#7db3ff' },
+    { label: i18n.dashboard.metrics.realtimeSignal, value: activeShare, color: '#f6c978' },
+    { label: i18n.dashboard.metrics.freshness, value: uptime.ratio, color: '#9bffb4' },
+    { label: i18n.dashboard.metrics.modelDiversity, value: Math.min(1, modelMix.length / 5), color: '#ff9fb2' },
+    { label: i18n.dashboard.metrics.zoneConcentration, value: Math.max(0, Math.min(1, 1 - concentration)), color: '#8fc0ff' },
+    { label: i18n.dashboard.metrics.prediction, value: Math.max(0, Math.min(1, 0.3 + (forecast.confidence * 0.7))), color: '#cba6f7' },
   ]
   const scatterPoints = sessions
     .slice()
@@ -90,37 +91,36 @@ export function ProductDashboard({
     <section className="gs-dashboard-section" aria-label="Product dashboard">
       <div className="gs-dashboard-head">
         <div>
-          <span className="gs-section-kicker">Statistics Dashboard</span>
-          <h2>Realtime metrics, comparison baselines, and lightweight prediction in one storytelling layer.</h2>
+          <span className="gs-section-kicker">{i18n.dashboard.title}</span>
+          <h2>{i18n.dashboard.subtitle}</h2>
         </div>
         <p>
-          The analytics section now combines richer product metrics, 6-hour rolling comparison, same-hour baseline
-          comparison, a simple linear forecast, and complementary chart types for faster pattern recognition.
+          {i18n.dashboard.description}
         </p>
       </div>
 
       <div className="gs-dashboard-grid">
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">Agents</span>
+          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.agents}</span>
           <strong>{status?.displayed ?? sessions.length}</strong>
-          <span className="gs-dashboard-card__meta">public aliases visible right now</span>
+          <span className="gs-dashboard-card__meta">{i18n.dashboard.meta.publicAliasesVisible}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">Sessions</span>
+          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.sessions}</span>
           <strong>{status?.running ?? sessions.filter((session) => session.status === 'running').length}</strong>
-          <span className="gs-dashboard-card__meta">currently running in the public office</span>
+          <span className="gs-dashboard-card__meta">{i18n.dashboard.meta.currentlyRunning}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">Uptime</span>
+          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.uptime}</span>
           <strong>{uptime.label}</strong>
-          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} connected inside the retained window</span>
+          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} {i18n.dashboard.meta.connectedInRetainedWindow}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--trend">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">24h live trend</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.liveTrend}</span>
             <strong className={runningTrend.direction === 'down' ? 'is-down' : runningTrend.direction === 'up' ? 'is-up' : ''}>
               {formatDelta(runningTrend.deltaRatio)}
             </strong>
@@ -130,95 +130,95 @@ export function ProductDashboard({
             stroke="#7db3ff"
             fill="rgba(125, 179, 255, 0.14)"
           />
-          <div className="gs-dashboard-card__meta">peak {runningTrend.peakValue.toFixed(0)} live agents in the last 24h</div>
+          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.peakLiveAgents}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Realtime signal</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.realtimeSignal}</span>
             <strong>{formatRatio(averageSignal)}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">average signal score across visible agents</div>
+          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.averageSignalAcrossAgents}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Visible load</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.visibleLoad}</span>
             <strong>{peakLoad.toFixed(0)}</strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {formatDelta(visibleTrend.deltaRatio)} vs the earlier half of the 24h window
+            {formatDelta(visibleTrend.deltaRatio)} {i18n.dashboard.meta.vsEarlierHalf}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">6h rolling delta</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.rollingDelta}</span>
             <strong className={runningWindowComparison.deltaRatio < 0 ? 'is-down' : runningWindowComparison.deltaRatio > 0 ? 'is-up' : ''}>
               {formatDelta(runningWindowComparison.deltaRatio)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {runningWindowComparison.currentAverage.toFixed(1)} avg now vs {runningWindowComparison.previousAverage.toFixed(1)} in the previous 6h
+            {runningWindowComparison.currentAverage.toFixed(1)} {i18n.dashboard.meta.avgNowVsPrevious}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Same-hour baseline</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.sameHourBaseline}</span>
             <strong className={sameHourDelta < 0 ? 'is-down' : sameHourDelta > 0 ? 'is-up' : ''}>
               {formatDelta(sameHourDelta)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            today avg {comparison.todayAverage.toFixed(1)} vs yesterday {comparison.yesterdayAverage.toFixed(1)}
+            {i18n.dashboard.meta.todayVsYesterday}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Prediction</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.prediction}</span>
             <strong className={forecast.deltaRatio < 0 ? 'is-down' : forecast.deltaRatio > 0 ? 'is-up' : ''}>
               {formatDelta(forecast.deltaRatio)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            next projection {forecast.projectedValue.toFixed(1)} live with {formatRatio(forecast.confidence)} confidence fit
+            {i18n.dashboard.meta.nextProjection}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Zone concentration</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.zoneConcentration}</span>
             <strong>{topZone ? formatRatio(topZone.count / Math.max(sessions.length, 1)) : '0%'}</strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {topZone ? `${topZone.label} leads the visible mix` : 'waiting for visible sessions'}
+            {topZone ? `${topZone.label} ${i18n.dashboard.meta.leadsVisibleMix}` : i18n.dashboard.meta.waitingForSessions}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Model diversity</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.modelDiversity}</span>
             <strong>{modelMix.length}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">families visible in the current frame</div>
+          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.familiesVisible}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Freshness</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.freshness}</span>
             <strong>{formatTimestamp(displayTimestamp)}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">current frame timestamp for the displayed surface</div>
+          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.currentFrameTimestamp}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">Retention</span>
+            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.retention}</span>
             <strong>{historyMeta ? `${historyMeta.retentionHours}h` : '24h'}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">history buffer used for replay, trends, and comparisons</div>
+          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.historyBufferUsed}</div>
         </article>
       </div>
 
@@ -226,20 +226,20 @@ export function ProductDashboard({
         <article className="gs-dashboard-compare">
           <div className="gs-dashboard-compare__head">
             <div>
-              <span className="gs-dashboard-card__label">Comparison chart</span>
-              <h3>Today vs yesterday running-agent profile</h3>
+              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.comparisonChart}</span>
+              <h3>{i18n.dashboard.charts.todayVsYesterdayProfile}</h3>
             </div>
             <div className="gs-dashboard-compare__summary">
-              <span>6h rolling {formatDelta(runningWindowComparison.deltaRatio)}</span>
-              <span>Visible {formatDelta(visibleWindowComparison.deltaRatio)}</span>
-              <span>Same-hour {formatDelta(sameHourDelta)}</span>
-              {comparison.partialYesterday ? <span>Yesterday is partial because retention is limited</span> : null}
+              <span>6h {i18n.dashboard.metrics.rollingDelta} {formatDelta(runningWindowComparison.deltaRatio)}</span>
+              <span>{i18n.dashboard.metrics.visibleLoad} {formatDelta(visibleWindowComparison.deltaRatio)}</span>
+              <span>{i18n.dashboard.metrics.sameHourBaseline} {formatDelta(sameHourDelta)}</span>
+              {comparison.partialYesterday ? <span>{i18n.dashboard.charts.yesterdayPartial}</span> : null}
             </div>
           </div>
 
           <div className="gs-dashboard-compare__legend">
-            <span><i className="is-today" />Today</span>
-            <span><i className="is-yesterday" />Yesterday</span>
+            <span><i className="is-today" />{i18n.dashboard.charts.today}</span>
+            <span><i className="is-yesterday" />{i18n.dashboard.charts.yesterday}</span>
           </div>
 
           <div className="gs-dashboard-compare__chart" role="img" aria-label="Today versus yesterday running agent comparison chart">
@@ -266,11 +266,11 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual gs-dashboard-visual--forecast">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">Simple linear forecast</span>
-              <h3>Projected live-agent trajectory</h3>
+              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.linearForecast}</span>
+              <h3>{i18n.dashboard.charts.projectedTrajectory}</h3>
             </div>
             <strong className={forecast.slope < 0 ? 'is-down' : forecast.slope > 0 ? 'is-up' : ''}>
-              {forecast.projectedValue.toFixed(1)} projected
+              {forecast.projectedValue.toFixed(1)} {i18n.dashboard.charts.projected}
             </strong>
           </div>
           <svg viewBox="0 0 360 180" className="gs-dashboard-chart" role="img" aria-label="Forecast chart">
@@ -288,7 +288,7 @@ export function ProductDashboard({
             ))}
           </svg>
           <div className="gs-dashboard-card__meta">
-            Uses the latest retained samples to extend a straight-line trend. Lightweight, explainable, and useful for short-range momentum cues.
+            {i18n.dashboard.charts.forecastExplanation}
           </div>
         </article>
       </div>
@@ -297,10 +297,10 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">Radar chart</span>
-              <h3>Surface health profile</h3>
+              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.radarChart}</span>
+              <h3>{i18n.dashboard.charts.surfaceHealthProfile}</h3>
             </div>
-            <strong>{topZone?.label || 'No zone lead yet'}</strong>
+            <strong>{topZone?.label || i18n.dashboard.charts.noZoneLead}</strong>
           </div>
           <svg viewBox="0 0 260 240" className="gs-dashboard-radar" role="img" aria-label="Radar chart">
             {Array.from({ length: 4 }, (_, layer) => (
@@ -343,10 +343,10 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">Scatter plot</span>
-              <h3>Signal vs status-change latency</h3>
+              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.scatterPlot}</span>
+              <h3>{i18n.dashboard.charts.signalVsLatency}</h3>
             </div>
-            <strong>{scatterPoints.length} tracked agents</strong>
+            <strong>{scatterPoints.length} {i18n.dashboard.charts.trackedAgents}</strong>
           </div>
           <svg viewBox="0 0 360 220" className="gs-dashboard-chart" role="img" aria-label="Scatter plot">
             <path className="gs-dashboard-chart__grid" d="M36 28V182 M148 28V182 M260 28V182 M36 182H332 M36 105H332 M36 28H332" />
@@ -359,12 +359,12 @@ export function ProductDashboard({
                 r={point.radius}
                 fill={getZoneColor(point.zone)}
               >
-                <title>{`${point.label} • ${point.xMinutes.toFixed(0)}m since status change • ${formatRatio(point.ySignal)}`}</title>
+                <title>{`${point.label} • ${point.xMinutes.toFixed(0)}m ${i18n.dashboard.charts.minutesSinceStatusChange} • ${formatRatio(point.ySignal)}`}</title>
               </circle>
             ))}
           </svg>
           <div className="gs-dashboard-card__meta">
-            X-axis shows minutes since the last status change. Y-axis shows signal score. Larger dots are currently running agents.
+            X{i18n.dashboard.charts.minutesSinceStatusChange}。Y{i18n.dashboard.charts.signalScore}。
           </div>
         </article>
       </div>

@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react'
+import { i18n } from '../../content/i18n'
 
 export type LogLevel = 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
 
@@ -178,16 +179,16 @@ export function LogsPanel({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginTop: 6 }}>
           {errorCount > 0 && (
             <span style={{ fontSize: 10, color: '#F38BA8' }}>
-              {errorCount} ERR
+              {errorCount} {i18n.logs.err}
             </span>
           )}
           {warnCount > 0 && (
             <span style={{ fontSize: 10, color: '#F9E2AF' }}>
-              {warnCount} WARN
+              {warnCount} {i18n.logs.warn}
             </span>
           )}
           <span style={{ fontSize: 9, color: '#6C7086' }}>
-            {logs.length} logs
+            {i18n.logs.logsCount.replace('{count}', String(logs.length))}
           </span>
         </div>
       </div>
@@ -197,26 +198,26 @@ export function LogsPanel({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.title}>Logs</span>
+        <span style={styles.title}>{i18n.logs.title}</span>
         <div style={styles.controls}>
           <span style={{ fontSize: 10, color: '#45475A' }}>
             {visibleLogs.length}
           </span>
           <button style={styles.pauseBtn} onClick={handlePauseToggle}>
-            {isPaused ? '▶ Resume' : '⏸ Pause'}
+            {isPaused ? `▶ ${i18n.logs.resume}` : `⏸ ${i18n.logs.pause}`}
           </button>
         </div>
       </div>
 
       {isPaused && (
         <div style={styles.pausedIndicator}>
-          ⏸ Paused - {logs.length - visibleLogs.length} new entries
+          ⏸ {i18n.logs.paused} - {i18n.logs.newEntries.replace('{count}', String(logs.length - visibleLogs.length))}
         </div>
       )}
 
       <div ref={scrollRef} style={styles.logList}>
         {visibleLogs.length === 0 ? (
-          <div style={styles.emptyState}>No logs yet</div>
+          <div style={styles.emptyState}>{i18n.logs.noLogsYet}</div>
         ) : (
           visibleLogs.map(log => (
             <div

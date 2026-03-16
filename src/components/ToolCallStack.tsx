@@ -14,6 +14,7 @@ import {
   ToolCallData,
   ToolType,
 } from './ToolCallCard.js'
+import { i18n } from '../content/i18n.js'
 
 export interface ToolCallStackProps {
   calls: ToolCallData[]
@@ -234,7 +235,7 @@ export function ToolCallStack({
           <button
             style={styles.actionBtn}
             onClick={() => setExpandedAll(!expandedAll)}
-            title={expandedAll ? 'Collapse all' : 'Expand all'}
+            title={expandedAll ? i18n.toolCall.collapseAll : i18n.toolCall.expandAll}
           >
             {expandedAll ? '⊟' : '⊞'}
           </button>

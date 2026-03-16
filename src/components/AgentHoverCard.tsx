@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import { formatRatio, getPublicAgentLabel, getSignalWindowLabel } from '../publicDisplay.js'
+import { i18n } from '../content/i18n.js'
 
 export interface HoverToolStat {
   label: string
@@ -125,7 +126,7 @@ export function AgentHoverCard({
 
   if (!visible || !anchor) return null
 
-  const label = session ? getPublicAgentLabel(session.agentId) : 'Loading agent'
+  const label = session ? getPublicAgentLabel(session.agentId) : i18n.common.loading
   const sparkline = buildSparkline(activityPoints, 176, 40)
   const toolRows = loading
     ? Array.from({ length: 3 }, (_, index) => (
@@ -167,43 +168,43 @@ export function AgentHoverCard({
     >
       <div className="gs-agent-hover-card__header">
         <div>
-          <div className="gs-agent-hover-card__eyebrow">Agent hover</div>
+          <div className="gs-agent-hover-card__eyebrow">{i18n.panels.stats}</div>
           <div className="gs-agent-hover-card__title">{label}</div>
         </div>
         <div className={`gs-agent-hover-card__status ${session?.status === 'running' ? 'is-live' : ''}`}>
-          {loading ? 'syncing' : session?.status || 'idle'}
+          {loading ? i18n.status.connecting : session?.status || i18n.agent.status.idle}
         </div>
       </div>
 
       <div className="gs-agent-hover-card__grid">
         <div>
-          <span>Public ID</span>
-          <strong>{loading ? 'Resolving…' : publicId || session?.publicId || session?.sessionKey || 'Unavailable'}</strong>
+          <span>{i18n.summaryCard.carousel.topAgents}</span>
+          <strong>{loading ? i18n.common.loading : publicId || session?.publicId || session?.sessionKey || i18n.common.error}</strong>
         </div>
         <div>
-          <span>Activity</span>
+          <span>{i18n.agent.window.observed}</span>
           <strong>{loading || !session ? '...' : formatRatio(session.signalScore)}</strong>
         </div>
         <div>
-          <span>Active window</span>
-          <strong>{loading || !session ? 'Estimating…' : getSignalWindowLabel(dominantWindow || session.signalWindow)}</strong>
+          <span>{i18n.agent.window.active}</span>
+          <strong>{loading || !session ? i18n.common.loading : getSignalWindowLabel(dominantWindow || session.signalWindow)}</strong>
         </div>
         <div>
-          <span>Role</span>
-          <strong>{loading || !session ? 'Waiting…' : session.role}</strong>
+          <span>{i18n.experience.settings.behavior}</span>
+          <strong>{loading || !session ? i18n.common.loading : session.role}</strong>
         </div>
       </div>
 
       <div className="gs-agent-hover-card__section">
-        <div className="gs-agent-hover-card__section-title">Public tool estimate</div>
+        <div className="gs-agent-hover-card__section-title">{i18n.dashboard.charts.scatterPlot}</div>
         <div className="gs-agent-hover-card__tools">
           {toolRows}
-          {!loading && toolStats.length === 0 ? <div className="gs-agent-hover-card__empty">Waiting for retained tool telemetry.</div> : null}
+          {!loading && toolStats.length === 0 ? <div className="gs-agent-hover-card__empty">{i18n.caseStudy.cards.faq.eyebrow}</div> : null}
         </div>
       </div>
 
       <div className="gs-agent-hover-card__section">
-        <div className="gs-agent-hover-card__section-title">Activity timeline</div>
+        <div className="gs-agent-hover-card__section-title">{i18n.replay.storyline}</div>
         {loading ? (
           <div className="gs-agent-hover-card__sparkline-skeleton">
             <span />
@@ -224,7 +225,7 @@ export function AgentHoverCard({
             />
           </svg>
         ) : (
-          <div className="gs-agent-hover-card__empty">Not enough recent activity to draw a sparkline yet.</div>
+          <div className="gs-agent-hover-card__empty">{i18n.replay.replayBufferEmpty}</div>
         )}
       </div>
     </div>

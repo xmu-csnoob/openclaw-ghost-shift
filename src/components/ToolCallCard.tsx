@@ -10,6 +10,7 @@
  */
 
 import React, { useState } from 'react'
+import { i18n } from '../content/i18n'
 
 export type ToolType =
   | 'Read'
@@ -283,7 +284,7 @@ export function ToolCallCard({
       </div>
       {expanded && (
         <div style={styles.content}>
-          <div style={styles.paramsTitle}>Parameters</div>
+          <div style={styles.paramsTitle}>{i18n.toolCall.parameters}</div>
           <pre style={styles.paramsContent}>
             {JSON.stringify(call.params, null, 2)}
           </pre>

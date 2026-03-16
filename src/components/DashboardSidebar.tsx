@@ -28,6 +28,7 @@ import {
   LogEntry,
   mockLogs,
 } from './panels/LogsPanel'
+import { i18n } from '../content/i18n.js'
 
 export interface DashboardSidebarProps {
   /** Initial collapsed state */
@@ -127,7 +128,7 @@ export function DashboardSidebar({
         <button
           style={styles.collapseBtn}
           onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? i18n.expandSidebar : i18n.collapseSidebar}
         >
           <span style={styles.collapseIcon}>◀</span>
         </button>

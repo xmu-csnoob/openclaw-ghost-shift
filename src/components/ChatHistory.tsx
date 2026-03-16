@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react'
+import { i18n } from '../content/i18n.js'
 
 // ==================== Types ====================
 
@@ -283,6 +284,37 @@ const getToolIcon = (name: string) => {
   }
 }
 
+const getToolName = (name: string): string => {
+  switch (name) {
+    case 'Read': return i18n.chatHistory.tool.read
+    case 'Write': return i18n.chatHistory.tool.write
+    case 'Edit': return i18n.chatHistory.tool.edit
+    case 'Bash': return i18n.chatHistory.tool.bash
+    case 'Grep': return i18n.chatHistory.tool.grep
+    case 'Glob': return i18n.chatHistory.tool.glob
+    default: return i18n.chatHistory.tool.default
+  }
+}
+
+const getStatusLabel = (status: ToolCallInfo['status']): string => {
+  switch (status) {
+    case 'pending': return i18n.chatHistory.status.pending
+    case 'running': return i18n.chatHistory.status.running
+    case 'completed': return i18n.chatHistory.status.completed
+    case 'error': return i18n.chatHistory.status.error
+    default: return i18n.chatHistory.status.pending
+  }
+}
+
+const getRoleLabel = (role: ChatMessage['role']): string => {
+  switch (role) {
+    case 'user': return i18n.chatHistory.role.user
+    case 'assistant': return i18n.chatHistory.role.assistant
+    case 'system': return i18n.chatHistory.role.system
+    default: return role
+  }
+}
+
 const formatParams = (params?: Record<string, unknown>): string => {
   if (!params) return ''
   const keys = Object.keys(params)
@@ -308,11 +340,11 @@ function ToolCallCard({ tool, defaultExpanded = false }: ToolCallCardProps): Rea
       >
         <div style={styles.toolName}>
           <span>{getToolIcon(tool.name)}</span>
-          <span>{tool.name}</span>
+          <span>{getToolName(tool.name)}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ ...styles.toolStatus, ...getStatusStyle(tool.status) }}>
-            {getStatusIcon(tool.status)} {tool.status}
+            {getStatusIcon(tool.status)} {getStatusLabel(tool.status)}
           </span>
           <span style={{ ...styles.expandIcon, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
             ▶
@@ -351,7 +383,7 @@ export function ChatHistory({
   if (messages.length === 0) {
     return (
       <div style={styles.emptyState}>
-        No messages yet
+        {i18n.chatHistory.empty}
       </div>
     )
   }
@@ -383,7 +415,7 @@ export function ChatHistory({
                   ...(isSystem ? { color: '#F9E2AF' } : {}),
                   ...(!isUser && !isSystem ? styles.assistantRole : {}),
                 }}>
-                  {message.role}
+                  {getRoleLabel(message.role)}
                 </span>
                 {message.timestamp && (
                   <span style={styles.timestamp}>{message.timestamp}</span>

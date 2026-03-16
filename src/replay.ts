@@ -101,29 +101,29 @@ export function getPlaybackFreshness(timestamp: number, now: number = Date.now()
 
   if (age < 15_000) {
     return {
-      label: 'Live now',
-      color: '#A6E3A1',
-      detail: 'Public office is tracking the latest heartbeat.',
+      label: '实时',
+      color: '#22c55e',
+      detail: '公开办公室正在追踪最新心跳',
     }
   }
   if (age < 2 * 60_000) {
     return {
-      label: 'Fresh',
-      color: '#89B4FA',
-      detail: `Captured ${formatRelativeAge(age)}.`,
+      label: '新鲜',
+      color: '#14b8a6',
+      detail: `${formatRelativeAge(age)}前捕获`,
     }
   }
   if (age < 30 * 60_000) {
     return {
-      label: 'Cooling',
-      color: '#F9E2AF',
-      detail: `Scrubbing ${formatRelativeAge(age)} in the retained window.`,
+      label: '冷却中',
+      color: '#f59e0b',
+      detail: `在保留窗口中查看 ${formatRelativeAge(age)} 的记录`,
     }
   }
   return {
-    label: 'Replay',
-    color: '#F38BA8',
-    detail: `Viewing a historical frame from ${formatRelativeAge(age)}.`,
+    label: '回放',
+    color: '#ff5c5c',
+    detail: `正在查看 ${formatRelativeAge(age)} 的历史帧`,
   }
 }
 

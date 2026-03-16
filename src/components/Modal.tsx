@@ -1,0 +1,66 @@
+import { useEffect, useRef, type ReactNode } from 'react'
+
+export interface ModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: ReactNode
+  className?: string
+}
+
+export function Modal({ isOpen, onClose, title, children, className = '' }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  return (
+    <div
+      className={`gs-modal-backdrop ${className}`}
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div ref={modalRef} className="gs-modal">
+        <div className="gs-modal__header">
+          <h2 id="modal-title" className="gs-modal__title">{title}</h2>
+          <button
+            type="button"
+            className="gs-modal__close"
+            onClick={onClose}
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </div>
+        <div className="gs-modal__content">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}

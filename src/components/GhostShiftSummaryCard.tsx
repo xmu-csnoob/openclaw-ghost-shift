@@ -13,6 +13,7 @@ import type { TimelinePoint } from '../replay.js'
 import type { PublicOfficeStatus } from '../services/types.js'
 import { clampRecentTimeline, computeTrendSummary, formatDelta, getTopAgentEntries } from '../portfolioMetrics.js'
 import { MiniSparkline } from './MiniSparkline.js'
+import { i18n } from '../content/i18n.js'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
@@ -56,8 +57,8 @@ export function GhostShiftSummaryCard({
   const visibleCount = status?.displayed ?? sessions.length
   const runningCount = status?.running ?? sessions.filter((session) => session.status === 'running').length
   const activeWingCount = summarizeZones(sessions).length
-  const topWing = summarizeZones(sessions)[0]?.label || 'Waiting for public traffic'
-  const topModelFamily = summarizeModelMix(sessions)[0]?.label || 'Hidden'
+  const topWing = summarizeZones(sessions)[0]?.label || i18n.summaryCard.facts.waitingForPublicTraffic
+  const topModelFamily = summarizeModelMix(sessions)[0]?.label || i18n.agent.model.hidden
   const averageSignal =
     sessions.length > 0 ? sessions.reduce((sum, session) => sum + session.signalScore, 0) / sessions.length : 0
   const recentTimeline = clampRecentTimeline(timeline, 24)
@@ -66,12 +67,12 @@ export function GhostShiftSummaryCard({
   const topAgents = getTopAgentEntries(sessions, (session) => getPublicAgentLabel(session.agentId), 5)
   const activeAgent = topAgents[activeAgentIndex] || null
   const statusLabel = backendError
-    ? 'Snapshot unavailable'
+    ? i18n.summaryCard.snapshotUnavailable
     : connectionState === 'connected'
-      ? 'Live snapshot'
+      ? i18n.summaryCard.liveSnapshot
       : connectionState === 'connecting'
-        ? 'Connecting'
-        : 'Offline'
+        ? i18n.summaryCard.connecting
+        : i18n.summaryCard.offline
 
   useEffect(() => {
     if (topAgents.length <= 1) {
@@ -104,28 +105,27 @@ export function GhostShiftSummaryCard({
         </span>
       </div>
 
-      <div className="gs-summary-card__brand">Ghost Shift</div>
+      <div className="gs-summary-card__brand">{i18n.brand.zh}</div>
       <h2 className="gs-summary-card__title">
         {variant === 'embed'
-          ? 'Public office demo in a portfolio-sized frame.'
-          : 'A compact product surface for the live public office demo.'}
+          ? i18n.summaryCard.title.embed
+          : i18n.summaryCard.title.feature}
       </h2>
       <p className="gs-summary-card__body">
-        Built for `me.wenfei4288.com`: enough live signal to prove the product is running, now with 24h trend context,
-        mini charts, and a rotating roster of the strongest public agents.
+        {i18n.summaryCard.body}
       </p>
 
       <div className="gs-summary-card__metrics">
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">Visible</span>
+          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.visible}</span>
           <strong>{visibleCount}</strong>
         </div>
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">Live now</span>
+          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.running}</span>
           <strong>{runningCount}</strong>
         </div>
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">Active wings</span>
+          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.activeZones}</span>
           <strong>{activeWingCount}</strong>
         </div>
       </div>
@@ -133,7 +133,7 @@ export function GhostShiftSummaryCard({
       <div className="gs-summary-card__sparkline-grid">
         <div className="gs-summary-card__sparkline-card">
           <div className="gs-summary-card__sparkline-meta">
-            <span>24h live activity</span>
+            <span>{i18n.summaryCard.sparklines.liveActivity}</span>
             <strong className={trend.direction === 'down' ? 'is-down' : trend.direction === 'up' ? 'is-up' : ''}>
               {formatDelta(trend.deltaRatio)}
             </strong>
@@ -147,8 +147,8 @@ export function GhostShiftSummaryCard({
 
         <div className="gs-summary-card__sparkline-card">
           <div className="gs-summary-card__sparkline-meta">
-            <span>24h visible load</span>
-            <strong>{displayedTrend.peakValue.toFixed(0)} peak</strong>
+            <span>{i18n.summaryCard.sparklines.visibleLoad}</span>
+            <strong>{displayedTrend.peakValue.toFixed(0)} {i18n.summaryCard.sparklines.peak}</strong>
           </div>
           <MiniSparkline
             values={recentTimeline.map((point) => point.displayed)}
@@ -160,40 +160,40 @@ export function GhostShiftSummaryCard({
 
       <dl className="gs-summary-card__facts">
         <div>
-          <dt>Lead wing</dt>
+          <dt>{i18n.summaryCard.facts.topZone}</dt>
           <dd>{topWing}</dd>
         </div>
         <div>
-          <dt>Model mix</dt>
+          <dt>{i18n.summaryCard.facts.modelMix}</dt>
           <dd>{topModelFamily}</dd>
         </div>
         <div>
-          <dt>Average signal</dt>
+          <dt>{i18n.summaryCard.facts.averageSignal}</dt>
           <dd>{formatRatio(averageSignal)}</dd>
         </div>
         <div>
-          <dt>Last update</dt>
+          <dt>{i18n.summaryCard.facts.lastUpdate}</dt>
           <dd>{formatUpdatedAt(status?.lastUpdatedAt)}</dd>
         </div>
       </dl>
 
       <div className="gs-summary-card__carousel">
         <div className="gs-summary-card__carousel-header">
-          <span>Top agents</span>
+          <span>{i18n.summaryCard.carousel.topAgents}</span>
           <div className="gs-summary-card__carousel-actions">
             <button
               type="button"
               onClick={() => setActiveAgentIndex((current) => (current - 1 + topAgents.length) % Math.max(topAgents.length, 1))}
               disabled={topAgents.length <= 1}
             >
-              Prev
+              {i18n.summaryCard.carousel.prev}
             </button>
             <button
               type="button"
               onClick={() => setActiveAgentIndex((current) => (current + 1) % Math.max(topAgents.length, 1))}
               disabled={topAgents.length <= 1}
             >
-              Next
+              {i18n.summaryCard.carousel.next}
             </button>
           </div>
         </div>
@@ -211,13 +211,13 @@ export function GhostShiftSummaryCard({
               </div>
             </div>
             <div className="gs-summary-card__agent-stats">
-              <span>{formatRatio(activeAgent.signalScore)} signal</span>
+              <span>{formatRatio(activeAgent.signalScore)} {i18n.summaryCard.carousel.signal}</span>
               <span>{getSignalWindowLabel(activeAgent.signalWindow)}</span>
               <span>{activeAgent.status}</span>
             </div>
           </div>
         ) : (
-          <div className="gs-summary-card__agent is-empty">Waiting for public agents</div>
+          <div className="gs-summary-card__agent is-empty">{i18n.summaryCard.carousel.waitingForPublicAgents}</div>
         )}
 
         {topAgents.length > 1 ? (
@@ -228,7 +228,7 @@ export function GhostShiftSummaryCard({
                 type="button"
                 className={index === activeAgentIndex ? 'is-active' : ''}
                 onClick={() => setActiveAgentIndex(index)}
-                aria-label={`Show ${agent.label}`}
+                aria-label={`${i18n.summaryCard.carousel.show} ${agent.label}`}
               />
             ))}
           </div>
@@ -236,10 +236,10 @@ export function GhostShiftSummaryCard({
       </div>
 
       <div className="gs-summary-card__footer">
-        <span>Refreshes every {refreshMs / 1000}s</span>
+        <span>{i18n.summaryCard.footer.refreshesEvery} {refreshMs / 1000}s</span>
         {liveDemoHref ? (
           <a className="gs-summary-card__link" href={liveDemoHref}>
-            Open live office
+            {i18n.summaryCard.footer.openLiveOffice}
           </a>
         ) : null}
       </div>

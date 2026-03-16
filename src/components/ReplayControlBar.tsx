@@ -1,5 +1,6 @@
 import React from 'react'
 import type { PlaybackState, PlaybackWindowHours } from '../replay.js'
+import { i18n } from '../content/i18n.js'
 
 export interface ReplayControlBarProps {
   playbackState: PlaybackState
@@ -140,7 +141,7 @@ export function ReplayControlBar({
             onClick={() => onModeChange('live')}
             style={pillButtonStyle(playbackState.mode === 'live')}
           >
-            Live
+            实时
           </button>
           <button
             type="button"
@@ -148,7 +149,7 @@ export function ReplayControlBar({
             disabled={!hasFrames}
             style={pillButtonStyle(playbackState.mode === 'replay', !hasFrames)}
           >
-            Replay
+            回放
           </button>
         </div>
 
@@ -170,7 +171,7 @@ export function ReplayControlBar({
           <div style={{ fontSize: 11, color: '#9399B2' }}>{freshnessDetail}</div>
           {playbackState.mode === 'live' && autoTourPaused && (
             <button type="button" onClick={onResumeTour} style={pillButtonStyle(false)}>
-              Resume tour
+              继续导览
             </button>
           )}
         </div>
@@ -235,7 +236,7 @@ export function ReplayControlBar({
                 ))}
               </div>
               <div style={{ marginTop: 8, fontSize: 11, color: '#CDD6F4' }}>
-                {preview.running}/{preview.displayed} active
+                {preview.running}/{preview.displayed} {i18n.replay.active}
               </div>
               <div style={{ marginTop: 2, fontSize: 10, color: '#9399B2' }}>{preview.zoneLabel}</div>
             </button>
@@ -260,7 +261,7 @@ export function ReplayControlBar({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {playbackState.mode === 'replay' && (
             <button type="button" onClick={onPlayToggle} style={pillButtonStyle(false, !hasFrames)}>
-              {playbackState.isPlaying ? 'Pause' : 'Play'}
+              {playbackState.isPlaying ? i18n.replay.pause : i18n.replay.play}
             </button>
           )}
           {playbackState.mode === 'replay' && (
@@ -279,7 +280,7 @@ export function ReplayControlBar({
           )}
           {playbackState.mode === 'replay' && (
             <button type="button" onClick={onJumpToLive} style={pillButtonStyle(false)}>
-              Jump to live
+              {i18n.replay.jumpToLive}
             </button>
           )}
           <div style={{ fontSize: 11, color: '#CDD6F4' }}>{currentLabel}</div>

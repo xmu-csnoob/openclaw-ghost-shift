@@ -11,6 +11,7 @@ import { ReplayControlBar } from './ReplayControlBar.js'
 import { SessionPanel } from './SessionPanel.js'
 import { SignalStrip } from './SignalStrip.js'
 import { StatusPanel } from './StatusPanel.js'
+import { i18n } from '../content/i18n.js'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
@@ -97,11 +98,11 @@ export interface LiveOfficeStageProps {
 function getConnectionLabel(state: ConnectionState): string {
   switch (state) {
     case 'connected':
-      return 'Connected'
+      return i18n.status.connected
     case 'connecting':
-      return 'Connecting'
+      return i18n.status.connecting
     default:
-      return 'Disconnected'
+      return i18n.status.disconnected
   }
 }
 
@@ -243,10 +244,10 @@ export function LiveOfficeStage({
 
         <div className="gs-stage-panel gs-stage-panel--stats">
           <span>
-            <strong>{sessions.length}</strong> visible
+            <strong>{sessions.length}</strong> {i18n.liveOffice.visible}
           </span>
-          {!compactViewport ? <span>{warmCount} warm</span> : null}
-          <span>{runningCount} live</span>
+          {!compactViewport ? <span>{warmCount} {i18n.liveOffice.warm}</span> : null}
+          <span>{runningCount} {i18n.liveOffice.liveAgents}</span>
         </div>
 
         <button
@@ -254,7 +255,7 @@ export function LiveOfficeStage({
           onClick={onToggleStatusPanel}
           aria-pressed={showStatusPanel}
         >
-          Telemetry
+          {i18n.liveOffice.telemetry}
         </button>
 
         <button
@@ -262,7 +263,7 @@ export function LiveOfficeStage({
           onClick={onToggleHeatmap}
           aria-pressed={heatmapEnabled}
         >
-          Heatmap
+          {i18n.liveOffice.heatmap}
         </button>
       </div>
 
@@ -274,11 +275,11 @@ export function LiveOfficeStage({
 
       {heatmapEnabled ? (
         <div className="gs-stage-heatmap-legend" role="status" aria-live="polite">
-          <div className="gs-stage-heatmap-legend__eyebrow">Activity heatmap</div>
+          <div className="gs-stage-heatmap-legend__eyebrow">{i18n.liveOffice.activityHeatmap}</div>
           <div className="gs-stage-heatmap-legend__body">
-            <span>{heatmapSources.length} active sources</span>
-            <span>{heatmapZoneCount} hot zones</span>
-            <span>{compactViewport ? 'Pinch or drag to inspect' : 'Pan or zoom to inspect density'}</span>
+            <span>{heatmapSources.length} {i18n.liveOffice.activeSources}</span>
+            <span>{heatmapZoneCount} {i18n.liveOffice.hotZones}</span>
+            <span>{compactViewport ? i18n.liveOffice.pinchDragToInspect : i18n.liveOffice.panZoomToInspect}</span>
           </div>
         </div>
       ) : null}
@@ -304,7 +305,7 @@ export function LiveOfficeStage({
 
       {!compactViewport && sessions.length > 0 && !showStatusPanel && !showSessionPanel ? (
         <div className="gs-stage-roster">
-          <div className="gs-stage-roster__label">{playbackState.mode === 'replay' ? 'Replay Roster' : 'Live Roster'}</div>
+          <div className="gs-stage-roster__label">{playbackState.mode === 'replay' ? i18n.liveOffice.replayRoster : i18n.liveOffice.liveRoster}</div>
           {sessions.slice(0, 5).map((session) => {
             const numericAgentId = getNumericAgentId(session.sessionKey)
             const isSelected = numericAgentId === selectedAgentId
@@ -325,15 +326,14 @@ export function LiveOfficeStage({
             )
           })}
           {sessions.length > 5 ? (
-            <div className="gs-stage-roster__more">+{sessions.length - 5} more in the public office</div>
+            <div className="gs-stage-roster__more">+{sessions.length - 5} {i18n.liveOffice.moreInPublicOffice}</div>
           ) : null}
         </div>
       ) : null}
 
       {!compactViewport ? (
         <div className="gs-stage-help">
-          Scrub the timeline to replay the public office. Any pan, zoom, or click pauses the camera auto-tour until you
-          resume it.
+          {i18n.liveOffice.scrubHelp}
         </div>
       ) : null}
 

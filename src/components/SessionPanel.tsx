@@ -11,6 +11,7 @@ import {
   getZoneColor,
   getZoneLabel,
 } from '../publicDisplay.js'
+import { i18n } from '../content/i18n.js'
 
 export interface SessionPanelProps {
   session: DisplaySession | null
@@ -149,11 +150,11 @@ export function SessionPanel({
   if (!visible) return null
 
   const label = getPublicAgentLabel(session?.agentId)
-  const activity = session ? getActivityLabel(session.activityBand) : 'Quiet'
+  const activity = session ? getActivityLabel(session.activityBand) : i18n.agent.band.quiet
   const activityColor = session ? getActivityColor(session.activityBand) : '#6C7086'
   const zoneColor = session ? getZoneColor(session.zone) : '#6C7086'
-  const signalWindowLabel = session ? getSignalWindowLabel(session.signalWindow) : 'Observed'
-  const footprintLabel = session ? getFootprintLabel(session.footprint) : 'Public Thread'
+  const signalWindowLabel = session ? getSignalWindowLabel(session.signalWindow) : i18n.agent.window.observed
+  const footprintLabel = session ? getFootprintLabel(session.footprint) : i18n.dashboard.metrics.visibleLoad
 
   return (
     <div
@@ -165,7 +166,7 @@ export function SessionPanel({
       <div style={styles.header}>
         <div style={styles.titleWrap}>
           <div style={styles.title}>{label}</div>
-          <div style={styles.subtitle}>Public agent card</div>
+          <div style={styles.subtitle}>{i18n.panels.stats}</div>
         </div>
         <button style={styles.closeBtn} onClick={onClose}>
           ✕
@@ -176,22 +177,22 @@ export function SessionPanel({
         <div style={styles.hero}>
           <div style={styles.heroStatus}>
             <span style={{ color: activityColor, fontWeight: 700 }}>{activity}</span>
-            <span style={{ color: '#CDD6F4' }}>{session?.status || 'idle'}</span>
+            <span style={{ color: '#CDD6F4' }}>{session?.status || i18n.agent.status.idle}</span>
           </div>
           <div style={styles.heroText}>
             {session?.status === 'running'
-              ? 'This agent is actively contributing right now and its public activity trace is updating live.'
-              : `This agent is quiet at the moment, but its latest public burst landed ${signalWindowLabel.toLowerCase()}.`}
+              ? i18n.caseStudyContent.whatItIs.body
+              : `${i18n.caseStudyContent.whatHidden.body} ${signalWindowLabel.toLowerCase()}.`}
           </div>
         </div>
 
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Recent Signal</div>
+            <div style={styles.statLabel}>{i18n.dashboard.metrics.realtimeSignal}</div>
             <div style={styles.statValue}>{session ? formatRatio(session.signalScore) : '0%'}</div>
           </div>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Observed</div>
+            <div style={styles.statLabel}>{i18n.agent.window.observed}</div>
             <div style={styles.statValue}>
               {session ? formatDurationShort(Date.now() - session.observedSince) : '0m'}
             </div>
@@ -199,55 +200,54 @@ export function SessionPanel({
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Wing</span>
+          <span style={styles.metaLabel}>{i18n.dashboard.metrics.zoneConcentration}</span>
           <span style={{ ...styles.metaValue, color: zoneColor }}>
-            {session ? getZoneLabel(session.zone) : 'hidden'}
+            {session ? getZoneLabel(session.zone) : i18n.caseStudy.fields.hidden}
           </span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Role</span>
-          <span style={styles.metaValue}>{session?.role || 'hidden'}</span>
+          <span style={styles.metaLabel}>{i18n.experience.settings.behavior}</span>
+          <span style={styles.metaValue}>{session?.role || i18n.caseStudy.fields.hidden}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Origin</span>
-          <span style={styles.metaValue}>{session?.origin || 'hidden'}</span>
+          <span style={styles.metaLabel}>{i18n.summaryCard.metrics.visible}</span>
+          <span style={styles.metaValue}>{session?.origin || i18n.caseStudy.fields.hidden}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Last Burst</span>
+          <span style={styles.metaLabel}>{i18n.replay.storyline}</span>
           <span style={styles.metaValue}>{signalWindowLabel}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Footprint</span>
+          <span style={styles.metaLabel}>{i18n.dashboard.metrics.modelDiversity}</span>
           <span style={styles.metaValue}>{footprintLabel}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Public Alias</span>
+          <span style={styles.metaLabel}>{i18n.summaryCard.carousel.topAgents}</span>
           <span style={styles.metaValue}>{label}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Model Family</span>
-          <span style={styles.metaValue}>{session?.modelFamily || 'hidden'}</span>
+          <span style={styles.metaLabel}>{i18n.caseStudy.cards.interactive.eyebrow}</span>
+          <span style={styles.metaValue}>{session?.modelFamily || i18n.caseStudy.fields.hidden}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Current Beat</span>
+          <span style={styles.metaLabel}>{i18n.replay.storyline}</span>
           <span style={{ ...styles.metaValue, color: activityColor }}>{activity}</span>
         </div>
 
         <div style={styles.metaRow}>
-          <span style={styles.metaLabel}>Current State</span>
-          <span style={styles.metaValue}>{session?.status || 'idle'}</span>
+          <span style={styles.metaLabel}>{i18n.status.live}</span>
+          <span style={styles.metaValue}>{session?.status || i18n.agent.status.idle}</span>
         </div>
 
         <div style={styles.footer}>
-          These metrics are derived from the public office snapshot plus coarse recency and volume bands. Internal
-          session identifiers, channels, prompts, transcript contents, devices, approvals, and exact token counts stay hidden.
+          {i18n.caseStudyContent.whatHidden.body}
         </div>
       </div>
     </div>

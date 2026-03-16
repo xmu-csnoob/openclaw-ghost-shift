@@ -4,8 +4,10 @@ import { CaseStudyLayer } from '../components/CaseStudyLayer.js'
 import { ExperiencePanel, type SurfaceExperiencePreferences } from '../components/ExperiencePanel.js'
 import { GhostShiftSummaryCard } from '../components/GhostShiftSummaryCard.js'
 import { LiveOfficeStage } from '../components/LiveOfficeStage.js'
+import { Modal } from '../components/Modal.js'
 import { ProductDashboard } from '../components/ProductDashboard.js'
 import { RealtimeStatsSidebar } from '../components/RealtimeStatsSidebar.js'
+import { SettingsContent } from '../components/SettingsContent.js'
 import { SharePanel } from '../components/SharePanel.js'
 import {
   demoSidebarNotes,
@@ -13,6 +15,7 @@ import {
   heroPills,
   surfaceCards,
 } from '../content/ghostShiftContent.js'
+import { i18n } from '../content/i18n.js'
 import { OfficeState } from '../office/engine/officeState.js'
 import type { OfficeLayout } from '../office/types.js'
 import type { DisplaySession, SessionObservation } from '../publicDisplay.js'
@@ -123,7 +126,7 @@ function parsePlaybackMode(value: string | null): SharedPlaybackMode {
 function buildEmbedSnippet(embedCardPath: string): string {
   return `<iframe
   src="${embedCardPath}"
-  title="Ghost Shift summary card"
+  title="${i18n.summaryCard.iframeTitle}"
   loading="lazy"
   style="width:100%;max-width:440px;min-height:520px;border:0;"
 ></iframe>`
@@ -363,9 +366,9 @@ function buildSessionInsights(replayFrames: ReplayFrame[], liveSessions: Display
           publicId: entry.publicId,
           activityPoints: entry.points.slice(-20),
           toolStats: [
-            { label: 'Read', count: entry.toolStats.read, color: '#7db3ff' },
-            { label: 'Write', count: entry.toolStats.write, color: '#f6c978' },
-            { label: 'Ops', count: entry.toolStats.ops, color: '#9bffb4' },
+            { label: i18n.agent.toolStats.read, count: entry.toolStats.read, color: '#7db3ff' },
+            { label: i18n.agent.toolStats.write, count: entry.toolStats.write, color: '#f6c978' },
+            { label: i18n.agent.toolStats.ops, count: entry.toolStats.ops, color: '#9bffb4' },
           ],
           dominantWindow,
         },
@@ -415,7 +418,7 @@ function buildReplayPreviewFrames(
         label: formatPlaybackTimestamp(frame.timestamp),
         running: frame.status.running,
         displayed: frame.status.displayed,
-        zoneLabel: topZone?.label || 'Quiet office',
+        zoneLabel: topZone?.label || i18n.quietOffice,
         accent: getZoneColor(topZone?.zone || 'ops-lab'),
         isCurrent: currentReplayFrame?.timestamp === frame.timestamp,
         previewBars: [runningRatio, occupancyRatio, zoneShare],
@@ -489,7 +492,9 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const [surfacePreferences, setSurfacePreferences] = useState<SurfaceExperiencePreferences>(readSurfacePreferences)
   const [showGuide, setShowGuide] = useState(() => readSurfacePreferences().coachTips)
   const [showSettings, setShowSettings] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [shortcutNotice, setShortcutNotice] = useState<string | null>(null)
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
   const [liveSnapshot, setLiveSnapshot] = useState<PublicOfficeSnapshot | null>(null)
@@ -528,7 +533,6 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const tourCursorRef = useRef(-1)
   const tourCandidatesRef = useRef<number[]>([])
   const shareSectionRef = useRef<HTMLDivElement | null>(null)
-  const caseStudySectionRef = useRef<HTMLDivElement | null>(null)
 
   const liveStatus = liveSnapshot?.status ?? null
   const liveTimestamp = parseTimestamp(liveStatus?.lastUpdatedAt) ?? Date.now()
@@ -606,7 +610,7 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
       } catch {
         if (cancelled) return
         setConnectionState('disconnected')
-        setBackendError('API unavailable')
+        setBackendError(i18n.status.apiUnavailable)
         setIsSnapshotLoading(false)
       }
     }
@@ -657,7 +661,7 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
         setIsHistoryLoading(false)
       } catch {
         if (!cancelled) {
-          setBackendError((previous) => previous ?? 'History unavailable')
+          setBackendError((previous) => previous ?? i18n.historyUnavailable)
           setIsHistoryLoading(false)
         }
       }
@@ -919,49 +923,49 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const freshness = useMemo(() => {
     if (playbackState.mode === 'replay') {
       return {
-        label: 'Replay',
+        label: i18n.status.replay,
         color: '#F9E2AF',
         detail: currentReplayFrame
-          ? `Frame ${formatPlaybackTimestamp(currentReplayFrame.timestamp)}`
-          : 'Choose a recorded frame',
+          ? `${i18n.replay.frame} ${formatPlaybackTimestamp(currentReplayFrame.timestamp)}`
+          : i18n.replay.chooseRecordedFrame,
       }
     }
 
     if (backendError || connectionState !== 'connected' || !liveStatus?.connected) {
       return {
-        label: 'Offline',
+        label: i18n.status.offline,
         color: '#F38BA8',
-        detail: backendError || 'Waiting for a live snapshot',
+        detail: backendError || i18n.status.waitingForLiveSnapshot,
       }
     }
 
     const ageMs = Math.max(0, Date.now() - liveTimestamp)
     if (ageMs > DELAYED_THRESHOLD_MS) {
       return {
-        label: 'Delayed',
+        label: i18n.status.delayed,
         color: '#FAB387',
-        detail: `Updated ${formatRelativeAge(ageMs)}`,
+        detail: `${i18n.status.updated} ${formatRelativeAge(ageMs)}`,
       }
     }
 
     return {
-      label: 'Live now',
+      label: i18n.status.liveNow,
       color: '#A6E3A1',
-      detail: `Updated ${formatRelativeAge(ageMs)}`,
+      detail: `${i18n.status.updated} ${formatRelativeAge(ageMs)}`,
     }
   }, [backendError, connectionState, currentReplayFrame, liveStatus, liveTimestamp, playbackState.mode])
 
   const currentFrameLabel =
     playbackState.mode === 'replay'
       ? currentReplayFrame
-        ? `Frame ${formatPlaybackTimestamp(currentReplayFrame.timestamp)}`
-        : 'Waiting for replay frames'
-      : `Live edge ${formatPlaybackTimestamp(displayTimestamp)}`
+        ? `${i18n.replay.frame} ${formatPlaybackTimestamp(currentReplayFrame.timestamp)}`
+        : i18n.replay.waitingForReplayFrames
+      : `${i18n.replay.liveEdge} ${formatPlaybackTimestamp(displayTimestamp)}`
 
   const coverageLabel =
     replayFrames.length === 0
-      ? 'Replay buffer empty'
-      : `Buffered ${formatDurationShort(scrubberMax - replayFrames[0].timestamp)} of 24h retention`
+      ? i18n.replay.replayBufferEmpty
+      : `${i18n.replay.buffered} ${formatDurationShort(scrubberMax - replayFrames[0].timestamp)} ${i18n.replay.bufferedRetention}`
 
   const handleZoomChange = useCallback(
     (newZoom: number) => {
@@ -1136,11 +1140,11 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   }, [])
 
   const handleJumpToShare = useCallback(() => {
-    shareSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setShowShareModal(true)
   }, [])
 
-  const handleJumpToCaseStudy = useCallback(() => {
-    caseStudySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const handleOpenHelp = useCallback(() => {
+    setShowHelpModal(true)
   }, [])
 
   useEffect(() => {
@@ -1155,63 +1159,63 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
       if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
         event.preventDefault()
         setShowGuide((previous) => !previous)
-        setShortcutNotice(showGuide ? 'Guide hidden' : 'Guide shown')
+        setShortcutNotice(showGuide ? i18n.shortcutNotices.guideHidden : i18n.shortcutNotices.guideShown)
         return
       }
 
       if (key === 't') {
         event.preventDefault()
         handleCycleTheme()
-        setShortcutNotice('Theme switched')
+        setShortcutNotice(i18n.shortcutNotices.themeSwitched)
         return
       }
 
       if (key === 'g') {
         event.preventDefault()
         handleToggleHeatmap()
-        setShortcutNotice(heatmapEnabled ? 'Heatmap off' : 'Heatmap on')
+        setShortcutNotice(heatmapEnabled ? i18n.shortcutNotices.heatmapOff : i18n.shortcutNotices.heatmapOn)
         return
       }
 
       if (key === 's') {
         event.preventDefault()
         handleJumpToShare()
-        setShortcutNotice('Jumped to share panel')
+        setShortcutNotice(i18n.shortcutNotices.jumpedToShare)
         return
       }
 
       if (key === 'l') {
         event.preventDefault()
         handleModeChange('live')
-        setShortcutNotice('Live mode selected')
+        setShortcutNotice(i18n.shortcutNotices.liveModeSelected)
         return
       }
 
       if (key === 'r') {
         event.preventDefault()
         handleModeChange('replay')
-        setShortcutNotice('Replay mode selected')
+        setShortcutNotice(i18n.shortcutNotices.replayModeSelected)
         return
       }
 
       if (key === '1') {
         event.preventDefault()
         handleWindowHoursChange(1)
-        setShortcutNotice('Replay window set to 1h')
+        setShortcutNotice(i18n.shortcutNotices.replayWindow1h)
         return
       }
 
       if (key === '6') {
         event.preventDefault()
         handleWindowHoursChange(6)
-        setShortcutNotice('Replay window set to 6h')
+        setShortcutNotice(i18n.shortcutNotices.replayWindow6h)
         return
       }
 
       if (key === '2') {
         event.preventDefault()
         handleWindowHoursChange(24)
-        setShortcutNotice('Replay window set to 24h')
+        setShortcutNotice(i18n.shortcutNotices.replayWindow24h)
       }
     }
 
@@ -1231,43 +1235,43 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const routeCards = [
     {
       href: liveHref,
-      eyebrow: 'Live',
-      title: 'Live Office',
-      body: 'Realtime canvas, public roster, freshness badges, and heatmap inspection.',
+      eyebrow: i18n.pages.live.eyebrow,
+      title: i18n.pages.live.title,
+      body: i18n.pages.live.body,
     },
     {
       href: replayHref,
-      eyebrow: 'Replay',
-      title: 'Replay Workspace',
-      body: 'Dedicated timeline controls, event markers, and playback speed for narrative review.',
+      eyebrow: i18n.pages.replay.eyebrow,
+      title: i18n.pages.replay.title,
+      body: i18n.pages.replay.body,
     },
     {
       href: embedHref,
-      eyebrow: 'Embed',
-      title: 'Embed Studio',
-      body: 'Preview the portable summary card and copy a shareable iframe snippet.',
+      eyebrow: i18n.pages.embed.eyebrow,
+      title: i18n.pages.embed.title,
+      body: i18n.pages.embed.body,
     },
     {
       href: docsHref,
-      eyebrow: 'Docs',
-      title: 'Docs & API',
-      body: 'Deployment notes, public contract boundaries, and implementation guidance.',
+      eyebrow: i18n.pages.docs.eyebrow,
+      title: i18n.pages.docs.title,
+      body: i18n.pages.docs.body,
     },
   ]
 
   const liveExperienceSection = (
     <section className="gs-demo-section">
       <div className="gs-demo-copy">
-        <span className="gs-section-kicker">{page === 'replay' ? 'Replay Workspace' : 'Live Office'}</span>
+        <span className="gs-section-kicker">{page === 'replay' ? i18n.pages.replay.kicker : i18n.pages.live.kicker}</span>
         <h2>
           {page === 'replay'
-            ? 'Scrub historical shifts with a dedicated replay surface.'
-            : 'Focus on the live public office without the rest of the marketing stack.'}
+            ? i18n.pages.replay.intro
+            : i18n.pages.live.intro}
         </h2>
         <p>
           {page === 'replay'
-            ? 'This page opens straight into replay-first context: buffered frames, event markers, playback speed, and historical freshness states that stay shareable by URL.'
-            : 'The live surface keeps the office front and center: realtime canvas motion, route-aware side stats, and interaction affordances that still hold up on touch devices.'}
+            ? i18n.pages.replay.description
+            : i18n.pages.live.description}
         </p>
       </div>
 
@@ -1344,8 +1348,8 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           />
 
           <article className="gs-side-card">
-            <div className="gs-side-card__eyebrow">{page === 'replay' ? 'Replay roster' : 'Live roster'}</div>
-            <h3>Public aliases and room cadence</h3>
+            <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayRoster : i18n.liveRoster}</div>
+            <h3>{i18n.sidebar.publicAliases}</h3>
             <div className="gs-live-roster">
               {(page === 'replay' ? displaySessions : liveSessions).slice(0, 5).map((session) => {
                 const agentId = sessionToAgentId.get(session.sessionKey)
@@ -1369,8 +1373,8 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           </article>
 
           <article className="gs-side-card">
-            <div className="gs-side-card__eyebrow">{page === 'replay' ? 'Replay notes' : 'Why this surface works'}</div>
-            <h3>{page === 'replay' ? 'Historical context without losing operator readability.' : 'Portfolio-first, operator-safe.'}</h3>
+            <div className="gs-side-card__eyebrow">{page === 'replay' ? i18n.replayNotes : i18n.whyThisSurface}</div>
+            <h3>{page === 'replay' ? i18n.sidebar.replayTitle : i18n.sidebar.liveTitle}</h3>
             <ul className="gs-side-list">
               {(page === 'replay' ? documentationPoints.slice(0, 4) : demoSidebarNotes).map((note) => (
                 <li key={note}>{note}</li>
@@ -1386,16 +1390,16 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
     <>
       <section className="gs-docs-section">
         <div className="gs-docs-copy">
-          <span className="gs-section-kicker">{page === 'embed' ? 'Embed Studio' : 'Documentation'}</span>
+          <span className="gs-section-kicker">{page === 'embed' ? i18n.docsSection.embedKicker : i18n.docsSection.docsKicker}</span>
           <h2>
             {page === 'embed'
-              ? 'Preview the card, copy the snippet, and keep the URL portable.'
-              : 'Keep the public contract narrow and the implementation legible.'}
+              ? i18n.docsSection.embedTitle
+              : i18n.docsSection.docsTitle}
           </h2>
           <p>
             {page === 'embed'
-              ? 'The summary card is the teaser surface for the live office. Use the dedicated preview route for operator checks, then ship the card-only route inside portfolio pages or CMS embeds.'
-              : 'These notes cover deployment boundaries, public API shape, and the product rationale for separating live, replay, embed, and docs into their own routes.'}
+              ? i18n.docsSection.embedBody
+              : i18n.docsSection.docsBody}
           </p>
         </div>
 
@@ -1412,8 +1416,8 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
             />
           ) : (
             <article className="gs-side-card">
-              <div className="gs-side-card__eyebrow">Deployment notes</div>
-              <h3>Keep the public contract narrow.</h3>
+              <div className="gs-side-card__eyebrow">{i18n.docsSection.deploymentNotes}</div>
+              <h3>{i18n.docsSection.keepContractNarrow}</h3>
               <ul className="gs-doc-list">
                 {documentationPoints.map((point) => (
                   <li key={point}>{point}</li>
@@ -1423,29 +1427,23 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           )}
 
           <article className="gs-code-card">
-            <div className="gs-side-card__eyebrow">Shareable URLs</div>
+            <div className="gs-side-card__eyebrow">{i18n.docsSection.shareableUrls}</div>
             <pre>
               <code>{buildEmbedSnippet(embedCardHref)}</code>
             </pre>
             <div className="gs-route-grid gs-route-grid--compact">
               <a className="gs-route-card" href={embedCardHref}>
-                <span className="gs-route-card__eyebrow">Card</span>
-                <strong>Open card-only preview</strong>
+                <span className="gs-route-card__eyebrow">{i18n.docsSection.card}</span>
+                <strong>{i18n.docsSection.openCardPreview}</strong>
               </a>
               <a className="gs-route-card" href={liveHref}>
-                <span className="gs-route-card__eyebrow">Live</span>
-                <strong>Open live office</strong>
+                <span className="gs-route-card__eyebrow">{i18n.nav.live}</span>
+                <strong>{i18n.docsSection.openLiveOffice}</strong>
               </a>
             </div>
           </article>
         </div>
       </section>
-
-      {page !== 'embed' ? (
-        <div ref={caseStudySectionRef}>
-          <CaseStudyLayer exampleSession={liveSessions[0] || null} />
-        </div>
-      ) : null}
     </>
   )
 
@@ -1473,19 +1471,16 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           <>
             <section className="gs-hero">
               <div className="gs-hero-copy">
-                <span className="gs-kicker">Ghost Shift</span>
-                <h1>Replayable public telemetry, split into focused workflows.</h1>
-                <p>
-                  Landing stays concise. Live, replay, embed, docs, and about now each get their own route so viewers
-                  can focus on one job at a time instead of parsing a single overloaded page.
-                </p>
+                <span className="gs-kicker">{i18n.brand.zh}</span>
+                <h1>{i18n.hero.title}</h1>
+                <p>{i18n.hero.subtitle}</p>
 
                 <div className="gs-hero-actions">
                   <a className="gs-button gs-button--primary" href={liveHref}>
-                    Open live office
+                    {i18n.hero.cta.primary}
                   </a>
                   <a className="gs-button gs-button--secondary" href={replayHref}>
-                    Open replay workspace
+                    {i18n.pages.replay.title}
                   </a>
                 </div>
 
@@ -1548,19 +1543,29 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
 
         {page === 'live' || page === 'replay' ? (
           <>
+            {/* 设置按钮 */}
+            <button
+              type="button"
+              className={`gs-settings-icon ${showSettings ? 'is-active' : ''}`}
+              onClick={() => setShowSettings((previous) => !previous)}
+              aria-label="设置"
+              title="打开设置"
+              style={{
+                position: 'fixed',
+                top: '12px',
+                right: '12px',
+                zIndex: 150,
+              }}
+            >
+              ⚙️
+            </button>
+
             <ExperiencePanel
-              preferences={surfacePreferences}
               showGuide={showGuide}
-              showSettings={showSettings}
               shortcutNotice={shortcutNotice}
               onToggleGuide={() => setShowGuide((previous) => !previous)}
-              onToggleSettings={() => setShowSettings((previous) => !previous)}
-              onThemeChange={handleThemeChange}
-              onDensityChange={handleDensityChange}
-              onAutoSharePreviewChange={handleAutoSharePreviewChange}
-              onCoachTipsChange={handleCoachTipsChange}
               onJumpToShare={handleJumpToShare}
-              onJumpToCaseStudy={handleJumpToCaseStudy}
+              onOpenHelp={handleOpenHelp}
             />
             <ProductDashboard
               status={displayStatus}
@@ -1583,9 +1588,6 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
                 theme={surfacePreferences.theme}
                 autoGeneratePreview={surfacePreferences.autoSharePreview}
               />
-            </div>
-            <div ref={caseStudySectionRef}>
-              <CaseStudyLayer exampleSession={liveSessions[0] || null} />
             </div>
           </>
         ) : null}
@@ -1698,6 +1700,63 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           </>
         ) : null}
       </main>
+
+      {/* Floating Share Button - only show on live, replay, and embed pages */}
+      {(page === 'live' || page === 'replay' || page === 'embed') && (
+        <button
+          type="button"
+          className="gs-share-fab"
+          onClick={() => setShowShareModal(true)}
+          aria-label="打开分享面板"
+        >
+          分享
+        </button>
+      )}
+
+      {/* Share Modal */}
+      <Modal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="分享表面"
+        className="gs-share-modal"
+      >
+        <SharePanel
+          livePath={liveHref}
+          status={displayStatus}
+          sessions={displaySessions}
+          timeline={augmentedTimelineSeries}
+          timestamp={displayTimestamp}
+          freshnessLabel={freshness.label}
+          playbackMode={playbackState.mode}
+          windowHours={playbackState.windowHours}
+          theme={surfacePreferences.theme}
+          autoGeneratePreview={surfacePreferences.autoSharePreview}
+        />
+      </Modal>
+
+      {/* 设置 Modal */}
+      <Modal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="设置"
+      >
+        <SettingsContent
+          preferences={surfacePreferences}
+          onThemeChange={handleThemeChange}
+          onDensityChange={handleDensityChange}
+          onAutoSharePreviewChange={handleAutoSharePreviewChange}
+          onCoachTipsChange={handleCoachTipsChange}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title={i18n.caseStudy.modalTitle}
+        className="gs-help-modal"
+      >
+        <CaseStudyLayer exampleSession={liveSessions[0] || null} />
+      </Modal>
     </div>
   )
 }

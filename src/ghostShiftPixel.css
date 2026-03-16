@@ -1,0 +1,804 @@
+/* ============================================
+   Ghost Shift - OpenClaw 像素风主题
+   简化版 CSS，专注于办公室展示
+   ============================================ */
+
+:root {
+  /* OpenClaw 配色 */
+  --gs-bg: #12141a;
+  --gs-bg-elevated: #1a1d25;
+  --gs-bg-hover: #262a35;
+  --gs-border: #27272a;
+  --gs-border-strong: #3f3f46;
+  
+  /* 强调色 */
+  --gs-accent: #ff5c5c;
+  --gs-accent-hover: #ff7070;
+  --gs-accent-secondary: #14b8a6;
+  
+  /* 文字色 */
+  --gs-text: #e4e4e7;
+  --gs-text-strong: #fafafa;
+  --gs-text-dim: #71717a;
+  
+  /* 状态色 */
+  --gs-success: #22c55e;
+  --gs-warning: #f59e0b;
+  --gs-danger: #ef4444;
+  
+  /* 像素风效果 */
+  --gs-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  --gs-shadow-hover: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  
+  /* 字体 */
+  --gs-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --gs-font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ========== 全局重置 ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--gs-font);
+  background: var(--gs-bg);
+  color: var(--gs-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== 主容器 ========== */
+.gs-shell {
+  min-height: 100vh;
+  background: var(--gs-bg);
+}
+
+.gs-page {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== 导航栏 ========== */
+.gs-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--gs-bg);
+  border-bottom: 2px solid var(--gs-border);
+}
+
+.gs-nav__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gs-nav__brand-zh {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gs-text-strong);
+}
+
+.gs-nav__brand-en {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gs-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.gs-nav__links {
+  display: flex;
+  gap: 4px;
+}
+
+.gs-nav__link {
+  padding: 8px 16px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--gs-text-dim);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.gs-nav__link:hover {
+  color: var(--gs-text);
+  border-color: var(--gs-border);
+}
+
+.gs-nav__link.is-active {
+  color: var(--gs-accent);
+  border-color: var(--gs-accent);
+  background: rgba(255, 92, 92, 0.1);
+}
+
+/* ========== 办公室容器（主角） ========== */
+.gs-office-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 100px;
+  position: relative;
+}
+
+.gs-office-stage {
+  width: 100%;
+  max-width: 1200px;
+  aspect-ratio: 16 / 10;
+  border: 3px solid var(--gs-border);
+  background: var(--gs-bg-elevated);
+  box-shadow: var(--gs-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========== 底部状态栏 ========== */
+.gs-status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--gs-bg);
+  border-top: 2px solid var(--gs-border);
+}
+
+.gs-status-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.gs-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.gs-status-indicator__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--gs-success);
+  box-shadow: 0 0 8px var(--gs-success);
+}
+
+.gs-status-indicator__dot--delayed {
+  background: var(--gs-warning);
+  box-shadow: 0 0 8px var(--gs-warning);
+}
+
+.gs-status-indicator__dot--offline {
+  background: var(--gs-danger);
+  box-shadow: 0 0 8px var(--gs-danger);
+}
+
+.gs-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.gs-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gs-stat__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gs-text-strong);
+}
+
+.gs-stat__label {
+  font-size: 0.625rem;
+  color: var(--gs-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.gs-status-bar__right {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========== 按钮 ========== */
+.gs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid var(--gs-border);
+  background: var(--gs-bg-elevated);
+  color: var(--gs-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--gs-shadow);
+}
+
+.gs-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--gs-shadow-hover);
+  border-color: var(--gs-border-strong);
+}
+
+.gs-btn:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
+.gs-btn--primary {
+  background: var(--gs-accent);
+  border-color: var(--gs-accent);
+  color: var(--gs-text-strong);
+}
+
+.gs-btn--primary:hover {
+  background: var(--gs-accent-hover);
+  border-color: var(--gs-accent-hover);
+}
+
+.gs-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gs-btn--ghost:hover {
+  background: var(--gs-bg-hover);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.gs-btn--sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+/* ========== 悬浮控制面板 ========== */
+.gs-float-panel {
+  position: absolute;
+  z-index: 50;
+  background: var(--gs-bg);
+  border: 2px solid var(--gs-border);
+  box-shadow: var(--gs-shadow);
+  padding: 12px;
+}
+
+.gs-float-panel--top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.gs-float-panel--bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.gs-float-panel--top-left {
+  top: 16px;
+  left: 16px;
+}
+
+/* ========== 回放控制条 ========== */
+.gs-replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gs-replay-controls__play {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gs-replay-controls__timeline {
+  flex: 1;
+  height: 24px;
+  background: var(--gs-bg-elevated);
+  border: 2px solid var(--gs-border);
+  position: relative;
+  cursor: pointer;
+}
+
+.gs-replay-controls__progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--gs-accent-secondary);
+  opacity: 0.6;
+}
+
+/* ========== 落地页 Hero ========== */
+.gs-hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.gs-hero__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gs-accent-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.gs-hero__kicker::before,
+.gs-hero__kicker::after {
+  content: '';
+  width: 24px;
+  height: 2px;
+  background: var(--gs-accent-secondary);
+}
+
+.gs-hero__title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: var(--gs-text-strong);
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.gs-hero__subtitle {
+  font-size: 1.125rem;
+  color: var(--gs-text-dim);
+  max-width: 600px;
+  margin-bottom: 32px;
+}
+
+.gs-hero__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gs-hero__pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.gs-hero__pill {
+  padding: 6px 16px;
+  border: 2px solid var(--gs-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gs-text-dim);
+}
+
+/* ========== 卡片网格 ========== */
+.gs-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 24px;
+}
+
+.gs-card {
+  padding: 24px;
+  border: 2px solid var(--gs-border);
+  background: var(--gs-bg-elevated);
+  box-shadow: var(--gs-shadow);
+}
+
+.gs-card__eyebrow {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--gs-accent-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+
+.gs-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gs-text-strong);
+  margin-bottom: 8px;
+}
+
+.gs-card__body {
+  font-size: 0.875rem;
+  color: var(--gs-text-dim);
+  line-height: 1.5;
+}
+
+/* ========== 模式切换 ========== */
+.gs-mode-toggle {
+  display: flex;
+  border: 2px solid var(--gs-border);
+}
+
+.gs-mode-toggle__btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--gs-text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-mode-toggle__btn:not(:last-child) {
+  border-right: 2px solid var(--gs-border);
+}
+
+.gs-mode-toggle__btn.is-active {
+  background: var(--gs-accent);
+  color: var(--gs-text-strong);
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 768px) {
+  .gs-nav {
+    padding: 8px 16px;
+  }
+  
+  .gs-nav__brand-en {
+    display: none;
+  }
+  
+  .gs-nav__link {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .gs-office-container {
+    padding: 60px 16px 80px;
+  }
+  
+  .gs-status-bar {
+    padding: 8px 16px;
+  }
+  
+  .gs-stats {
+    gap: 16px;
+  }
+  
+  .gs-stat__value {
+    font-size: 1rem;
+  }
+}
+
+/* ========== 动画 ========== */
+@keyframes gs-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gs-animate-in {
+  animation: gs-fade-in 0.3s ease both;
+}
+
+/* ========== 工具类 ========== */
+.gs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ========== Modal 样式 ========== */
+.gs-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(18, 20, 26, 0.85);
+  animation: gs-modal-backdrop-in 0.2s ease;
+}
+
+@keyframes gs-modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.gs-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  background: var(--gs-bg-elevated);
+  border: 2px solid var(--gs-border);
+  box-shadow: var(--gs-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: gs-modal-in 0.25s ease;
+}
+
+@keyframes gs-modal-in {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+.gs-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 2px solid var(--gs-border);
+}
+
+.gs-modal__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gs-text-strong);
+  margin: 0;
+}
+
+.gs-modal__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--gs-border);
+  background: transparent;
+  color: var(--gs-text-dim);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-modal__close:hover {
+  background: var(--gs-accent);
+  border-color: var(--gs-accent);
+  color: var(--gs-text-strong);
+}
+
+.gs-modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* Modal 内的设置样式 */
+.gs-modal .gs-settings-group {
+  margin-bottom: 20px;
+}
+
+.gs-modal .gs-settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.gs-modal .gs-settings-group__label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gs-text-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gs-modal .gs-theme-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gs-modal .gs-theme-switcher button {
+  padding: 12px 16px;
+  background: var(--gs-bg);
+  border: 2px solid var(--gs-border);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-modal .gs-theme-switcher button:hover {
+  background: var(--gs-bg-hover);
+  border-color: var(--gs-border-strong);
+}
+
+.gs-modal .gs-theme-switcher button.is-active {
+  background: var(--gs-accent);
+  border-color: var(--gs-accent);
+}
+
+.gs-modal .gs-theme-switcher button strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gs-text-strong);
+  margin-bottom: 2px;
+}
+
+.gs-modal .gs-theme-switcher button span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gs-text-dim);
+}
+
+.gs-modal .gs-theme-switcher button.is-active span {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.gs-modal .gs-toggle-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gs-modal .gs-toggle-row button {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--gs-bg);
+  border: 2px solid var(--gs-border);
+  color: var(--gs-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-modal .gs-toggle-row button:hover {
+  background: var(--gs-bg-hover);
+}
+
+.gs-modal .gs-toggle-row button.is-active {
+  background: var(--gs-accent);
+  border-color: var(--gs-accent);
+  color: var(--gs-text-strong);
+}
+
+.gs-modal .gs-toggle-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gs-modal .gs-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.gs-modal .gs-check-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--gs-accent);
+}
+
+.gs-modal .gs-check-row span {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--gs-text);
+  line-height: 1.4;
+}
+
+/* 设置图标按钮 */
+.gs-settings-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--gs-border);
+  background: transparent;
+  color: var(--gs-text-dim);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-settings-icon:hover {
+  background: var(--gs-bg-hover);
+  border-color: var(--gs-border-strong);
+  color: var(--gs-text);
+}
+
+.gs-settings-icon.is-active {
+  background: var(--gs-accent);
+  border-color: var(--gs-accent);
+  color: var(--gs-text-strong);
+}
+
+/* Floating Share Button (FAB) */
+.gs-share-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--gs-accent);
+  background: var(--gs-accent);
+  color: var(--gs-text-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0;
+  cursor: pointer;
+  z-index: 999;
+  box-shadow: var(--gs-shadow);
+  transition: all 0.15s ease;
+}
+
+.gs-share-fab:hover {
+  background: var(--gs-accent-hover);
+  border-color: var(--gs-accent-hover);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+}
+
+.gs-share-fab:active {
+  transform: translate(0, 0);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.gs-share-fab:focus {
+  outline: 2px solid var(--gs-accent);
+  outline-offset: 2px;
+}
+
+/* Share Modal specific styles */
+.gs-share-modal .gs-modal {
+  max-width: 1200px;
+  max-height: 90vh;
+}
+
+.gs-share-modal .gs-modal__content {
+  overflow-y: auto;
+  max-height: calc(90vh - 80px);
+}

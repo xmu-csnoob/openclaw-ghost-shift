@@ -131,36 +131,36 @@ export function formatRatio(ratio: number): string {
 export function getSignalWindowLabel(window: string): string {
   switch (window) {
     case 'live':
-      return 'Live now'
+      return '实时'
     case 'just-now':
-      return 'Just now'
+      return '刚刚'
     case '2m':
-      return '< 2m ago'
+      return '2分钟前'
     case '10m':
-      return '< 10m ago'
+      return '10分钟前'
     case '30m':
-      return '< 30m ago'
+      return '30分钟前'
     case '2h':
-      return '< 2h ago'
+      return '2小时前'
     case 'today':
-      return 'Earlier today'
+      return '今天早些'
     case 'archive':
-      return 'Background'
+      return '背景'
     default:
-      return 'Observed'
+      return '已观察'
   }
 }
 
 export function getZoneLabel(zone: string): string {
   switch (zone) {
     case 'code-studio':
-      return 'Code Studio'
+      return '代码工作室'
     case 'chat-lounge':
-      return 'Chat Lounge'
+      return '对话休息室'
     case 'ops-lab':
-      return 'Ops Lab'
+      return '运维实验室'
     default:
-      return 'Public Wing'
+      return '公共区域'
   }
 }
 

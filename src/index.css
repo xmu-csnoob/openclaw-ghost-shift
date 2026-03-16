@@ -1,21 +1,39 @@
 :root {
-  /* Dark theme colors */
-  --pixel-bg: #1E1E2E;
-  --pixel-border: #45475A;
-  --pixel-accent: #89B4FA;
-  --pixel-text: #CDD6F4;
-  --pixel-text-dim: #A6ADC8;
-  --pixel-btn-bg: #313244;
-  --pixel-btn-hover: #45475A;
-  --pixel-btn-disabled-opacity: 0.5;
-  --pixel-danger-bg: #F38BA8;
-  --pixel-success: #A6E3A1;
-  --pixel-warning: #F9E2AF;
-  --pixel-shadow: 2px 2px 0px #0A0A14;
-  --pixel-controls-z: 100;
-  --pixel-vignette: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0,0,0,0.4) 100%);
-  --pixel-reset-text: #F9E2AF;
-  --pixel-hint-bg: rgba(30, 30, 46, 0.9);
+  /* OpenClaw 像素主题 */
+  --pixel-bg: #12141a;
+  --pixel-bg-elevated: #1a1d25;
+  --pixel-bg-hover: #262a35;
+  --pixel-border: #27272a;
+  --pixel-border-strong: #3f3f46;
+  
+  /* OpenClaw 强调色 */
+  --pixel-accent: #ff5c5c;
+  --pixel-accent-hover: #ff7070;
+  --pixel-accent-muted: rgba(255, 92, 92, 0.7);
+  --pixel-accent-subtle: rgba(255, 92, 92, 0.15);
+  
+  /* 辅助强调色 (青绿) */
+  --pixel-accent-2: #14b8a6;
+  --pixel-accent-2-muted: rgba(20, 184, 166, 0.7);
+  --pixel-accent-2-subtle: rgba(20, 184, 166, 0.15);
+  
+  /* 状态色 */
+  --pixel-success: #22c55e;
+  --pixel-warning: #f59e0b;
+  --pixel-danger: #ef4444;
+  
+  /* 文字色 */
+  --pixel-text: #e4e4e7;
+  --pixel-text-strong: #fafafa;
+  --pixel-text-dim: #71717a;
+  
+  /* 像素风效果 */
+  --pixel-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  --pixel-shadow-hover: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  
+  /* 字体 */
+  --pixel-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --pixel-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 * {
@@ -31,9 +49,7 @@ html, body, #root {
 
 body {
   min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  font-family: 'Instrument Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+  font-family: var(--pixel-font);
   background: var(--pixel-bg);
   color: var(--pixel-text);
   -webkit-font-smoothing: antialiased;
@@ -41,15 +57,29 @@ body {
 }
 
 a {
-  color: inherit;
+  color: var(--pixel-accent);
+  text-decoration: none;
 }
 
-/* Pixel art style buttons */
+a:hover {
+  text-decoration: underline;
+}
+
+/* 像素风按钮 */
 button {
   font-family: inherit;
   border-radius: 0;
   cursor: pointer;
   user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+button:hover {
+  transform: translate(-1px, -1px);
+}
+
+button:active {
+  transform: translate(0, 0);
 }
 
 button:focus {
@@ -57,7 +87,7 @@ button:focus {
   outline-offset: 2px;
 }
 
-/* Scrollbar styling */
+/* 像素风滚动条 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -73,5 +103,48 @@ button:focus {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--pixel-text-dim);
+  background: var(--pixel-border-strong);
+}
+
+/* 选中样式 */
+::selection {
+  background: var(--pixel-accent-subtle);
+  color: var(--pixel-text-strong);
+}
+
+/* 双语标题组件 */
+.gs-bilingual-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gs-bilingual-title__zh {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pixel-text-strong);
+  line-height: 1.1;
+}
+
+.gs-bilingual-title__en {
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pixel-text-dim);
+}
+
+.gs-bilingual-title--inline {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gs-bilingual-title--inline .gs-bilingual-title__zh {
+  font-size: inherit;
+}
+
+.gs-bilingual-title--inline .gs-bilingual-title__en {
+  font-size: 0.7em;
 }

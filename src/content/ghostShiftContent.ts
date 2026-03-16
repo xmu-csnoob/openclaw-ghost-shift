@@ -14,61 +14,61 @@ export interface CaseStudyCardCopy {
 }
 
 export const heroPills = [
-  'Privacy-safe public telemetry',
-  'Embeddable portfolio card',
-  'Mobile-friendly office demo',
+  '隐私安全的公开遥测',
+  '可嵌入的作品集卡片',
+  '移动端友好的办公演示',
 ]
 
 export const surfaceCards: SurfaceCardCopy[] = [
   {
-    eyebrow: 'Featured surface',
-    title: 'Public office demo',
+    eyebrow: '核心展示',
+    title: '公开办公演示',
     body:
-      'A live pixel office that turns active agent work into something visitors can read in seconds: room occupancy, signal strength, activity bands, and public-facing cadence.',
-    note: 'Lead with the live office, not an empty dashboard shell.',
+      '一个实时像素办公室，把活跃的 Agent 工作转化为访客几秒钟就能看懂的内容：房间占用、信号强度、活动频段和公开节奏。',
+    note: '用实时办公室开场，而不是空的仪表盘壳子。',
     featured: true,
   },
   {
-    eyebrow: 'Portfolio embed',
-    title: 'Summary card',
+    eyebrow: '作品集嵌入',
+    title: '摘要卡片',
     body:
-      'A compact card built for `me.wenfei4288.com`: headline, live status, visible counts, top wing, and refresh cadence in a format that survives tight layouts.',
-    note: 'Use it as the teaser surface before sending readers into the full office.',
+      '一个紧凑的卡片，专为作品集设计：标题、实时状态、可见数量、顶部区域和刷新节奏，在紧凑布局下也能正常显示。',
+    note: '把它作为预告界面，再引导读者进入完整的办公室。',
   },
   {
-    eyebrow: 'Boundary layer',
-    title: 'Case study framing',
+    eyebrow: '边界层',
+    title: '案例研究说明',
     body:
-      'A dedicated explanation layer that tells visitors what the demo is actually rendering, what stays hidden, and why the public surface can be shared safely.',
-    note: 'The privacy boundary is part of the product story, not a footnote.',
+      '一个专门的解释层，告诉访客这个演示实际渲染了什么、什么被隐藏、以及为什么这个公开表面可以安全分享。',
+    note: '隐私边界是产品故事的一部分，不是脚注。',
   },
 ]
 
 export const caseStudyCards: CaseStudyCardCopy[] = [
   {
-    title: 'What the demo is',
+    title: '这个演示是什么',
     body:
-      'Ghost Shift reads a privacy-safe public snapshot and renders it as a live office. Visitors see room-level activity, public aliases, coarse roles, model families, and behavior bands instead of raw backend state.',
+      'Ghost Shift 读取一个隐私安全的公开快照，并将其渲染为实时办公室。访客看到的是房间级别的活动、公开别名、粗粒度角色、模型族和行为频段，而不是原始的后端状态。',
   },
   {
-    title: 'What stays hidden',
+    title: '什么被隐藏了',
     body:
-      'Prompts, transcripts, approvals, tool arguments, exact token counts, device identity, and internal session keys stay out of the product surface. The office is designed to expose narrative signal without exposing operating detail.',
+      '提示词、对话记录、审批、工具参数、精确的 token 计数、设备身份和内部会话密钥都不会出现在产品表面。办公室的设计目标是暴露叙事信号，而不是操作细节。',
   },
   {
-    title: 'Update cadence',
-    body: `The public surface refreshes every ${SNAPSHOT_REFRESH_MS / 1000} seconds. That is fast enough to feel live in a portfolio context, but coarse enough to avoid turning the page into an operator console.`,
+    title: '更新节奏',
+    body: `公开表面每 ${SNAPSHOT_REFRESH_MS / 1000} 秒刷新一次。这在作品集场景下足够实时，但又足够粗糙，不会让页面变成操作控制台。`,
   },
 ]
 
 export const demoSidebarNotes = [
-  'Visitors can understand the product at a glance because the office scene carries the explanation work.',
-  'The public office remains useful on mobile: the demo stays readable, while dense telemetry folds into supporting cards below.',
-  'Summary card and case study copy now mirror the same privacy contract as the live surface.',
+  '访客可以一眼理解产品，因为办公室场景本身就承担了解释工作。',
+  '公开办公室在移动端依然有用：演示保持可读性，密集的遥测数据折叠到下方的辅助卡片中。',
+  '摘要卡片和案例研究文案现在与实时表面使用相同的隐私协议。',
 ]
 
 export const documentationPoints = [
-  'Embed the summary card under a dedicated iframe path so the portfolio site can treat it as a clean, reusable surface.',
-  'Use the case study layer to explain that the office is a public rendering, not a gateway mirror.',
-  'Keep the office demo visually dominant in the portfolio so readers immediately see the product working.',
+  '在专门的 iframe 路径下嵌入摘要卡片，让作品集网站可以把它当作一个干净、可复用的表面。',
+  '使用案例研究层解释这是一个公开渲染，而不是网关镜像。',
+  '让办公室演示在作品集中保持视觉主导地位，让读者立即看到产品在工作。',
 ]
