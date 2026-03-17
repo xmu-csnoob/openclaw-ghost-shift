@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 18px 0 12px;
+  padding: 14px 0 10px;
   backdrop-filter: blur(18px);
 }
 
@@ -30,13 +30,13 @@
 .gs-app-nav__logo {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   border: 1px solid rgba(255, 107, 53, 0.2);
   background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 107, 53, 0.08));
   color: #2d2d2d;
   font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
-  font-size: 0.84rem;
+  font-size: 1.1rem;
   letter-spacing: 0.12em;
 }
 
