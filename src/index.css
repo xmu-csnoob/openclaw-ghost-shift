@@ -12,6 +12,12 @@
   --bg-hover: #fff0e6;        /* 悬停色 */
   --bg-active: #ffe8d6;       /* 激活状态 */
   
+  /* 🔴 红色 - 强调/错误 */
+  --red: #ef4444;             /* 主红 */
+  --red-hover: #f87171;       /* 悬停红 */
+  --red-light: #fecaca;       /* 浅红 */
+  --red-dark: #dc2626;        /* 深红 */
+  
   /* 🧡 橙色 - 温暖活力 */
   --orange: #ff6b35;          /* 主橙 */
   --orange-hover: #ff8555;    /* 悬停橙 */

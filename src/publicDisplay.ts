@@ -167,13 +167,13 @@ export function getZoneLabel(zone: string): string {
 export function getZoneColor(zone: string): string {
   switch (zone) {
     case 'code-studio':
-      return '#89B4FA'
+      return '#ff6b35'
     case 'chat-lounge':
-      return '#F9E2AF'
+      return '#ef4444'
     case 'ops-lab':
-      return '#A6E3A1'
+      return '#f59e0b'
     default:
-      return '#6C7086'
+      return '#d4a574'
   }
 }
 
@@ -193,13 +193,13 @@ export function getActivityLabel(band: ActivityBand): string {
 export function getActivityColor(band: ActivityBand): string {
   switch (band) {
     case 'surging':
-      return '#F38BA8'
+      return '#ef4444'
     case 'steady':
-      return '#A6E3A1'
+      return '#ff6b35'
     case 'warm':
-      return '#F9E2AF'
+      return '#f59e0b'
     default:
-      return '#6C7086'
+      return '#d4a574'
   }
 }
 

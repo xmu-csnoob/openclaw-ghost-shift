@@ -9,10 +9,10 @@ const _ = '' // transparent
 
 /** Square desk: 32x32 pixels (2x2 tiles) — top-down wood surface */
 export const DESK_SQUARE_SPRITE: SpriteData = (() => {
-  const W = '#8B6914' // wood edge
-  const L = '#A07828' // lighter wood
-  const S = '#B8922E' // surface
-  const D = '#6B4E0A' // dark edge
+  const W = '#c4943c' // wood edge (warmer)
+  const L = '#d4a84e' // lighter wood
+  const S = '#e0b860' // surface
+  const D = '#a07830' // dark edge (warmer)
   const rows: string[][] = []
   // Row 0: empty
   rows.push(new Array(32).fill(_))
@@ -55,11 +55,11 @@ export const DESK_SQUARE_SPRITE: SpriteData = (() => {
 
 /** Plant in pot: 16x24 */
 export const PLANT_SPRITE: SpriteData = (() => {
-  const G = '#3D8B37'
-  const D = '#2D6B27'
-  const T = '#6B4E0A'
-  const P = '#B85C3A'
-  const R = '#8B4422'
+  const G = '#5aab44'
+  const D = '#3d8b2e'
+  const T = '#8a6820'
+  const P = '#d4845a'
+  const R = '#b06838'
   return [
     [_, _, _, _, _, _, G, G, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, G, G, G, G, _, _, _, _, _, _, _],
@@ -90,13 +90,13 @@ export const PLANT_SPRITE: SpriteData = (() => {
 
 /** Bookshelf: 16x32 (1 tile wide, 2 tiles tall) */
 export const BOOKSHELF_SPRITE: SpriteData = (() => {
-  const W = '#8B6914'
-  const D = '#6B4E0A'
-  const R = '#CC4444'
-  const B = '#4477AA'
-  const G = '#44AA66'
-  const Y = '#CCAA33'
-  const P = '#9955AA'
+  const W = '#c4943c'
+  const D = '#a07830'
+  const R = '#ef4444'
+  const B = '#ff6b35'
+  const G = '#f59e0b'
+  const Y = '#d4845a'
+  const P = '#cc6b8a'
   return [
     [_, W, W, W, W, W, W, W, W, W, W, W, W, W, W, _],
     [W, D, D, D, D, D, D, D, D, D, D, D, D, D, D, W],
@@ -135,10 +135,10 @@ export const BOOKSHELF_SPRITE: SpriteData = (() => {
 
 /** Water cooler: 16x24 */
 export const COOLER_SPRITE: SpriteData = (() => {
-  const W = '#CCDDEE'
-  const L = '#88BBDD'
-  const D = '#999999'
-  const B = '#666666'
+  const W = '#fff0e0'
+  const L = '#ffd4b8'
+  const D = '#b0a090'
+  const B = '#8a7a6a'
   return [
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, D, D, D, D, D, D, _, _, _, _, _],
@@ -169,10 +169,10 @@ export const COOLER_SPRITE: SpriteData = (() => {
 
 /** Whiteboard: 32x16 (2 tiles wide, 1 tile tall) — hangs on wall */
 export const WHITEBOARD_SPRITE: SpriteData = (() => {
-  const F = '#AAAAAA'
-  const W = '#EEEEFF'
-  const M = '#CC4444'
-  const B = '#4477AA'
+  const F = '#c0b0a0'
+  const W = '#fff8f0'
+  const M = '#ef4444'
+  const B = '#ff6b35'
   return [
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
     [_, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, _],
@@ -195,10 +195,10 @@ export const WHITEBOARD_SPRITE: SpriteData = (() => {
 
 /** Chair: 16x16 — top-down desk chair */
 export const CHAIR_SPRITE: SpriteData = (() => {
-  const W = '#8B6914'
-  const D = '#6B4E0A'
-  const B = '#5C3D0A'
-  const S = '#A07828'
+  const W = '#c4943c'
+  const D = '#a07830'
+  const B = '#7a5818'
+  const S = '#d4a84e'
   return [
     [_, _, _, _, _, D, D, D, D, D, D, _, _, _, _, _],
     [_, _, _, _, D, B, B, B, B, B, B, D, _, _, _, _],
@@ -221,10 +221,10 @@ export const CHAIR_SPRITE: SpriteData = (() => {
 
 /** PC monitor: 16x16 — top-down monitor on stand */
 export const PC_SPRITE: SpriteData = (() => {
-  const F = '#555555'
-  const S = '#3A3A5C'
-  const B = '#6688CC'
-  const D = '#444444'
+  const F = '#8a7a6a'
+  const S = '#d4c5b0'
+  const B = '#ff6b35'
+  const D = '#7a6a5a'
   return [
     [_, _, _, F, F, F, F, F, F, F, F, F, F, _, _, _],
     [_, _, _, F, S, S, S, S, S, S, S, S, F, _, _, _],
@@ -249,8 +249,8 @@ export const PC_SPRITE: SpriteData = (() => {
 export const LAMP_SPRITE: SpriteData = (() => {
   const Y = '#FFDD55'
   const L = '#FFEE88'
-  const D = '#888888'
-  const B = '#555555'
+  const D = '#b0a090'
+  const B = '#8a7a6a'
   const G = '#FFFFCC'
   return [
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
@@ -276,9 +276,9 @@ export const LAMP_SPRITE: SpriteData = (() => {
 
 /** Permission bubble: white square with "..." in amber, and a tail pointer (11x13) */
 export const BUBBLE_PERMISSION_SPRITE: SpriteData = (() => {
-  const B = '#555566' // border
-  const F = '#EEEEFF' // fill
-  const A = '#CCA700' // amber dots
+  const B = '#b0a090' // border
+  const F = '#fff8f0' // fill
+  const A = '#e5a800' // amber dots
   return [
     [B, B, B, B, B, B, B, B, B, B, B],
     [B, F, F, F, F, F, F, F, F, F, B],
@@ -298,8 +298,8 @@ export const BUBBLE_PERMISSION_SPRITE: SpriteData = (() => {
 
 /** Waiting bubble: white square with green checkmark, and a tail pointer (11x13) */
 export const BUBBLE_WAITING_SPRITE: SpriteData = (() => {
-  const B = '#555566' // border
-  const F = '#EEEEFF' // fill
+  const B = '#b0a090' // border
+  const F = '#fff8f0' // fill
   const G = '#44BB66' // green check
   return [
     [_, B, B, B, B, B, B, B, B, B, _],
@@ -323,12 +323,12 @@ export const BUBBLE_WAITING_SPRITE: SpriteData = (() => {
 
 /** Palette colors for 6 distinct agent characters */
 export const CHARACTER_PALETTES = [
-  { skin: '#FFCC99', shirt: '#4488CC', pants: '#334466', hair: '#553322', shoes: '#222222' },
-  { skin: '#FFCC99', shirt: '#CC4444', pants: '#333333', hair: '#FFD700', shoes: '#222222' },
-  { skin: '#DEB887', shirt: '#44AA66', pants: '#334444', hair: '#222222', shoes: '#333333' },
-  { skin: '#FFCC99', shirt: '#AA55CC', pants: '#443355', hair: '#AA4422', shoes: '#222222' },
-  { skin: '#DEB887', shirt: '#CCAA33', pants: '#444433', hair: '#553322', shoes: '#333333' },
-  { skin: '#FFCC99', shirt: '#FF8844', pants: '#443322', hair: '#111111', shoes: '#222222' },
+  { skin: '#FFCC99', shirt: '#ff6b35', pants: '#8a6040', hair: '#553322', shoes: '#6a4a2a' },
+  { skin: '#FFCC99', shirt: '#ef4444', pants: '#8a5a40', hair: '#FFD700', shoes: '#6a4a2a' },
+  { skin: '#DEB887', shirt: '#f59e0b', pants: '#6a6050', hair: '#222222', shoes: '#5a4a3a' },
+  { skin: '#FFCC99', shirt: '#cc6b8a', pants: '#7a5a60', hair: '#AA4422', shoes: '#6a4a2a' },
+  { skin: '#DEB887', shirt: '#d4845a', pants: '#7a6a50', hair: '#553322', shoes: '#5a4a3a' },
+  { skin: '#FFCC99', shirt: '#ff8844', pants: '#7a5a40', hair: '#111111', shoes: '#6a4a2a' },
 ] as const
 
 interface CharPalette {

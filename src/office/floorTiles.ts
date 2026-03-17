@@ -20,7 +20,7 @@ const DEFAULT_FLOOR_SPRITE: SpriteData = Array.from(
 let floorSprites: SpriteData[] = [];
 
 /** Wall color constant */
-export const WALL_COLOR = '#3A3A5C';
+export const WALL_COLOR = '#d4c5b0';
 
 /** Set floor tile sprites (called once when extension sends floorTilesLoaded) */
 export function setFloorSprites(sprites: SpriteData[]): void {

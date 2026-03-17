@@ -35,7 +35,7 @@
   border: 1px solid rgba(255, 107, 53, 0.2);
   background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 107, 53, 0.08));
   color: #2d2d2d;
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 0.84rem;
   letter-spacing: 0.12em;
 }
@@ -172,13 +172,13 @@
 .gs-shell::before {
   top: -12rem;
   left: -10rem;
-  background: rgba(var(--gs-accent-secondary-rgb), 0.16);
+  background: rgba(var(--gs-accent-secondary-rgb), 0.08);
 }
 
 .gs-shell::after {
   right: -12rem;
   top: 14rem;
-  background: rgba(var(--gs-accent-primary-rgb), 0.14);
+  background: rgba(var(--gs-accent-primary-rgb), 0.06);
 }
 
 /* 全局页面布局 */
@@ -355,7 +355,7 @@
   background:
     linear-gradient(180deg, rgba(255, 251, 247, 0.96), rgba(255, 245, 237, 0.9)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 60%);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: 3px 3px 0 #ffd4c4;
   backdrop-filter: blur(14px);
 }
 
@@ -399,7 +399,7 @@
 .gs-case-study h2,
 .gs-docs-copy h2 {
   margin-top: 12px;
-  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  font-family: var(--font-pixel), 'IBM Plex Sans', sans-serif; font-size: clamp(1rem, 2vw, 1.5rem); letter-spacing: 0.05em;
   font-size: clamp(1.8rem, 2.5vw, 2.5rem);
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -477,7 +477,7 @@
   border: 1px solid rgba(255, 107, 53, 0.12);
   background: rgba(255, 251, 247, 0.9);
   font-size: 0.83rem;
-  color: rgba(229, 235, 246, 0.86);
+  color: rgba(45, 45, 45, 0.86);
 }
 
 .gs-route-grid {
@@ -544,13 +544,13 @@
   padding: 22px;
   border: 2px solid rgba(255, 107, 53, 0.12);
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 0 #ffd4c4;
 }
 
 .gs-surface-card--featured {
   grid-column: span 2;
   background:
-    radial-gradient(circle at top right, rgba(255, 205, 115, 0.15), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 107, 53, 0.1), transparent 28%),
     linear-gradient(180deg, rgba(255, 251, 247, 0.97), rgba(255, 245, 237, 0.95));
 }
 
@@ -568,7 +568,7 @@
 .gs-case-card h3,
 .gs-side-card h3 {
   margin-top: 10px;
-  font-family: 'Azeret Mono', 'IBM Plex Sans', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 1.3rem;
   line-height: 1.15;
   color: #2d2d2d;
@@ -623,8 +623,8 @@
   height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(255, 92, 92, 0.14), transparent 32%),
+    radial-gradient(circle at top left, rgba(255, 107, 53, 0.06), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(239, 68, 68, 0.06), transparent 32%),
     linear-gradient(180deg, #fffbf7 0%, #fff5ed 50%, #ffe8dd 100%);
 }
 
@@ -651,7 +651,7 @@
 }
 
 .gs-live-topbar__brand {
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -857,7 +857,7 @@
   min-height: 500px;
   border: 1px solid rgba(255, 107, 53, 0.1);
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.08);
 }
 
 .gs-side-stack,
@@ -928,7 +928,7 @@
 }
 
 .gs-live-roster__zone {
-  color: #90a5c1;
+  color: #777777;
   font-size: 0.82rem;
 }
 
@@ -951,17 +951,17 @@
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 0.88rem;
   line-height: 1.7;
-  color: #dfe7f3;
+  color: #2d2d2d;
 }
 
 .gs-code-card code,
 .gs-doc-list code,
 .gs-docs-copy code,
 .gs-summary-card__body code {
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
 }
 
 .gs-live-stage {
@@ -1007,7 +1007,7 @@
 }
 
 .gs-stage-panel--brand {
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   letter-spacing: 0.12em;
   color: #ff6b35;
 }
@@ -1034,7 +1034,7 @@
 }
 
 .gs-stage-panel__error {
-  color: #ff9f9f;
+  color: #ef4444;
   font-size: 0.74rem;
 }
 
@@ -1115,7 +1115,7 @@
   background: rgba(255, 251, 247, 0.92);
   font-size: 0.78rem;
   line-height: 1.5;
-  color: rgba(220, 230, 243, 0.74);
+  color: rgba(85, 85, 85, 0.74);
 }
 
 .gs-stage-roster {
@@ -1185,7 +1185,7 @@
   background:
     linear-gradient(180deg, rgba(255, 251, 247, 0.98), rgba(255, 245, 237, 0.96)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 62%);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.08);
   backdrop-filter: blur(14px);
   z-index: 155;
   pointer-events: none;
@@ -1245,9 +1245,9 @@
 }
 
 .gs-agent-hover-card__status.is-live {
-  border-color: rgba(155, 255, 180, 0.36);
-  background: rgba(155, 255, 180, 0.12);
-  color: #9bffb4;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
   animation: gs-status-pulse 1.8s ease infinite;
 }
 
@@ -1296,7 +1296,7 @@
   height: 7px;
   border-radius: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 107, 53, 0.06);
 }
 
 .gs-agent-hover-card__tool-fill {
@@ -1373,9 +1373,9 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 130;
-  background: linear-gradient(135deg, rgba(24, 24, 37, 0.96), rgba(17, 24, 39, 0.92) 55%, rgba(30, 41, 59, 0.9));
+  background: linear-gradient(135deg, rgba(255, 251, 247, 0.97), rgba(255, 245, 237, 0.96) 55%, rgba(255, 240, 230, 0.95));
   border: 1px solid rgba(255, 107, 53, 0.15);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.06);
   backdrop-filter: blur(14px);
   border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1540,7 +1540,7 @@
   height: 8px;
   border-radius: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 107, 53, 0.06);
 }
 
 .gs-stats-sidebar__bar-fill {
@@ -1575,7 +1575,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 0;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 107, 53, 0.04);
 }
 
 .gs-skeleton::after {
@@ -1583,7 +1583,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
   animation: gs-shimmer 1.4s ease infinite;
 }
 
@@ -1620,7 +1620,7 @@
 .gs-stage-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 32%, rgba(0, 0, 0, 0.44) 100%);
+  background: radial-gradient(ellipse at center, transparent 32%, rgba(0, 0, 0, 0.08) 100%);
   pointer-events: none;
   z-index: 40;
 }
@@ -1634,7 +1634,7 @@
   background:
     radial-gradient(circle at top right, rgba(var(--gs-accent-secondary-rgb), 0.1), transparent 28%),
     linear-gradient(180deg, rgba(255, 251, 247, 0.97), rgba(255, 245, 237, 0.95));
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 3px 3px 0 #ffd4c4;
   backdrop-filter: blur(16px);
 }
 
@@ -1684,7 +1684,7 @@
 }
 
 .gs-summary-card__brand {
-  font-family: 'Azeret Mono', 'IBM Plex Sans', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 0.94rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1692,7 +1692,7 @@
 }
 
 .gs-summary-card__title {
-  font-family: 'Azeret Mono', 'IBM Plex Sans', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: clamp(1.5rem, 3vw, 2.3rem);
   line-height: 1.02;
   letter-spacing: -0.05em;
@@ -1910,7 +1910,7 @@
 .gs-share-card__meta span,
 .gs-share-card__meta strong {
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 107, 53, 0.03);
   font-size: 0.78rem;
   color: rgba(45, 45, 45, 0.8);
 }
@@ -1941,7 +1941,7 @@
   background:
     linear-gradient(180deg, rgba(255, 251, 247, 0.96), rgba(255, 245, 237, 0.94)),
     linear-gradient(135deg, rgba(var(--gs-accent-primary-rgb), 0.05), transparent 62%);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.06);
 }
 
 .gs-experience-panel__head,
@@ -1968,7 +1968,7 @@
 
 .gs-experience-panel__head h2 {
   margin-top: 10px;
-  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  font-family: var(--font-pixel), 'IBM Plex Sans', sans-serif; font-size: clamp(1rem, 2vw, 1.5rem); letter-spacing: 0.05em;
   font-size: clamp(1.7rem, 3vw, 2.5rem);
   color: #2d2d2d;
 }
@@ -2095,7 +2095,7 @@
 .gs-share-theme-row button.is-active,
 .gs-case-study__field-grid button.is-active {
   border-color: rgba(var(--gs-accent-primary-rgb), 0.48);
-  background: rgba(var(--gs-accent-primary-rgb), 0.14);
+  background: rgba(var(--gs-accent-primary-rgb), 0.06);
 }
 
 .gs-check-row {
@@ -2118,7 +2118,7 @@
   background:
     linear-gradient(180deg, rgba(255, 251, 247, 0.95), rgba(255, 245, 237, 0.94)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 62%);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.06);
 }
 
 .gs-dashboard-head p,
@@ -2133,7 +2133,7 @@
 .gs-share-section__head h2,
 .gs-case-study__head h2 {
   margin-top: 10px;
-  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  font-family: var(--font-pixel), 'IBM Plex Sans', sans-serif; font-size: clamp(1rem, 2vw, 1.5rem); letter-spacing: 0.05em;
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   color: #2d2d2d;
 }
@@ -2457,7 +2457,7 @@
   height: 8px;
   border-radius: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 107, 53, 0.06);
 }
 
 .gs-case-study__timeline-progress {
@@ -2482,14 +2482,14 @@
   margin-top: 14px;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Azeret Mono', 'SFMono-Regular', monospace;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
   font-size: 0.82rem;
   line-height: 1.7;
-  color: #e6ecf6;
+  color: #2d2d2d;
 }
 
 .gs-case-study__tabs button.is-active {
-  background: rgba(var(--gs-accent-primary-rgb), 0.14);
+  background: rgba(var(--gs-accent-primary-rgb), 0.06);
   border-color: rgba(var(--gs-accent-primary-rgb), 0.48);
 }
 
@@ -2625,11 +2625,11 @@
 @keyframes gs-status-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(155, 255, 180, 0.12);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.1);
   }
 
   50% {
-    box-shadow: 0 0 0 8px rgba(155, 255, 180, 0.02);
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.02);
   }
 }
 
@@ -3381,7 +3381,7 @@
   max-height: 90vh;
   border: 2px solid rgba(255, 107, 53, 0.15);
   background: linear-gradient(180deg, rgba(255, 251, 247, 0.99), rgba(255, 245, 237, 0.98));
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.06);
   backdrop-filter: blur(14px);
   overflow: hidden;
   display: flex;
@@ -3532,7 +3532,7 @@
   border: 1px solid rgba(255, 107, 53, 0.25);
   border-radius: 50%;
   background: rgba(255, 107, 53, 0.05);
-  color: #c8d6f5;
+  color: #555555;
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
@@ -3558,7 +3558,7 @@
   height: 36px;
   border: 1px solid rgba(255, 107, 53, 0.2);
   background: rgba(255, 251, 247, 0.9);
-  color: #c8d6f5;
+  color: #555555;
   font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -3588,10 +3588,10 @@
   padding: 0 20px;
   border: 2px solid var(--gs-accent-primary);
   background: var(--gs-accent-primary);
-  color: #fafafa;
+  color: #ffffff;
   font-size: 0.9rem;
   font-weight: 700;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 4px 4px 0 #ffd4c4;
   cursor: pointer;
   z-index: 100;
   transition: all 0.18s ease;
@@ -3599,7 +3599,7 @@
 
 .gs-share-fab:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 6px 6px 0 #ffd4c4;
 }
 
 /* Help Modal */
@@ -3685,7 +3685,7 @@
   padding: 14px;
   border: 1px solid rgba(255, 107, 53, 0.1);
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 0 #ffd4c4;
 }
 
 .gs-live-sidebar .gs-experience-panel__head {
@@ -3776,7 +3776,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .gs-stats-sidebar__bar-fill {
-  background: linear-gradient(90deg, var(--bar-color, #89B4FA), rgba(255, 255, 255, 0.78));
+  background: linear-gradient(90deg, var(--bar-color, #ff6b35), rgba(255, 255, 255, 0.78));
 }
 
 @media (max-width: 768px) {
@@ -3885,7 +3885,7 @@
   max-height: calc(100% - 80px);
   background: rgba(255, 251, 247, 0.97);
   border: 1px solid rgba(255, 107, 53, 0.2);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.06);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -3905,7 +3905,7 @@
 .gs-status-panel__title {
   font-size: 13px;
   font-weight: bold;
-  color: #89B4FA;
+  color: #ff6b35;
   letter-spacing: 0.6px;
 }
 
@@ -3918,7 +3918,7 @@
 .gs-status-panel__close {
   background: transparent;
   border: none;
-  color: #6C7086;
+  color: #999999;
   font-size: 16px;
   cursor: pointer;
   padding: 0;
@@ -3945,7 +3945,7 @@
 
 .gs-status-panel__section-title {
   font-size: 10px;
-  color: #6C7086;
+  color: #999999;
   text-transform: uppercase;
   letter-spacing: 1.1px;
   margin-bottom: 8px;
@@ -3965,7 +3965,7 @@
 
 .gs-status-panel__stat-label {
   font-size: 10px;
-  color: #6C7086;
+  color: #999999;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -3973,14 +3973,14 @@
 .gs-status-panel__stat-value {
   margin-top: 4px;
   font-size: 20px;
-  color: #CDD6F4;
+  color: #2d2d2d;
   font-weight: 700;
 }
 
 .gs-status-panel__stat-meta {
   margin-top: 4px;
   font-size: 11px;
-  color: #9399B2;
+  color: #777777;
 }
 
 .gs-status-panel__sparkline {
@@ -3991,12 +3991,12 @@
 
 .gs-status-panel__sparkline-label {
   font-size: 11px;
-  color: #9399B2;
+  color: #777777;
   margin-top: 4px;
 }
 
 .gs-status-panel__empty {
-  color: #6C7086;
+  color: #999999;
   font-size: 11px;
 }
 
@@ -4006,7 +4006,7 @@
   gap: 10px;
   align-items: center;
   font-size: 11px;
-  color: #CDD6F4;
+  color: #2d2d2d;
   margin-bottom: 8px;
 }
 
@@ -4024,11 +4024,11 @@
 
 .gs-status-panel__meter-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--meter-color, #89B4FA), rgba(255, 255, 255, 0.5));
+  background: linear-gradient(90deg, var(--meter-color, #ff6b35), rgba(255, 255, 255, 0.5));
 }
 
 .gs-status-panel__meter-fill--gradient {
-  background: linear-gradient(90deg, #89B4FA, #A6E3A1);
+  background: linear-gradient(90deg, #ff6b35, #f59e0b);
 }
 
 .gs-status-panel__mix-value {
@@ -4067,11 +4067,11 @@
 .gs-status-panel__session-row--tertiary {
   margin-top: 4px;
   font-size: 10px;
-  color: #6C7086;
+  color: #999999;
 }
 
 .gs-status-panel__session-name {
-  color: #CDD6F4;
+  color: #2d2d2d;
   font-weight: 700;
 }
 
@@ -4142,7 +4142,7 @@
 
 /* Connection status dot colors */
 .gs-stage-status-dot[data-connection-tone='connected'][data-has-error='false'] {
-  background: #9bffb4;
+  background: #22c55e;
 }
 
 .gs-stage-status-dot[data-connection-tone='connecting'] {

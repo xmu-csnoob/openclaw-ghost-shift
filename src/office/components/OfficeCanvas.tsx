@@ -660,7 +660,7 @@ export function OfficeCanvas({
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        background: '#1E1E2E',
+        background: '#fffbf7',
         touchAction: 'none',
       }}
     >
