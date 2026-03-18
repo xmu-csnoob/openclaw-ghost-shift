@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -70,11 +71,20 @@ type PublicStatus struct {
 	Displayed     int    `json:"displayed"`
 	Running       int    `json:"running"`
 	LastUpdatedAt string `json:"lastUpdatedAt"`
+	Filtered      int    `json:"filtered,omitempty"`
+	Total         int    `json:"total,omitempty"`
+}
+
+type FilterInfo struct {
+	Status         string `json:"status,omitempty"`
+	MinActivity    string `json:"minActivity,omitempty"`
+	IncludeZombie  bool   `json:"includeZombie,omitempty"`
 }
 
 type PublicSnapshot struct {
 	Status   PublicStatus    `json:"status"`
 	Sessions []PublicSession `json:"sessions"`
+	Filter   *FilterInfo     `json:"filter,omitempty"`
 }
 
 func NewHandler(gc DataSource, cfg Config, deps Dependencies) (*Handler, error) {
@@ -154,9 +164,24 @@ func (h *Handler) PublicSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, cacheStatus, err := cachedCompute(r.Context(), h, route, "public:snapshot", h.cacheTTL, func() (PublicSnapshot, error) {
-		return h.buildPublicSnapshot(), nil
-	})
+	filter := parseFilterParams(r.URL.Query())
+
+	var payload PublicSnapshot
+	var cacheStatus string
+	var err error
+
+	if filter.Status == "" || filter.Status == "all" {
+		payload, cacheStatus, err = cachedCompute(r.Context(), h, route, "public:snapshot", h.cacheTTL, func() (PublicSnapshot, error) {
+			return h.buildPublicSnapshot(), nil
+		})
+	} else {
+		cacheKey := fmt.Sprintf("public:snapshot:filter:%s", filter.Status)
+		payload, cacheStatus, err = cachedCompute(r.Context(), h, route, cacheKey, h.cacheTTL, func() (PublicSnapshot, error) {
+			snapshot := h.buildPublicSnapshot()
+			return applyFilter(snapshot, filter), nil
+		})
+	}
+
 	if err != nil {
 		h.respondError(w, r, route, http.StatusInternalServerError, "snapshot_build_failed", "failed to build snapshot", err, nil)
 		return
@@ -584,15 +609,66 @@ func parseOptionalTimestamp(value string) (time.Time, error) {
 	return time.Parse(time.RFC3339, value)
 }
 
-func classifyZone(session models.Session) string {
-	switch classifyRole(session) {
-	case "coding-agent":
-		return "code-studio"
-	case "webchat":
-		return "chat-lounge"
-	default:
-		return "ops-lab"
+func parseFilterParams(q url.Values) FilterInfo {
+	status := strings.ToLower(strings.TrimSpace(q.Get("status")))
+	if status == "" {
+		return FilterInfo{}
 	}
+	validStatuses := map[string]bool{
+		"all": true, "live": true, "active": true, "warm": true,
+		"visible": true, "running": true, "idle": true,
+	}
+	if !validStatuses[status] {
+		return FilterInfo{}
+	}
+	return FilterInfo{
+		Status:        status,
+		MinActivity:   strings.TrimSpace(q.Get("minActivity")),
+		IncludeZombie: q.Get("includeZombie") == "true",
+	}
+}
+
+func applyFilter(snapshot PublicSnapshot, filter FilterInfo) PublicSnapshot {
+	if filter.Status == "" || filter.Status == "all" {
+		return snapshot
+	}
+	filtered := make([]PublicSession, 0, len(snapshot.Sessions))
+	for _, s := range snapshot.Sessions {
+		if matchFilter(s, filter) {
+			filtered = append(filtered, s)
+		}
+	}
+	total := len(snapshot.Sessions)
+	snapshot.Sessions = filtered
+	snapshot.Status.Displayed = len(filtered)
+	snapshot.Status.Total = total
+	snapshot.Status.Filtered = total - len(filtered)
+	snapshot.Filter = &filter
+	return snapshot
+}
+
+func matchFilter(s PublicSession, f FilterInfo) bool {
+	liveWindows := map[string]bool{"just-now": true, "2m": true, "live": true}
+	switch f.Status {
+	case "live":
+		return s.Status == "running" || liveWindows[s.ActivityWindow]
+	case "active":
+		return s.ActivityScore >= 0.7 || s.Status == "running"
+	case "warm":
+		return s.ActivityScore >= 0.38
+	case "visible":
+		return s.ActivityScore >= 0.18
+	case "running":
+		return s.Status == "running"
+	case "idle":
+		return s.Status == "idle"
+	default:
+		return true
+	}
+}
+
+func classifyZone(session models.Session) string {
+	return GetZoneManager().ClassifyZone(session.Tags, sessionSignals(session))
 }
 
 func classifyRole(session models.Session) string {

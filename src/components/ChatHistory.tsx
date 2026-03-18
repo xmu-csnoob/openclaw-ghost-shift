@@ -9,6 +9,7 @@
 
 import React, { useState } from 'react'
 import { i18n } from '../content/i18n.js'
+import { t, useT } from '../content/locale.js'
 
 // ==================== Types ====================
 
@@ -286,31 +287,31 @@ const getToolIcon = (name: string) => {
 
 const getToolName = (name: string): string => {
   switch (name) {
-    case 'Read': return i18n.chatHistory.tool.read
-    case 'Write': return i18n.chatHistory.tool.write
-    case 'Edit': return i18n.chatHistory.tool.edit
-    case 'Bash': return i18n.chatHistory.tool.bash
-    case 'Grep': return i18n.chatHistory.tool.grep
-    case 'Glob': return i18n.chatHistory.tool.glob
-    default: return i18n.chatHistory.tool.default
+    case 'Read': return t(i18n.chatHistory.tool.read)
+    case 'Write': return t(i18n.chatHistory.tool.write)
+    case 'Edit': return t(i18n.chatHistory.tool.edit)
+    case 'Bash': return t(i18n.chatHistory.tool.bash)
+    case 'Grep': return t(i18n.chatHistory.tool.grep)
+    case 'Glob': return t(i18n.chatHistory.tool.glob)
+    default: return t(i18n.chatHistory.tool.default)
   }
 }
 
 const getStatusLabel = (status: ToolCallInfo['status']): string => {
   switch (status) {
-    case 'pending': return i18n.chatHistory.status.pending
-    case 'running': return i18n.chatHistory.status.running
-    case 'completed': return i18n.chatHistory.status.completed
-    case 'error': return i18n.chatHistory.status.error
-    default: return i18n.chatHistory.status.pending
+    case 'pending': return t(i18n.chatHistory.status.pending)
+    case 'running': return t(i18n.chatHistory.status.running)
+    case 'completed': return t(i18n.chatHistory.status.completed)
+    case 'error': return t(i18n.chatHistory.status.error)
+    default: return t(i18n.chatHistory.status.pending)
   }
 }
 
 const getRoleLabel = (role: ChatMessage['role']): string => {
   switch (role) {
-    case 'user': return i18n.chatHistory.role.user
-    case 'assistant': return i18n.chatHistory.role.assistant
-    case 'system': return i18n.chatHistory.role.system
+    case 'user': return t(i18n.chatHistory.role.user)
+    case 'assistant': return t(i18n.chatHistory.role.assistant)
+    case 'system': return t(i18n.chatHistory.role.system)
     default: return role
   }
 }
@@ -380,10 +381,12 @@ export function ChatHistory({
   maxHeight = 300,
   compact = false,
 }: ChatHistoryProps): React.ReactElement {
+  useT()
+
   if (messages.length === 0) {
     return (
       <div style={styles.emptyState}>
-        {i18n.chatHistory.empty}
+        {t(i18n.chatHistory.empty)}
       </div>
     )
   }

@@ -9,11 +9,15 @@ import {
   getFootprintLabel,
   getPublicAgentLabel,
   getSignalWindowLabel,
+  getStatusLabel,
   getZoneColor,
   getZoneLabel,
   summarizeModelMix,
   summarizeZones,
 } from '../publicDisplay.js'
+import { i18n } from '../content/i18n.js'
+import { useT } from '../content/locale.js'
+import { Panel } from './ghostShift/Panel.js'
 
 export interface StatusPanelProps {
   status: PublicOfficeStatus | null
@@ -50,6 +54,7 @@ export function StatusPanel({
   onClose,
   defaultCollapsed = false,
 }: StatusPanelProps): React.ReactElement | null {
+  const tt = useT()
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem('gs-status-panel-collapsed')
     return stored !== null ? stored === 'true' : defaultCollapsed
@@ -77,39 +82,53 @@ export function StatusPanel({
     .slice(0, 6)
 
   return (
-    <div className="gs-status-panel">
-      <div className="gs-status-panel__header">
-        <span className="gs-status-panel__title">Office Telemetry</span>
-        <div className="gs-status-panel__header-actions">
+    <Panel
+      variant="overlay"
+      className="gs-status-panel"
+      title={tt(i18n.statusPanel.title)}
+      actions={(
+        <>
           <button
             type="button"
             className="gs-panel-toggle"
             onClick={handleToggleCollapse}
-            aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
-            title={collapsed ? '展开' : '折叠'}
+            aria-label={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
+            title={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
           >
             {collapsed ? '▼' : '▲'}
           </button>
-          <button className="gs-status-panel__close" onClick={onClose}>
+          <button
+            type="button"
+            className="gs-status-panel__close"
+            onClick={onClose}
+            aria-label={tt(i18n.common.close)}
+            title={tt(i18n.common.close)}
+          >
             ✕
           </button>
-        </div>
-      </div>
+        </>
+      )}
+      bodyClassName="gs-status-panel__body"
+    >
 
       {!collapsed && (
         <div className="gs-status-panel__content">
         <div className="gs-status-panel__section">
-          <div className="gs-status-panel__section-title">Live Pulse</div>
+          <div className="gs-status-panel__section-title">{tt(i18n.statusPanel.livePulse)}</div>
           <div className="gs-status-panel__stat-grid">
             <div className="gs-status-panel__stat-card">
-              <div className="gs-status-panel__stat-label">Running</div>
+              <div className="gs-status-panel__stat-label">{tt(i18n.statusPanel.running)}</div>
               <div className="gs-status-panel__stat-value">{status?.running ?? 0}</div>
-              <div className="gs-status-panel__stat-meta">agents live right now</div>
+              <div className="gs-status-panel__stat-meta">{tt(i18n.statusPanel.agentsLiveNow)}</div>
             </div>
             <div className="gs-status-panel__stat-card">
-              <div className="gs-status-panel__stat-label">Recent Signal</div>
+              <div className="gs-status-panel__stat-label">{tt(i18n.statusPanel.recentSignal)}</div>
               <div className="gs-status-panel__stat-value">{formatRatio(averageSignal)}</div>
-              <div className="gs-status-panel__stat-meta">{warmCount} warm of {status?.displayed ?? sessions.length} visible agents</div>
+              <div className="gs-status-panel__stat-meta">
+                {tt(i18n.statusPanel.warmOfVisible)
+                  .replace('{warm}', String(warmCount))
+                  .replace('{visible}', String(status?.displayed ?? sessions.length))}
+              </div>
             </div>
           </div>
           <div className="gs-status-panel__sparkline">
@@ -117,15 +136,15 @@ export function StatusPanel({
               <path d={sparkline} fill="none" stroke="#89B4FA" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
             <div className="gs-status-panel__sparkline-label">
-              Running-agent history over the last {history.length * 3}s
+              {tt(i18n.statusPanel.historyOverLast).replace('{seconds}', String(history.length * 3))}
             </div>
           </div>
         </div>
 
         <div className="gs-status-panel__section">
-          <div className="gs-status-panel__section-title">Wings</div>
+          <div className="gs-status-panel__section-title">{tt(i18n.statusPanel.wings)}</div>
           {zoneMix.length === 0 ? (
-            <div className="gs-status-panel__empty">No public rooms occupied yet</div>
+            <div className="gs-status-panel__empty">{tt(i18n.statusPanel.noPublicRooms)}</div>
           ) : (
             zoneMix.map((entry) => (
               <div key={entry.zone} className="gs-status-panel__mix-row">
@@ -146,9 +165,9 @@ export function StatusPanel({
         </div>
 
         <div className="gs-status-panel__section">
-          <div className="gs-status-panel__section-title">Model Mix</div>
+          <div className="gs-status-panel__section-title">{tt(i18n.statusPanel.modelMix)}</div>
           {modelMix.length === 0 ? (
-            <div className="gs-status-panel__empty">No public models visible yet</div>
+            <div className="gs-status-panel__empty">{tt(i18n.statusPanel.noPublicModels)}</div>
           ) : (
             modelMix.map((entry) => (
               <div key={entry.label} className="gs-status-panel__mix-row">
@@ -168,9 +187,9 @@ export function StatusPanel({
         </div>
 
         <div className="gs-status-panel__section">
-          <div className="gs-status-panel__section-title">Agent Cadence</div>
+          <div className="gs-status-panel__section-title">{tt(i18n.statusPanel.agentCadence)}</div>
           {topSessions.length === 0 ? (
-            <div className="gs-status-panel__empty">No visible agents</div>
+            <div className="gs-status-panel__empty">{tt(i18n.statusPanel.noVisibleAgents)}</div>
           ) : (
             topSessions.map((session) => (
               <div
@@ -186,7 +205,7 @@ export function StatusPanel({
                 </div>
                 <div className="gs-status-panel__session-row gs-status-panel__session-row--secondary">
                   <span style={{ color: getZoneColor(session.zone) }}>{getZoneLabel(session.zone)}</span>
-                  <span>{formatRatio(session.signalScore)} signal</span>
+                  <span>{formatRatio(session.signalScore)} {tt(i18n.statusPanel.signal)}</span>
                 </div>
                 <div className="gs-status-panel__session-row gs-status-panel__session-row--tertiary">
                   <span>{session.origin}</span>
@@ -197,8 +216,8 @@ export function StatusPanel({
                   <span>{session.modelFamily}</span>
                 </div>
                 <div className="gs-status-panel__session-row gs-status-panel__session-row--tertiary">
-                  <span>Observed {formatDurationShort(Date.now() - session.observedSince)}</span>
-                  <span>{session.status || 'idle'}</span>
+                  <span>{tt(i18n.statusPanel.observed).replace('{duration}', formatDurationShort(Date.now() - session.observedSince))}</span>
+                  <span>{getStatusLabel(session.status)}</span>
                 </div>
               </div>
             ))
@@ -206,6 +225,6 @@ export function StatusPanel({
         </div>
         </div>
       )}
-    </div>
+    </Panel>
   )
 }

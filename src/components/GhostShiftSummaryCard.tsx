@@ -14,6 +14,8 @@ import type { PublicOfficeStatus } from '../services/types.js'
 import { clampRecentTimeline, computeTrendSummary, formatDelta, getTopAgentEntries } from '../portfolioMetrics.js'
 import { MiniSparkline } from './MiniSparkline.js'
 import { i18n } from '../content/i18n.js'
+import { getIntlLocale, useT } from '../content/locale.js'
+import { getStatusLabel } from '../publicDisplay.js'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
@@ -30,12 +32,12 @@ export interface GhostShiftSummaryCardProps {
 }
 
 function formatUpdatedAt(value: string | undefined): string {
-  if (!value) return 'Waiting for first snapshot'
+  if (!value) return ''
 
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Waiting for first snapshot'
+  if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     hour: 'numeric',
     minute: '2-digit',
     month: 'short',
@@ -54,6 +56,7 @@ export function GhostShiftSummaryCard({
   variant = 'feature',
   defaultCollapsed = false,
 }: GhostShiftSummaryCardProps) {
+  const tt = useT()
   const [activeAgentIndex, setActiveAgentIndex] = useState(0)
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem('gs-summary-card-collapsed')
@@ -69,8 +72,8 @@ export function GhostShiftSummaryCard({
   const visibleCount = status?.displayed ?? sessions.length
   const runningCount = status?.running ?? sessions.filter((session) => session.status === 'running').length
   const activeWingCount = summarizeZones(sessions).length
-  const topWing = summarizeZones(sessions)[0]?.label || i18n.summaryCard.facts.waitingForPublicTraffic
-  const topModelFamily = summarizeModelMix(sessions)[0]?.label || i18n.agent.model.hidden
+  const topWing = summarizeZones(sessions)[0]?.label || tt(i18n.summaryCard.facts.waitingForPublicTraffic)
+  const topModelFamily = summarizeModelMix(sessions)[0]?.label || tt(i18n.agent.model.hidden)
   const averageSignal =
     sessions.length > 0 ? sessions.reduce((sum, session) => sum + session.signalScore, 0) / sessions.length : 0
   const recentTimeline = clampRecentTimeline(timeline, 24)
@@ -79,12 +82,13 @@ export function GhostShiftSummaryCard({
   const topAgents = getTopAgentEntries(sessions, (session) => getPublicAgentLabel(session.agentId), 5)
   const activeAgent = topAgents[activeAgentIndex] || null
   const statusLabel = backendError
-    ? i18n.summaryCard.snapshotUnavailable
+    ? tt(i18n.summaryCard.snapshotUnavailable)
     : connectionState === 'connected'
-      ? i18n.summaryCard.liveSnapshot
+      ? tt(i18n.summaryCard.liveSnapshot)
       : connectionState === 'connecting'
-        ? i18n.summaryCard.connecting
-        : i18n.summaryCard.offline
+        ? tt(i18n.summaryCard.connecting)
+        : tt(i18n.summaryCard.offline)
+  const updatedAtLabel = formatUpdatedAt(status?.lastUpdatedAt) || tt(i18n.summaryCard.facts.waitingForFirstSnapshot)
 
   useEffect(() => {
     if (topAgents.length <= 1) {
@@ -108,7 +112,7 @@ export function GhostShiftSummaryCard({
   return (
     <article className={`gs-summary-card gs-summary-card--${variant} ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="gs-summary-card__topline">
-        <span className="gs-summary-card__eyebrow">Embeddable summary card</span>
+        <span className="gs-summary-card__eyebrow">{tt(i18n.summaryCard.eyebrow)}</span>
         <div className="gs-summary-card__topline-actions">
           <span className="gs-summary-card__status">
             <span
@@ -120,19 +124,19 @@ export function GhostShiftSummaryCard({
             type="button"
             className="gs-panel-toggle"
             onClick={handleToggleCollapse}
-            aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
-            title={collapsed ? '展开' : '折叠'}
+            aria-label={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
+            title={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
           >
             {collapsed ? '▼' : '▲'}
           </button>
         </div>
       </div>
 
-      <div className="gs-summary-card__brand">{i18n.brand.zh}</div>
+      <div className="gs-summary-card__brand">{tt(i18n.brand.name)}</div>
       <h2 className="gs-summary-card__title">
         {variant === 'embed'
-          ? i18n.summaryCard.title.embed
-          : i18n.summaryCard.title.feature}
+          ? tt(i18n.summaryCard.title.embed)
+          : tt(i18n.summaryCard.title.feature)}
       </h2>
 
       {!collapsed && (
@@ -140,15 +144,15 @@ export function GhostShiftSummaryCard({
 
       <div className="gs-summary-card__metrics">
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.visible}</span>
+          <span className="gs-summary-card__metric-label">{tt(i18n.summaryCard.metrics.visible)}</span>
           <strong>{visibleCount}</strong>
         </div>
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.running}</span>
+          <span className="gs-summary-card__metric-label">{tt(i18n.summaryCard.metrics.running)}</span>
           <strong>{runningCount}</strong>
         </div>
         <div className="gs-summary-card__metric">
-          <span className="gs-summary-card__metric-label">{i18n.summaryCard.metrics.activeZones}</span>
+          <span className="gs-summary-card__metric-label">{tt(i18n.summaryCard.metrics.activeZones)}</span>
           <strong>{activeWingCount}</strong>
         </div>
       </div>
@@ -156,7 +160,7 @@ export function GhostShiftSummaryCard({
       <div className="gs-summary-card__sparkline-grid">
         <div className="gs-summary-card__sparkline-card">
           <div className="gs-summary-card__sparkline-meta">
-            <span>{i18n.summaryCard.sparklines.liveActivity}</span>
+            <span>{tt(i18n.summaryCard.sparklines.liveActivity)}</span>
             <strong className={trend.direction === 'down' ? 'is-down' : trend.direction === 'up' ? 'is-up' : ''}>
               {formatDelta(trend.deltaRatio)}
             </strong>
@@ -170,8 +174,8 @@ export function GhostShiftSummaryCard({
 
         <div className="gs-summary-card__sparkline-card">
           <div className="gs-summary-card__sparkline-meta">
-            <span>{i18n.summaryCard.sparklines.visibleLoad}</span>
-            <strong>{displayedTrend.peakValue.toFixed(0)} {i18n.summaryCard.sparklines.peak}</strong>
+            <span>{tt(i18n.summaryCard.sparklines.visibleLoad)}</span>
+            <strong>{displayedTrend.peakValue.toFixed(0)} {tt(i18n.summaryCard.sparklines.peak)}</strong>
           </div>
           <MiniSparkline
             values={recentTimeline.map((point) => point.displayed)}
@@ -183,40 +187,40 @@ export function GhostShiftSummaryCard({
 
       <dl className="gs-summary-card__facts">
         <div>
-          <dt>{i18n.summaryCard.facts.topZone}</dt>
+          <dt>{tt(i18n.summaryCard.facts.topZone)}</dt>
           <dd>{topWing}</dd>
         </div>
         <div>
-          <dt>{i18n.summaryCard.facts.modelMix}</dt>
+          <dt>{tt(i18n.summaryCard.facts.modelMix)}</dt>
           <dd>{topModelFamily}</dd>
         </div>
         <div>
-          <dt>{i18n.summaryCard.facts.averageSignal}</dt>
+          <dt>{tt(i18n.summaryCard.facts.averageSignal)}</dt>
           <dd>{formatRatio(averageSignal)}</dd>
         </div>
         <div>
-          <dt>{i18n.summaryCard.facts.lastUpdate}</dt>
-          <dd>{formatUpdatedAt(status?.lastUpdatedAt)}</dd>
+          <dt>{tt(i18n.summaryCard.facts.lastUpdate)}</dt>
+          <dd>{updatedAtLabel}</dd>
         </div>
       </dl>
 
       <div className="gs-summary-card__carousel">
         <div className="gs-summary-card__carousel-header">
-          <span>{i18n.summaryCard.carousel.topAgents}</span>
+          <span>{tt(i18n.summaryCard.carousel.topAgents)}</span>
           <div className="gs-summary-card__carousel-actions">
             <button
               type="button"
               onClick={() => setActiveAgentIndex((current) => (current - 1 + topAgents.length) % Math.max(topAgents.length, 1))}
               disabled={topAgents.length <= 1}
             >
-              {i18n.summaryCard.carousel.prev}
+              {tt(i18n.summaryCard.carousel.prev)}
             </button>
             <button
               type="button"
               onClick={() => setActiveAgentIndex((current) => (current + 1) % Math.max(topAgents.length, 1))}
               disabled={topAgents.length <= 1}
             >
-              {i18n.summaryCard.carousel.next}
+              {tt(i18n.summaryCard.carousel.next)}
             </button>
           </div>
         </div>
@@ -234,13 +238,13 @@ export function GhostShiftSummaryCard({
               </div>
             </div>
             <div className="gs-summary-card__agent-stats">
-              <span>{formatRatio(activeAgent.signalScore)} {i18n.summaryCard.carousel.signal}</span>
+              <span>{formatRatio(activeAgent.signalScore)} {tt(i18n.summaryCard.carousel.signal)}</span>
               <span>{getSignalWindowLabel(activeAgent.signalWindow)}</span>
-              <span>{activeAgent.status}</span>
+              <span>{getStatusLabel(activeAgent.status)}</span>
             </div>
           </div>
         ) : (
-          <div className="gs-summary-card__agent is-empty">{i18n.summaryCard.carousel.waitingForPublicAgents}</div>
+          <div className="gs-summary-card__agent is-empty">{tt(i18n.summaryCard.carousel.waitingForPublicAgents)}</div>
         )}
 
         {topAgents.length > 1 ? (
@@ -251,7 +255,7 @@ export function GhostShiftSummaryCard({
                 type="button"
                 className={index === activeAgentIndex ? 'is-active' : ''}
                 onClick={() => setActiveAgentIndex(index)}
-                aria-label={`${i18n.summaryCard.carousel.show} ${agent.label}`}
+                aria-label={`${tt(i18n.summaryCard.carousel.show)} ${agent.label}`}
               />
             ))}
           </div>
@@ -262,10 +266,10 @@ export function GhostShiftSummaryCard({
       )}
 
       <div className="gs-summary-card__footer">
-        <span>{i18n.summaryCard.footer.refreshesEvery} {refreshMs / 1000}s</span>
+        <span>{tt(i18n.summaryCard.footer.refreshesEvery)} {refreshMs / 1000}s</span>
         {liveDemoHref ? (
           <a className="gs-summary-card__link" href={liveDemoHref}>
-            {i18n.summaryCard.footer.openLiveOffice}
+            {tt(i18n.summaryCard.footer.openLiveOffice)}
           </a>
         ) : null}
       </div>

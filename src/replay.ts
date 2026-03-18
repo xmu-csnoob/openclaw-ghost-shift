@@ -1,6 +1,8 @@
 import type { DisplaySession, PulseSample } from './publicDisplay.js'
 import type { Character } from './office/types.js'
 import type { PublicOfficeStatus } from './services/types.js'
+import { i18n } from './content/i18n.js'
+import { getIntlLocale, t } from './content/locale.js'
 
 export type PlaybackMode = 'live' | 'replay'
 export type PlaybackWindowHours = 1 | 6 | 24
@@ -69,7 +71,7 @@ export function findClosestFrameIndex(frames: ReplayFrame[], timestamp: number):
 }
 
 export function formatPlaybackTimestamp(timestamp: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -77,7 +79,7 @@ export function formatPlaybackTimestamp(timestamp: number): string {
 }
 
 export function formatPlaybackBoundary(timestamp: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -86,10 +88,20 @@ export function formatPlaybackBoundary(timestamp: number): string {
 }
 
 export function formatRelativeAge(ms: number): string {
-  if (ms < 5_000) return 'just now'
-  if (ms < 60_000) return `${Math.round(ms / 1_000)}s ago`
-  if (ms < 60 * 60_000) return `${Math.round(ms / 60_000)}m ago`
-  return `${Math.round(ms / (60 * 60_000))}h ago`
+  if (ms < 5_000) return t(i18n.agent.signalWindow.justNow)
+
+  const formatter = new Intl.RelativeTimeFormat(getIntlLocale(), {
+    numeric: 'always',
+  })
+
+  if (ms < 60_000) {
+    return formatter.format(-Math.round(ms / 1_000), 'second')
+  }
+  if (ms < 60 * 60_000) {
+    return formatter.format(-Math.round(ms / 60_000), 'minute')
+  }
+
+  return formatter.format(-Math.round(ms / (60 * 60_000)), 'hour')
 }
 
 export function getPlaybackFreshness(timestamp: number, now: number = Date.now()): {
@@ -101,29 +113,29 @@ export function getPlaybackFreshness(timestamp: number, now: number = Date.now()
 
   if (age < 15_000) {
     return {
-      label: '实时',
+      label: t(i18n.replay.freshness.live),
       color: '#22c55e',
-      detail: '公开办公室正在追踪最新心跳',
+      detail: t(i18n.replay.freshness.trackingLatestHeartbeat),
     }
   }
   if (age < 2 * 60_000) {
     return {
-      label: '新鲜',
+      label: t(i18n.replay.freshness.fresh),
       color: '#14b8a6',
-      detail: `${formatRelativeAge(age)}前捕获`,
+      detail: t(i18n.replay.freshness.capturedAgo, { age: formatRelativeAge(age) }),
     }
   }
   if (age < 30 * 60_000) {
     return {
-      label: '冷却中',
+      label: t(i18n.replay.freshness.cooling),
       color: '#f59e0b',
-      detail: `在保留窗口中查看 ${formatRelativeAge(age)} 的记录`,
+      detail: t(i18n.replay.freshness.viewingRecorded, { age: formatRelativeAge(age) }),
     }
   }
   return {
-    label: '回放',
+    label: t(i18n.replay.freshness.replay),
     color: '#ff5c5c',
-    detail: `正在查看 ${formatRelativeAge(age)} 的历史帧`,
+    detail: t(i18n.replay.freshness.viewingHistorical, { age: formatRelativeAge(age) }),
   }
 }
 

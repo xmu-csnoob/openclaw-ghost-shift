@@ -27,6 +27,18 @@ func main() {
 	metricsRegistry := observability.NewRegistry()
 	cacheManager := cache.NewManager(cfg.RedisURL, cfg.CacheMemoryMaxEntries, logger)
 
+	// Initialize ZoneManager
+	dataDir := strings.TrimSpace(os.Getenv("DATA_DIR"))
+	if dataDir == "" {
+		dataDir = "data"
+	}
+	zoneManager, err := api.InitZoneManager(dataDir)
+	if err != nil {
+		logger.Warn("zone_config_load_failed", "error", err.Error())
+	} else {
+		logger.Info("zone_config_loaded", "rules_count", len(zoneManager.Get().Rules))
+	}
+
 	port := strings.TrimSpace(os.Getenv("PORT"))
 	if port == "" {
 		port = "3002"
@@ -116,6 +128,24 @@ func main() {
 
 		mux.Handle("/internal-api/", http.StripPrefix("/internal-api", requireInternalToken(internalToken, internalMux)))
 		logger.Info("internal_api_enabled")
+
+		// Admin API with token authentication
+		adminHandler := api.NewAdminHandler(zoneManager)
+		adminMux := http.NewServeMux()
+		adminMux.Handle("/zones", obs.Wrap("admin_get_zones", http.HandlerFunc(adminHandler.GetZones)))
+		adminMux.Handle("/zones/reload", obs.Wrap("admin_reload_zones", http.HandlerFunc(adminHandler.ReloadZones)))
+		mux.Handle("/api/admin/zones", requireInternalToken(internalToken, obs.Wrap("admin_zones", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				adminHandler.GetZones(w, r)
+			case http.MethodPatch:
+				adminHandler.PatchZones(w, r)
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			}
+		}))))
+		mux.Handle("/api/admin/zones/reload", requireInternalToken(internalToken, obs.Wrap("admin_reload_zones", http.HandlerFunc(adminHandler.ReloadZones))))
+		logger.Info("admin_api_enabled")
 	}
 
 	if staticReady {

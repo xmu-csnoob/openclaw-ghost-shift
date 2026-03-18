@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { AgentHoverCard } from './AgentHoverCard.js'
 import type { DisplaySession } from '../publicDisplay.js'
@@ -58,7 +58,7 @@ describe('AgentHoverCard', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  test('renders agent summary, clamps placement, and builds tool and sparkline output', () => {
+  test('renders agent summary, clamps placement, and builds tool and sparkline output', async () => {
     const { container } = render(
       <AgentHoverCard
         visible
@@ -82,16 +82,26 @@ describe('AgentHoverCard', () => {
     expect((card as HTMLElement).style.top).toBe('84px')
     expect((card as HTMLElement).style.left).toBe('12px')
 
-    expect(screen.getByText('Agent hover')).toBeInTheDocument()
+    // Check that the compact info renders correctly
+    expect(screen.getByText('Running')).toBeInTheDocument()
     expect(screen.getByText('Agent')).toBeInTheDocument()
-    expect(screen.getByText('pub_fallback')).toBeInTheDocument()
-    expect(screen.getByText('82%')).toBeInTheDocument()
     expect(screen.getByText('Just now')).toBeInTheDocument()
+    expect(screen.getByText('GPT')).toBeInTheDocument()
+    expect(screen.getByText('Code Studio')).toBeInTheDocument()
+    expect(screen.getByText('View details')).toBeInTheDocument()
 
-    const fills = Array.from(container.querySelectorAll('.gs-agent-hover-card__tool-fill'))
-    expect(fills).toHaveLength(2)
-    expect(fills[0]).toHaveStyle({ width: '10%' })
-    expect(fills[1]).toHaveStyle({ width: '54%' })
+    // Tool stats are only visible when expanded - click to expand
+    await act(async () => {
+      fireEvent.click(screen.getByText('View details'))
+    })
+
+    // After expansion, check for tool stats
+    await waitFor(() => {
+      const fills = Array.from(container.querySelectorAll('.gs-agent-hover-card__tool-fill'))
+      expect(fills).toHaveLength(2)
+      expect(fills[0]).toHaveStyle({ width: '10%' })
+      expect(fills[1]).toHaveStyle({ width: '54%' })
+    })
 
     const path = container.querySelector('path')
     expect(path).toHaveAttribute('d', 'M0.00,36.80 L88.00,20.00 L176.00,0.00')

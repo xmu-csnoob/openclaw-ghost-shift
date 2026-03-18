@@ -18,11 +18,22 @@ export interface PublicOfficeStatus {
   displayed: number
   running: number
   lastUpdatedAt: string
+  filtered?: number
+  total?: number
+}
+
+export type SessionFilterStatus = 'all' | 'live' | 'active' | 'warm' | 'visible' | 'running' | 'idle'
+
+export interface FilterInfo {
+  status?: SessionFilterStatus
+  minActivity?: string
+  includeZombie?: boolean
 }
 
 export interface PublicOfficeSnapshot {
   status: PublicOfficeStatus
   sessions: AgentSession[]
+  filter?: FilterInfo
 }
 
 export interface PublicTimelinePoint {

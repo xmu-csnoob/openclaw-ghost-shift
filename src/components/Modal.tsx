@@ -1,4 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { i18n } from '../content/i18n.js'
+import { t } from '../content/locale.js'
 
 export interface ModalProps {
   isOpen: boolean
@@ -52,7 +54,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
             type="button"
             className="gs-modal__close"
             onClick={onClose}
-            aria-label="关闭"
+            aria-label={t(i18n.common.close)}
           >
             ✕
           </button>

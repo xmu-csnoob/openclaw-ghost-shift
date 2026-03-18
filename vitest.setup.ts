@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom/vitest'
+import { setLocale } from './src/content/locale.js'
+
+// Set locale to English for all tests (default is 'zh')
+setLocale('en')
 
 // Mock ResizeObserver for tests
 class TestResizeObserver {

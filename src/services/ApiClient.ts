@@ -4,6 +4,7 @@ import type {
   PublicOfficeStatus,
   PublicReplayResponse,
   PublicTimelineResponse,
+  SessionFilterStatus,
 } from './types'
 
 export function normalizeAPIBase(value: string): string {
@@ -59,8 +60,13 @@ export class ApiClient {
     return this.getJSON<APIStatus>('/status')
   }
 
-  async getSnapshot(): Promise<PublicOfficeSnapshot> {
-    return this.getJSON<PublicOfficeSnapshot>('/public/snapshot')
+  async getSnapshot(filterStatus?: SessionFilterStatus): Promise<PublicOfficeSnapshot> {
+    const query = new URLSearchParams()
+    if (filterStatus && filterStatus !== 'all') {
+      query.set('status', filterStatus)
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : ''
+    return this.getJSON<PublicOfficeSnapshot>(`/public/snapshot${suffix}`)
   }
 
   async getTimeline(since?: string, until?: string): Promise<PublicTimelineResponse> {

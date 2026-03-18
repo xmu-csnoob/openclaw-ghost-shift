@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import type { TimelinePoint } from '../replay.js'
 import type { PublicOfficeStatus } from '../services/types.js'
@@ -6,6 +6,7 @@ import { renderShareCard } from '../shareCard.js'
 import type { SurfaceTheme } from '../surfaceThemes.js'
 import { surfaceThemeOptions } from '../surfaceThemes.js'
 import { i18n } from '../content/i18n.js'
+import { useLocale, useT } from '../content/locale.js'
 
 export interface SharePanelProps {
   livePath: string
@@ -51,9 +52,14 @@ export function SharePanel({
   theme,
   autoGeneratePreview,
 }: SharePanelProps) {
+  const locale = useLocale()
+  const tt = useT()
+  const defaultHeadline = tt(i18n.share.defaults.headline)
+  const defaultSummary = tt(i18n.share.defaults.summary)
+  const previousDefaultsRef = useRef({ headline: defaultHeadline, summary: defaultSummary })
   const [cardTheme, setCardTheme] = useState<SurfaceTheme>(theme)
-  const [headline, setHeadline] = useState(i18n.share.description.split('。')[0])
-  const [summary, setSummary] = useState(i18n.share.description)
+  const [headline, setHeadline] = useState(() => defaultHeadline)
+  const [summary, setSummary] = useState(() => defaultSummary)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [stagePreviewUrl, setStagePreviewUrl] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -65,13 +71,23 @@ export function SharePanel({
   const visibleCount = status?.displayed ?? sessions.length
   const runningCount = status?.running ?? sessions.filter((session) => session.status === 'running').length
   const socialCopy = useMemo(
-    () => `${headline} ${freshnessLabel.toLowerCase()} with ${visibleCount} visible agents and ${runningCount} running now.`,
-    [freshnessLabel, headline, runningCount, visibleCount],
+    () => tt(i18n.share.defaults.socialCopy)
+      .replace('{headline}', headline)
+      .replace('{freshness}', freshnessLabel.toLowerCase())
+      .replace('{visible}', String(visibleCount))
+      .replace('{running}', String(runningCount)),
+    [freshnessLabel, headline, runningCount, tt, visibleCount],
   )
 
   useEffect(() => {
     setCardTheme(theme)
   }, [theme])
+
+  useEffect(() => {
+    setHeadline((current) => (current === previousDefaultsRef.current.headline ? defaultHeadline : current))
+    setSummary((current) => (current === previousDefaultsRef.current.summary ? defaultSummary : current))
+    previousDefaultsRef.current = { headline: defaultHeadline, summary: defaultSummary }
+  }, [defaultHeadline, defaultSummary, locale])
 
   const createPreview = () => {
     const stageCanvas = document.querySelector<HTMLCanvasElement>('.gs-live-stage canvas')
@@ -97,7 +113,7 @@ export function SharePanel({
     try {
       setPreviewUrl(createPreview())
     } catch {
-      setMessage(i18n.share.messages.previewUnavailable)
+      setMessage(tt(i18n.share.messages.previewUnavailable))
     }
   }, [
     autoGeneratePreview,
@@ -108,6 +124,7 @@ export function SharePanel({
     shareUrl,
     status,
     summary,
+    tt,
     timeline,
     timestamp,
   ])
@@ -116,24 +133,24 @@ export function SharePanel({
     const nextPreviewUrl = createPreview()
     setPreviewUrl(nextPreviewUrl)
     setStagePreviewUrl(captureStagePreview())
-    setMessage(i18n.share.messages.previewRefreshed)
+    setMessage(tt(i18n.share.messages.previewRefreshed))
   }
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setMessage(i18n.share.messages.linkCopied)
+      setMessage(tt(i18n.share.messages.linkCopied))
     } catch {
-      setMessage(i18n.share.messages.clipboardUnavailable)
+      setMessage(tt(i18n.share.messages.clipboardUnavailable))
     }
   }
 
   const handleCopySocialCopy = async () => {
     try {
       await navigator.clipboard.writeText(`${socialCopy}\n${shareUrl}`)
-      setMessage(i18n.share.messages.socialCopyCopied)
+      setMessage(tt(i18n.share.messages.socialCopyCopied))
     } catch {
-      setMessage(i18n.share.messages.clipboardUnavailable)
+      setMessage(tt(i18n.share.messages.clipboardUnavailable))
     }
   }
 
@@ -147,7 +164,7 @@ export function SharePanel({
     link.href = url
     link.download = `ghost-shift-${timestamp}.png`
     link.click()
-    setMessage(i18n.share.messages.pngDownloaded)
+    setMessage(tt(i18n.share.messages.pngDownloaded))
   }
 
   const handleShare = async () => {
@@ -162,28 +179,28 @@ export function SharePanel({
         text: socialCopy,
         url: shareUrl,
       })
-      setMessage(i18n.share.messages.sharedSuccessfully)
+      setMessage(tt(i18n.share.messages.sharedSuccessfully))
     } catch {
-      setMessage(i18n.share.messages.shareCancelled)
+      setMessage(tt(i18n.share.messages.shareCancelled))
     }
   }
 
   const platformChecks = [
-    { label: i18n.share.platformChecks.titleLength, value: `${headline.length}/70`, status: headline.length <= 70 ? 'is-good' : 'is-warn' },
-    { label: i18n.share.platformChecks.descriptionLength, value: `${summary.length}/140`, status: summary.length <= 140 ? 'is-good' : 'is-warn' },
-    { label: i18n.share.platformChecks.deepLink, value: playbackMode === 'replay' ? i18n.share.platformChecks.timestamped : i18n.share.platformChecks.liveEdge, status: 'is-neutral' },
-    { label: i18n.share.platformChecks.cardRatio, value: '1200 × 630', status: 'is-good' },
+    { label: tt(i18n.share.platformChecks.titleLength), value: `${headline.length}/70`, status: headline.length <= 70 ? 'is-good' : 'is-warn' },
+    { label: tt(i18n.share.platformChecks.descriptionLength), value: `${summary.length}/140`, status: summary.length <= 140 ? 'is-good' : 'is-warn' },
+    { label: tt(i18n.share.platformChecks.deepLink), value: playbackMode === 'replay' ? tt(i18n.share.platformChecks.timestamped) : tt(i18n.share.platformChecks.liveEdge), status: 'is-neutral' },
+    { label: tt(i18n.share.platformChecks.cardRatio), value: '1200 × 630', status: 'is-good' },
   ]
 
   return (
-    <section className="gs-share-section" aria-label="Share tools">
+    <section className="gs-share-section" aria-label={tt(i18n.common.shareTools)}>
       <div className="gs-share-section__head">
         <div>
-          <span className="gs-section-kicker">{i18n.panels.share}</span>
-          <h2>{i18n.share.title}</h2>
+          <span className="gs-section-kicker">{tt(i18n.panels.share)}</span>
+          <h2>{tt(i18n.share.title)}</h2>
         </div>
         <p>
-          {i18n.share.description}
+          {tt(i18n.share.description)}
         </p>
       </div>
 
@@ -191,8 +208,8 @@ export function SharePanel({
         <article className="gs-share-card">
           <div className="gs-share-style-grid">
             <div className="gs-share-style-group">
-              <span className="gs-share-preview__label">{i18n.share.cardStyle}</span>
-              <div className="gs-share-theme-row" role="list" aria-label="Share card style">
+              <span className="gs-share-preview__label">{tt(i18n.share.cardStyle)}</span>
+              <div className="gs-share-theme-row" role="list" aria-label={tt(i18n.share.cardStyle)}>
                 {surfaceThemeOptions.map((option) => (
                   <button
                     type="button"
@@ -200,29 +217,29 @@ export function SharePanel({
                     className={cardTheme === option.id ? 'is-active' : ''}
                     onClick={() => setCardTheme(option.id)}
                   >
-                    {option.label}
+                    {tt(option.label)}
                   </button>
                 ))}
               </div>
             </div>
 
             <label className="gs-share-field">
-              <span className="gs-share-preview__label">{i18n.share.headline}</span>
+              <span className="gs-share-preview__label">{tt(i18n.share.headline)}</span>
               <input value={headline} onChange={(event) => setHeadline(event.target.value)} />
             </label>
 
             <label className="gs-share-field">
-              <span className="gs-share-preview__label">{i18n.share.summary}</span>
+              <span className="gs-share-preview__label">{tt(i18n.share.summary)}</span>
               <textarea value={summary} rows={3} onChange={(event) => setSummary(event.target.value)} />
             </label>
           </div>
 
           <div className="gs-share-card__actions">
-            <button type="button" onClick={handleGeneratePreview}>{i18n.share.buttons.generatePreview}</button>
-            <button type="button" onClick={handleCopyLink}>{i18n.share.buttons.copyLink}</button>
-            <button type="button" onClick={handleCopySocialCopy}>{i18n.share.buttons.copySocialCopy}</button>
-            <button type="button" onClick={handleDownload}>{i18n.share.buttons.downloadPNG}</button>
-            <button type="button" onClick={handleShare}>{i18n.share.buttons.share}</button>
+            <button type="button" onClick={handleGeneratePreview}>{tt(i18n.share.buttons.generatePreview)}</button>
+            <button type="button" onClick={handleCopyLink}>{tt(i18n.share.buttons.copyLink)}</button>
+            <button type="button" onClick={handleCopySocialCopy}>{tt(i18n.share.buttons.copySocialCopy)}</button>
+            <button type="button" onClick={handleDownload}>{tt(i18n.share.buttons.downloadPNG)}</button>
+            <button type="button" onClick={handleShare}>{tt(i18n.share.buttons.share)}</button>
           </div>
 
           <div className="gs-share-card__meta">
@@ -243,23 +260,23 @@ export function SharePanel({
 
         <div className="gs-share-preview-stack">
           <article className="gs-share-preview">
-            <div className="gs-share-preview__label">{i18n.share.preview.socialMediaCard}</div>
+            <div className="gs-share-preview__label">{tt(i18n.share.preview.socialMediaCard)}</div>
             {previewUrl ? (
-              <img src={previewUrl} alt={i18n.share.preview.generatedSharePreview} />
+              <img src={previewUrl} alt={tt(i18n.share.preview.generatedSharePreview)} />
             ) : (
               <div className="gs-share-preview__placeholder">
-                {i18n.share.preview.placeholderGenerate}
+                {tt(i18n.share.preview.placeholderGenerate)}
               </div>
             )}
           </article>
 
           <article className="gs-share-preview gs-share-preview--source">
-            <div className="gs-share-preview__label">{i18n.share.preview.sourceImage}</div>
+            <div className="gs-share-preview__label">{tt(i18n.share.preview.sourceImage)}</div>
             {stagePreviewUrl ? (
-              <img src={stagePreviewUrl} alt={i18n.share.preview.currentStageSnapshot} />
+              <img src={stagePreviewUrl} alt={tt(i18n.share.preview.currentStageSnapshot)} />
             ) : (
               <div className="gs-share-preview__placeholder">
-                {i18n.share.preview.placeholderSource}
+                {tt(i18n.share.preview.placeholderSource)}
               </div>
             )}
           </article>

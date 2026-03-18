@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import App from './App.tsx'
+import { setLocale } from './content/locale.js'
 import type {
   AgentSession,
   PublicOfficeSnapshot,
@@ -149,7 +150,8 @@ function installFetchMock({
 }
 
 beforeEach(() => {
-  window.history.replaceState({}, '', '/live')
+  setLocale('en')
+  window.history.replaceState({}, '', '/replay')
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 })
   vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
 })
@@ -170,20 +172,31 @@ describe('App replay controls', () => {
 
     render(<App />)
 
-    await screen.findByText((_, node) => node?.textContent === '5 visible')
-    expect(screen.getByText('Updated just now')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/5 visible/i)
+    })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Replay' }))
-    fireEvent.change(screen.getByRole('slider'), {
+    // Click Replay button to switch to replay mode
+    const replayButtons = screen.getAllByRole('button', { name: 'Replay' })
+    fireEvent.click(replayButtons[0])
+
+    // Scrub to the first frame (2 sessions)
+    const slider = screen.getByRole('slider')
+    fireEvent.change(slider, {
       target: { value: String(Date.parse(history.replay.frames[0].capturedAt)) },
     })
 
-    await screen.findByText((_, node) => node?.textContent === '2 visible')
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/2 visible/i)
+    })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Live' }))
+    // Switch back to Live mode
+    const liveButtons = screen.getAllByRole('button', { name: 'Live' })
+    fireEvent.click(liveButtons[0])
 
-    await screen.findByText((_, node) => node?.textContent === '5 visible')
-    expect(screen.getByText('Updated just now')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/5 visible/i)
+    })
   })
 
   test('shows delayed freshness and pauses then resumes auto-tour after canvas interaction', async () => {
@@ -200,19 +213,38 @@ describe('App replay controls', () => {
 
     render(<App />)
 
-    await screen.findByText('Delayed')
-    expect(screen.queryByRole('button', { name: 'Resume tour' })).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Canvas interaction' }))
-    expect(screen.getByRole('button', { name: 'Resume tour' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Resume tour' }))
+    // Wait for the component to load and show sessions
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Resume tour' })).not.toBeInTheDocument()
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/3 visible/i)
+    })
+
+    // First, switch to Live mode (the page starts in Replay mode)
+    const liveButtons = screen.getAllByRole('button', { name: 'Live' })
+    fireEvent.click(liveButtons[0])
+
+    // Wait to be in live mode (freshness label should show "Delayed" for 30s old data)
+    await waitFor(() => {
+      expect(screen.getByTestId('workspace-freshness-label')).toHaveTextContent('Delayed')
+    })
+
+    // Click canvas interaction button to pause the auto-tour
+    const canvasInteractionButton = screen.getByRole('button', { name: 'Canvas interaction' })
+    fireEvent.click(canvasInteractionButton)
+
+    // After canvas interaction in live mode, auto-tour should be paused
+    // Check for Continue tour button
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /continue tour/i })).toBeInTheDocument()
+    })
+
+    // Click Continue tour to resume
+    fireEvent.click(screen.getByRole('button', { name: /continue tour/i }))
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /continue tour/i })).not.toBeInTheDocument()
     })
   })
 
-  test('toggles heatmap and telemetry from the live stage', async () => {
+  test('toggles heatmap and telemetry from the replay stage', async () => {
     const history = makeHistory([2, 4, 5])
     installFetchMock({
       snapshots: makeSnapshot(5),
@@ -222,14 +254,20 @@ describe('App replay controls', () => {
 
     render(<App />)
 
-    await screen.findByText((_, node) => node?.textContent === '5 visible')
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/5 visible/i)
+    })
+    // Verify heatmap is initially off (mock displays heatmap state)
     expect(screen.getByTestId('heatmap-state')).toHaveTextContent('heatmap:off:5')
 
+    // Click Heatmap button to enable heatmap
     fireEvent.click(screen.getByRole('button', { name: 'Heatmap' }))
     expect(screen.getByTestId('heatmap-state')).toHaveTextContent('heatmap:on:5')
 
+    // Click Telemetry button to open the status panel
     fireEvent.click(screen.getByRole('button', { name: 'Telemetry' }))
-    expect(await screen.findByText('Office Telemetry')).toBeInTheDocument()
+    // Verify telemetry panel is visible by checking for its content
+    expect(await screen.findByText(/office telemetry/i)).toBeInTheDocument()
   })
 
   test('falls back to the offline state when the snapshot API is unavailable', async () => {
@@ -248,8 +286,22 @@ describe('App replay controls', () => {
 
     render(<App />)
 
-    await screen.findByText('Offline')
-    expect(screen.getAllByText('API unavailable').length).toBeGreaterThan(0)
+    // The replay page starts in Replay mode, so first switch to Live mode
+    // to test the offline state. There are multiple Live buttons (header and replay bar).
+    await waitFor(() => {
+      const liveButtons = screen.getAllByRole('button', { name: 'Live' })
+      expect(liveButtons.length).toBeGreaterThan(0)
+    })
+
+    const liveButtons = screen.getAllByRole('button', { name: 'Live' })
+    fireEvent.click(liveButtons[0])
+
+    // Wait for offline state to be reflected in the freshness label
+    await waitFor(() => {
+      expect(screen.getByTestId('workspace-freshness-label')).toHaveTextContent('Offline')
+    })
+    // Check for offline detail message (shows "API unavailable" when fetch fails)
+    expect(screen.getByTestId('workspace-freshness-detail')).toHaveTextContent(/API unavailable/i)
   })
 
   test('switches to the compact mobile layout on narrow viewports', async () => {
@@ -263,8 +315,13 @@ describe('App replay controls', () => {
 
     render(<App />)
 
-    await screen.findByText((_, node) => node?.textContent === '4 visible')
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/4 visible/i)
+    })
+    // On compact viewport, the sidebar is hidden by default
+    // Live Roster should not be visible when sidebar is closed
     expect(screen.queryByText('Live Roster')).not.toBeInTheDocument()
+    // Help text for scrubbing should be hidden on compact viewport
     expect(screen.queryByText(/Scrub the timeline to replay the public office/i)).not.toBeInTheDocument()
   })
 })
@@ -280,10 +337,14 @@ describe.each([0, 5, 20, 100, 250])('App integration at %i sessions', (count) =>
 
     render(<App />)
 
-    await screen.findByText((_, node) => node?.textContent === `${count} visible`)
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(new RegExp(`${count} visible`, 'i'))
+    })
 
+    // On the replay page with full presentation, when there are more than 5 sessions,
+    // the roster shows first 5 plus a "more" message
     if (count > 5) {
-      expect(screen.getByText(`+${count - 5} more in the public office`)).toBeInTheDocument()
+      expect(screen.getByText(new RegExp(`${count - 5} more in the public office`, 'i'))).toBeInTheDocument()
     } else {
       expect(screen.queryByText(/more in the public office/)).not.toBeInTheDocument()
     }

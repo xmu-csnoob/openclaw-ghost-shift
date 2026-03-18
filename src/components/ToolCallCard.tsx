@@ -10,7 +10,8 @@
  */
 
 import React, { useState } from 'react'
-import { i18n } from '../content/i18n'
+import { i18n } from '../content/i18n.js'
+import { useT } from '../content/locale.js'
 
 export type ToolType =
   | 'Read'
@@ -142,6 +143,7 @@ export function ToolCallCard({
   call,
   defaultExpanded = false,
 }: ToolCallCardProps): React.ReactElement {
+  const tt = useT()
   const [expanded, setExpanded] = useState(defaultExpanded)
 
   const colors = TOOL_COLORS[call.tool]
@@ -284,7 +286,7 @@ export function ToolCallCard({
       </div>
       {expanded && (
         <div style={styles.content}>
-          <div style={styles.paramsTitle}>{i18n.toolCall.parameters}</div>
+          <div style={styles.paramsTitle}>{tt(i18n.toolCall.parameters)}</div>
           <pre style={styles.paramsContent}>
             {JSON.stringify(call.params, null, 2)}
           </pre>

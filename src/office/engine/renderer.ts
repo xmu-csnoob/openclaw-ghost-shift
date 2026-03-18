@@ -53,7 +53,7 @@ import { renderMatrixEffect } from './matrixEffect.js';
 
 // ── Render functions ────────────────────────────────────────────
 
-export function renderTileGrid(
+function renderTileGrid(
   ctx: CanvasRenderingContext2D,
   tileMap: TileTypeVal[][],
   offsetX: number,
@@ -104,7 +104,7 @@ interface ZDrawable {
   draw: (ctx: CanvasRenderingContext2D) => void;
 }
 
-export function renderScene(
+function renderScene(
   ctx: CanvasRenderingContext2D,
   furniture: FurnitureInstance[],
   characters: Character[],
@@ -198,7 +198,7 @@ export function renderScene(
 
 // ── Seat indicators ─────────────────────────────────────────────
 
-export function renderSeatIndicators(
+function renderSeatIndicators(
   ctx: CanvasRenderingContext2D,
   seats: Map<string, Seat>,
   characters: Map<number, Character>,
@@ -237,7 +237,7 @@ export function renderSeatIndicators(
 
 // ── Edit mode overlays ──────────────────────────────────────────
 
-export function renderGridOverlay(
+function renderGridOverlay(
   ctx: CanvasRenderingContext2D,
   offsetX: number,
   offsetY: number,
@@ -282,7 +282,7 @@ export function renderGridOverlay(
 }
 
 /** Draw faint expansion placeholders 1 tile outside grid bounds (ghost border). */
-export function renderGhostBorder(
+function renderGhostBorder(
   ctx: CanvasRenderingContext2D,
   offsetX: number,
   offsetY: number,
@@ -325,7 +325,7 @@ export function renderGhostBorder(
   ctx.restore();
 }
 
-export function renderGhostPreview(
+function renderGhostPreview(
   ctx: CanvasRenderingContext2D,
   sprite: SpriteData,
   col: number,
@@ -348,7 +348,7 @@ export function renderGhostPreview(
   ctx.restore();
 }
 
-export function renderSelectionHighlight(
+function renderSelectionHighlight(
   ctx: CanvasRenderingContext2D,
   col: number,
   row: number,
@@ -369,7 +369,7 @@ export function renderSelectionHighlight(
   ctx.restore();
 }
 
-export function renderDeleteButton(
+function renderDeleteButton(
   ctx: CanvasRenderingContext2D,
   col: number,
   row: number,
@@ -408,7 +408,7 @@ export function renderDeleteButton(
   return { cx, cy, radius };
 }
 
-export function renderRotateButton(
+function renderRotateButton(
   ctx: CanvasRenderingContext2D,
   col: number,
   row: number,
@@ -457,7 +457,7 @@ export function renderRotateButton(
 
 // ── Speech bubbles ──────────────────────────────────────────────
 
-export function renderBubbles(
+function renderBubbles(
   ctx: CanvasRenderingContext2D,
   characters: Character[],
   offsetX: number,
@@ -493,7 +493,7 @@ export function renderBubbles(
   }
 }
 
-export interface ButtonBounds {
+interface ButtonBounds {
   /** Center X in device pixels */
   cx: number;
   /** Center Y in device pixels */
@@ -502,10 +502,10 @@ export interface ButtonBounds {
   radius: number;
 }
 
-export type DeleteButtonBounds = ButtonBounds;
-export type RotateButtonBounds = ButtonBounds;
+type DeleteButtonBounds = ButtonBounds;
+type RotateButtonBounds = ButtonBounds;
 
-export interface EditorRenderState {
+interface EditorRenderState {
   showGrid: boolean;
   ghostSprite: SpriteData | null;
   ghostCol: number;
@@ -529,7 +529,7 @@ export interface EditorRenderState {
   ghostBorderHoverRow: number;
 }
 
-export interface SelectionRenderState {
+interface SelectionRenderState {
   selectedAgentId: number | null;
   hoveredAgentId: number | null;
   hoveredTile: { col: number; row: number } | null;
