@@ -1,0 +1,283 @@
+.gs-live-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 107, 53, 0.08);
+  background: rgba(255, 251, 247, 0.95);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+.gs-live-topbar__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: rgba(45, 45, 45, 0.8);
+.gs-live-topbar__brand {
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #ff6b35;
+.gs-live-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+.gs-live-topbar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 107, 53, 0.12);
+  background: rgba(255, 251, 247, 0.88);
+  color: #555555;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+.gs-live-topbar__btn:hover {
+  border-color: rgba(255, 107, 53, 0.25);
+  background: rgba(255, 107, 53, 0.05);
+.gs-live-topbar__btn.is-active {
+  border-color: var(--gs-accent-primary);
+  color: var(--gs-accent-primary);
+.gs-live-main .gs-demo-stage,
+.gs-live-main .gs-live-stage {
+  width: 100%;
+  height: 100%;
+  border: none;
+  box-shadow: none;
+  min-height: 0;
+.gs-live-sidebar__toggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 107, 53, 0.12);
+  border-right: none;
+  background: rgba(255, 251, 247, 0.95);
+  color: #555555;
+  cursor: pointer;
+  z-index: 50;
+  transition: all 0.18s ease;
+.gs-live-sidebar__toggle:hover {
+  background: rgba(255, 107, 53, 0.05);
+.gs-live-bottombar {
+  height: 48px;
+  border-top: 1px solid rgba(255, 107, 53, 0.08);
+  background: rgba(255, 251, 247, 0.95);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+.gs-live-sidebar .gs-stats-sidebar {
+  padding: 12px;
+.gs-live-sidebar .gs-side-card {
+  padding: 14px;
+
+  .gs-live-topbar {
+    padding: 0 12px;
+  }
+
+  .gs-live-topbar__brand {
+    font-size: 0.76rem;
+  }
+
+  .gs-live-topbar__actions {
+    gap: 4px;
+  }
+
+  .gs-live-topbar__btn {
+    padding: 0 6px;
+    font-size: 0.72rem;
+  }
+.gs-live-roster__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+.gs-live-roster__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  flex: none;
+.gs-live-roster__name {
+  font-weight: 700;
+  color: #2d2d2d;
+.gs-live-roster__zone {
+  color: #777777;
+  font-size: 0.82rem;
+.gs-live-roster__window {
+  color: #ef4444;
+  font-size: 0.82rem;
+  text-align: right;
+.gs-live-stage--minimal {
+  border: 0;
+  box-shadow: none;
+.gs-replay-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+  background: linear-gradient(135deg, rgba(255, 251, 247, 0.97), rgba(255, 245, 237, 0.96) 55%, rgba(255, 240, 230, 0.95));
+  border: 1px solid rgba(255, 107, 53, 0.15);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.06);
+  backdrop-filter: blur(14px);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.gs-replay-bar.is-collapsed {
+  bottom: 16px;
+  width: min(480px, calc(100vw - 32px));
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+.gs-replay-bar.is-expanded {
+  top: 64px;
+  width: min(760px, calc(100vw - 32px));
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+.gs-replay-bar.is-expanded.is-compact {
+  top: 104px;
+  width: calc(100% - 20px);
+@media (max-width: 768px) {
+  .gs-replay-bar.is-collapsed {
+    width: calc(100vw - 32px);
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .gs-replay-bar.is-expanded {
+    top: 48px;
+    width: calc(100vw - 24px);
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .gs-replay-bar.is-expanded.is-compact {
+    top: 80px;
+    width: calc(100% - 16px);
+  }
+@media (max-width: 480px) {
+  .gs-replay-bar.is-collapsed {
+    width: calc(100vw - 24px);
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .gs-replay-bar.is-expanded {
+    top: 40px;
+    width: calc(100vw - 20px);
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .gs-replay-bar.is-expanded.is-compact {
+    top: 72px;
+    width: calc(100% - 12px);
+  }
+.gs-replay-bar__thumbnail,
+.gs-replay-bar__event-chip {
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+.gs-replay-bar__thumbnail:hover,
+.gs-replay-bar__event-chip:hover {
+  transform: translateY(-1px);
+.gs-replay-bar__thumbnail-preview {
+  overflow: hidden;
+.gs-replay-bar__thumbnail-bar {
+  display: block;
+  border-radius: 0 999px 2px 2px;
+  align-self: end;
+  animation: gs-bar-rise 0.42s ease both;
+.gs-replay-bar__event-dot.is-active {
+  transform: scale(1.12);
+.gs-replay-bar__event-chip.is-active {
+  transform: translateY(-1px);
+
+  .gs-replay-bar__preview-grid,
+  .gs-replay-bar__events {
+    scrollbar-width: none;
+  }
+
+  .gs-replay-bar__preview-grid::-webkit-scrollbar,
+  .gs-replay-bar__events::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gs-live-topbar__brand {
+    font-size: 0.76rem;
+  }
+
+  .gs-live-topbar__btn {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .gs-live-sidebar__toggle {
+    width: 20px;
+    height: 48px;
+  }
+  .gs-live-bottombar {
+    height: 44px;
+  }
+
+  .gs-live-topbar__status {
+    font-size: 0.74rem;
+  }
+
+  .gs-live-topbar__btn {
+    min-height: 24px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+  }
+  .gs-hero-copy,
+  .gs-demo-copy,
+  .gs-docs-copy,
+  .gs-experience-panel,
+  .gs-dashboard-section,
+  .gs-share-section,
+  .gs-summary-card {
+    padding: 16px;
+  }
+  .gs-hero h1,
+  .gs-demo-copy h2,
+  .gs-docs-copy h2,
+  .gs-case-study h2,
+  .gs-experience-panel__head h2,
+  .gs-dashboard-head h2,
+  .gs-share-section__head h2 {
+    font-size: 1.3rem;
+  }
+  .gs-live-bottombar {
+    height: 40px;
+  }
+
+  .gs-replay-bar {
+    width: calc(100% - 12px) !important;
+    left: 6px !important;
+    right: 6px !important;
+  }
+.gs-live-sidebar__toggle {
+  width: 28px;
+  height: 88px;
+  border-color: rgba(var(--gs-accent-secondary-rgb), 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 245, 237, 0.84));
+  backdrop-filter: blur(12px);

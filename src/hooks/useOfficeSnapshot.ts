@@ -5,7 +5,7 @@ import type { OfficeState } from '../office/engine/officeState.js'
 import type { DisplaySession, SessionObservation } from '../publicDisplay.js'
 import { formatRelativeAge } from '../replay.js'
 import { apiClient } from '../services/ApiClient.js'
-import type { PublicOfficeSnapshot } from '../services/types.js'
+import type { PublicOfficeSnapshot, SessionFilterStatus } from '../services/types.js'
 import { SNAPSHOT_REFRESH_MS } from '../surfaceConfig.js'
 import {
   applyLiveSnapshotToOfficeState,
@@ -16,9 +16,11 @@ import {
 
 interface UseOfficeSnapshotParams {
   officeState: OfficeState
+  /** Filter status for the snapshot API. Defaults to 'active'. */
+  filterStatus?: SessionFilterStatus
 }
 
-export function useOfficeSnapshot({ officeState }: UseOfficeSnapshotParams) {
+export function useOfficeSnapshot({ officeState, filterStatus = 'active' }: UseOfficeSnapshotParams) {
   const tt = useT()
   const observationsRef = useRef<Map<string, SessionObservation>>(new Map())
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
@@ -37,7 +39,7 @@ export function useOfficeSnapshot({ officeState }: UseOfficeSnapshotParams) {
     const fetchSnapshot = async () => {
       const requestStartedAt = performance.now()
       try {
-        const snapshot = await apiClient.getSnapshot('active')
+        const snapshot = await apiClient.getSnapshot(filterStatus === 'all' ? undefined : filterStatus)
         if (cancelled) return
 
         const now = Date.now()
@@ -77,7 +79,7 @@ export function useOfficeSnapshot({ officeState }: UseOfficeSnapshotParams) {
       cancelled = true
       window.clearInterval(intervalId)
     }
-  }, [officeState, tt])
+  }, [officeState, tt, filterStatus])
 
   const refreshLiveSessions = useCallback(() => {
     setLiveSessions((previous) => [...previous])
@@ -118,6 +120,7 @@ export function useOfficeSnapshot({ officeState }: UseOfficeSnapshotParams) {
     backendError,
     isSnapshotLoading,
     liveFreshness,
+    filterStatus,
     refreshLiveSessions,
   }
 }

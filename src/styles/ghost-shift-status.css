@@ -1,0 +1,336 @@
+.gs-theme-switcher,
+.gs-toggle-row,
+.gs-shortcut-row,
+.gs-theme-switcher,
+.gs-toggle-row {
+  flex-wrap: wrap;
+.gs-shortcut-list,
+.gs-settings-group,
+.gs-toggle-stack {
+  display: grid;
+  gap: 12px;
+.gs-shortcut-list,
+.gs-settings-group {
+  margin-top: 14px;
+.gs-shortcut-row {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 107, 53, 0.08);
+  background: rgba(255, 251, 247, 0.9);
+.gs-shortcut-row span,
+.gs-settings-group__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(85, 85, 85, 0.68);
+.gs-shortcut-row strong {
+  color: #2d2d2d;
+  font-size: 0.92rem;
+.gs-theme-switcher button,
+.gs-toggle-row button,
+.gs-theme-switcher button,
+.gs-toggle-row button,
+.gs-theme-switcher {
+  align-items: stretch;
+.gs-theme-switcher button {
+  flex: 1 1 0;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  padding: 14px;
+  text-align: left;
+.gs-theme-switcher button span {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(85, 85, 85, 0.78);
+.gs-theme-switcher button.is-active,
+.gs-toggle-row button.is-active,
+
+  .gs-help-button {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .gs-button {
+    min-height: 42px;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+  }
+  .gs-hero-copy,
+  .gs-demo-copy,
+  .gs-docs-copy {
+    padding: 20px;
+  }
+
+  .gs-settings-icon,
+  .gs-help-button,
+  .gs-locale-switch__button {
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
+  }
+.gs-help-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.05);
+  color: #555555;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+.gs-help-button:hover {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: rgba(255, 107, 53, 0.35);
+  color: #2d2d2d;
+  transform: scale(1.05);
+.gs-help-button:active {
+  transform: scale(0.98);
+.gs-settings-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  background: rgba(255, 251, 247, 0.9);
+  color: #555555;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  backdrop-filter: blur(10px);
+.gs-settings-icon:hover {
+  border-color: rgba(255, 107, 53, 0.35);
+  background: rgba(255, 107, 53, 0.05);
+  color: #2d2d2d;
+  transform: rotate(45deg);
+.gs-settings-icon.is-active {
+  border-color: var(--gs-accent-primary);
+  background: rgba(var(--gs-accent-primary-rgb), 0.12);
+  color: var(--gs-accent-primary);
+.gs-help-modal .gs-modal {
+  width: min(95vw, 1100px);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+.gs-help-modal .gs-modal__content {
+  overflow-y: auto;
+  padding: 0;
+  flex: 1;
+.gs-help-modal .gs-case-study {
+  padding: 24px;
+  margin: 0;
+.gs-help-modal .gs-case-study__head {
+  margin-bottom: 20px;
+.gs-status-panel {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100% - 80px);
+  background: rgba(255, 251, 247, 0.97);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  backdrop-filter: blur(10px);
+.gs-status-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+  background: linear-gradient(90deg, rgba(255, 107, 53, 0.08), rgba(255, 200, 150, 0.06));
+.gs-status-panel__title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #ff6b35;
+  letter-spacing: 0.6px;
+.gs-status-panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+.gs-status-panel__close {
+  background: transparent;
+  border: none;
+  color: #999999;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+.gs-status-panel__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+.gs-status-panel__section {
+  display: flex;
+  flex-direction: column;
+.gs-status-panel__section-title {
+  font-size: 10px;
+  color: #999999;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  margin-bottom: 8px;
+.gs-status-panel__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+.gs-status-panel__stat-card {
+  padding: 10px;
+  background: rgba(255, 107, 53, 0.08);
+  border: 1px solid rgba(255, 107, 53, 0.15);
+.gs-status-panel__stat-label {
+  font-size: 10px;
+  color: #999999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+.gs-status-panel__stat-value {
+  margin-top: 4px;
+  font-size: 20px;
+  color: #2d2d2d;
+  font-weight: 700;
+.gs-status-panel__stat-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #777777;
+.gs-status-panel__sparkline {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(255, 251, 247, 0.9);
+.gs-status-panel__sparkline-label {
+  font-size: 11px;
+  color: #777777;
+  margin-top: 4px;
+.gs-status-panel__empty {
+  color: #999999;
+  font-size: 11px;
+.gs-status-panel__mix-row {
+  display: grid;
+  grid-template-columns: 68px 1fr 34px;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  color: #2d2d2d;
+  margin-bottom: 8px;
+.gs-status-panel__mix-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+.gs-status-panel__meter {
+  height: 7px;
+  background: rgba(255, 107, 53, 0.12);
+  overflow: hidden;
+.gs-status-panel__meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--meter-color, #ff6b35), rgba(255, 255, 255, 0.5));
+.gs-status-panel__meter-fill--gradient {
+  background: linear-gradient(90deg, #ff6b35, #f59e0b);
+.gs-status-panel__mix-value {
+  text-align: right;
+.gs-status-panel__session-item {
+  padding: 9px 10px;
+  background: rgba(255, 107, 53, 0.06);
+  border: 1px solid rgba(255, 107, 53, 0.12);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+.gs-status-panel__session-item:hover {
+  background: rgba(255, 107, 53, 0.1);
+.gs-status-panel__session-item.is-selected {
+  border-color: rgba(255, 107, 53, 0.5);
+  background: rgba(255, 107, 53, 0.06);
+.gs-status-panel__session-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+.gs-status-panel__session-row--secondary {
+  margin-top: 6px;
+  font-size: 11px;
+.gs-status-panel__session-row--tertiary {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #999999;
+.gs-status-panel__session-name {
+  color: #2d2d2d;
+  font-weight: 700;
+.gs-status-panel__session-activity {
+  font-size: 11px;
+@media (max-width: 768px) {
+  .gs-status-panel {
+    top: 48px;
+    right: 8px;
+    width: min(340px, calc(100vw - 16px));
+    max-height: calc(100% - 64px);
+  }
+
+  .gs-status-panel__content {
+    padding: 10px;
+    gap: 14px;
+  }
+
+  .gs-status-panel__stat-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .gs-status-panel__mix-row {
+    grid-template-columns: 60px 1fr 40px;
+    gap: 8px;
+    font-size: 10px;
+  }
+
+  .gs-status-panel__session-item {
+    padding: 8px;
+    margin-bottom: 6px;
+  }
+
+  .gs-status-panel__session-row--secondary,
+  .gs-status-panel__session-row--tertiary {
+    font-size: 10px;
+  }
+@media (max-width: 480px) {
+  .gs-status-panel {
+    top: 40px;
+    right: 6px;
+    width: calc(100vw - 12px);
+    max-height: calc(100% - 52px);
+  }
+
+  .gs-status-panel__header {
+    padding: 8px 10px;
+  }
+
+  .gs-status-panel__title {
+    font-size: 12px;
+  }
+
+  .gs-status-panel__content {
+    padding: 8px;
+    gap: 12px;
+  }
+.gs-status-panel {
+  top: 74px;
+  right: 14px;
+  width: min(360px, calc(100vw - 28px));
+  z-index: 150;
+.gs-status-panel__body {
+  padding: 0;
+.gs-status-panel .gs-panel__title {
+  margin-top: 0;
+  font-size: 1rem;
+.gs-status-panel__content {
+  padding: 16px 18px 18px;
+  display: grid;
+  gap: 16px;

@@ -1,0 +1,243 @@
+.gs-hero,
+.gs-demo-section,
+.gs-docs-section {
+  animation: gs-rise 0.7s ease both;
+.gs-hero--canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+.gs-hero--canvas .gs-hero-stage {
+  position: relative;
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+.gs-hero--canvas .gs-hero-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 32px 48px;
+  border: 2px solid #ff6b35;
+  box-shadow: 4px 4px 0 #ff6b35;
+.gs-hero--canvas .gs-hero-overlay h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: #2d2d2d;
+  margin-bottom: 12px;
+.gs-hero--canvas .gs-hero-overlay p {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 24px;
+.gs-hero--canvas .gs-hero-actions {
+  justify-content: center;
+.gs-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: stretch;
+  padding: 32px 32px 20px;
+.gs-hero-copy,
+.gs-demo-copy,
+.gs-docs-copy {
+  padding: 28px;
+  border: 2px solid rgba(255, 107, 53, 0.15);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 247, 0.96), rgba(255, 245, 237, 0.9)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 60%);
+  box-shadow: 3px 3px 0 #ffd4c4;
+  backdrop-filter: blur(14px);
+.gs-demo-copy {
+  padding: 12px 0;
+.gs-demo-copy h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 4px 0;
+.gs-demo-copy p {
+  font-size: 13px;
+  color: rgba(85, 85, 85, 0.64);
+.gs-hero h1,
+.gs-demo-copy h2,
+.gs-docs-copy h2 {
+  margin-top: 12px;
+  font-family: var(--font-pixel), 'IBM Plex Sans', sans-serif; font-size: clamp(1rem, 2vw, 1.5rem); letter-spacing: 0.05em;
+  font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #2d2d2d;
+  font-weight: 600;
+.gs-demo-copy h2,
+.gs-docs-copy h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+.gs-hero-copy > p,
+.gs-demo-copy > p,
+.gs-docs-copy > p {
+  margin-top: 18px;
+  max-width: 40rem;
+  font-size: 1.04rem;
+  line-height: 1.72;
+  color: rgba(45, 45, 45, 0.88);
+.gs-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+.gs-demo-section,
+.gs-docs-section {
+  margin-top: 24px;
+.gs-demo-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 0;
+.gs-demo-layout,
+.gs-docs-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.75fr);
+  gap: 18px;
+  margin-top: 18px;
+.gs-demo-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 500px;
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.08);
+.gs-docs-layout {
+  margin-top: 18px;
+.gs-docs-copy code,
+
+  .gs-hero,
+  .gs-demo-layout,
+  .gs-docs-layout,
+  .gs-share-layout,
+  .gs-case-study__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .gs-hero-copy,
+  .gs-demo-copy,
+  .gs-docs-copy,
+  .gs-dashboard-section,
+  .gs-share-section,
+  .gs-summary-card,
+  .gs-surface-card,
+  .gs-side-card,
+  .gs-case-card,
+  .gs-code-card,
+  .gs-case-study__example,
+  .gs-dashboard-card,
+  .gs-dashboard-compare,
+  .gs-share-card,
+  .gs-share-preview {
+    padding: 18px;
+  }
+
+  .gs-hero h1,
+  .gs-demo-copy h2,
+  .gs-case-study h2,
+  .gs-docs-copy h2 {
+    line-height: 1;
+  }
+
+  .gs-demo-stage {
+    height: 420px;
+  }
+
+  .gs-hero--canvas .gs-hero-stage {
+    height: 40vh;
+    min-height: 280px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay {
+    padding: 20px 24px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay p {
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .gs-hero--canvas .gs-hero-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .gs-hero--canvas .gs-hero-actions .gs-button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  .gs-feature-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px;
+    margin: 32px auto;
+  }
+  .gs-demo-layout {
+    flex-direction: column;
+  }
+
+  .gs-demo-stage,
+  .gs-live-stage {
+    width: 100%;
+    min-height: 50vh;
+    height: auto;
+  }
+
+  .gs-hero h1,
+  .gs-demo-copy h2,
+  .gs-docs-copy h2,
+  .gs-case-study h2 {
+    font-size: 1.5rem;
+  }
+  .gs-experience-panel,
+  .gs-dashboard-section,
+  .gs-share-section {
+    padding: 18px 20px;
+  }
+  .gs-experience-panel__grid,
+  .gs-dashboard-analytics {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .gs-theme-switcher button {
+    min-height: 80px;
+    padding: 12px;
+  }
+  .gs-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+@media (max-width: 480px) {
+  .gs-hero--canvas .gs-hero-stage {
+    height: 35vh;
+    min-height: 240px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay {
+    padding: 16px 20px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay h1 {
+    font-size: 20px;
+  }
+
+  .gs-hero--canvas .gs-hero-overlay p {
+    font-size: 13px;
+  }
+  .gs-app-nav {
+    padding: 10px 12px;
+  }
