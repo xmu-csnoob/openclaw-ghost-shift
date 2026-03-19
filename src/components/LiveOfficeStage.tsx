@@ -12,8 +12,18 @@ import { SessionPanel } from './SessionPanel.js'
 import { SignalStrip } from './SignalStrip.js'
 import { StatusPanel } from './StatusPanel.js'
 import { i18n } from '../content/i18n.js'
+import { useT } from '../content/locale.js'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
+type HoverCardMode = 'full' | 'minimal'
+
+interface PanelToggle {
+  key: string
+  label: string
+  active: boolean
+  onToggle: () => void
+  disabled?: boolean
+}
 
 export interface LiveOfficeStageProps {
   officeState: OfficeState
@@ -24,7 +34,6 @@ export interface LiveOfficeStageProps {
   hoveredAgentId: number | null
   hoverPosition: { x: number; y: number } | null
   hoveredSession: DisplaySession | null
-  hoveredPublicId: string | null
   hoveredToolStats: HoverToolStat[]
   hoveredActivityPoints: HoverActivityPoint[]
   hoveredActiveWindow: string
@@ -93,16 +102,29 @@ export interface LiveOfficeStageProps {
   onResumeTour: () => void
   onPlaybackRateChange: (rate: PlaybackState['playbackRate']) => void
   onCanvasInteraction?: () => void
+  landingMode?: boolean
+  showStageTopbar?: boolean
+  showZoomControls?: boolean
+  showReplayControls?: boolean
+  showSignalStrip?: boolean
+  showRoster?: boolean
+  showHelp?: boolean
+  showHeatmapLegend?: boolean
+  hoverCardMode?: HoverCardMode
+  panelToggles?: PanelToggle[]
 }
 
-function getConnectionLabel(state: ConnectionState): string {
+function getConnectionLabel(
+  state: ConnectionState,
+  tt: (text: string | { zh: string; en: string }) => string,
+): string {
   switch (state) {
     case 'connected':
-      return i18n.status.connected
+      return tt(i18n.status.connected)
     case 'connecting':
-      return i18n.status.connecting
+      return tt(i18n.status.connecting)
     default:
-      return i18n.status.disconnected
+      return tt(i18n.status.disconnected)
   }
 }
 
@@ -115,7 +137,6 @@ export function LiveOfficeStage({
   hoveredAgentId,
   hoverPosition,
   hoveredSession,
-  hoveredPublicId,
   hoveredToolStats,
   hoveredActivityPoints,
   hoveredActiveWindow,
@@ -164,11 +185,27 @@ export function LiveOfficeStage({
   onResumeTour,
   onPlaybackRateChange,
   onCanvasInteraction,
+  landingMode = false,
+  showStageTopbar = true,
+  showZoomControls = true,
+  showReplayControls,
+  showSignalStrip,
+  showRoster,
+  showHelp,
+  showHeatmapLegend = true,
+  hoverCardMode = 'full',
+  panelToggles = [],
 }: LiveOfficeStageProps) {
+  const tt = useT()
   const runningCount = sessions.filter((session) => session.status === 'running').length
   const warmCount = sessions.filter((session) => session.signalScore >= 0.6).length
   const heatmapZoneCount = new Set(heatmapSources.map((source) => source.zone)).size
   const zoomLabel = `${zoom >= 10 || Number.isInteger(zoom) ? zoom.toFixed(0) : zoom.toFixed(1)}x`
+  const resolvedShowReplayControls = showReplayControls ?? !landingMode
+  const resolvedShowSignalStrip = showSignalStrip ?? !compactViewport
+  const resolvedShowRoster = showRoster ?? !compactViewport
+  const resolvedShowHelp = showHelp ?? !compactViewport
+  const showHoverCard = hoverCardMode === 'minimal' || hoverCardMode === 'full'
 
   return (
     <div className="gs-live-stage">
@@ -187,95 +224,120 @@ export function LiveOfficeStage({
         onUserInteraction={onCanvasInteraction}
       />
 
-      <ReplayControlBar
-        playbackState={playbackState}
-        hasFrames={hasReplayFrames}
-        scrubberMin={scrubberMin}
-        scrubberMax={scrubberMax}
-        scrubberValue={scrubberValue}
-        currentLabel={currentFrameLabel}
-        startLabel={startLabel}
-        endLabel={endLabel}
-        coverageLabel={coverageLabel}
-        freshnessLabel={freshness.label}
-        freshnessColor={freshness.color}
-        freshnessDetail={freshness.detail}
-        autoTourPaused={autoTourPaused}
-        previewFrames={previewFrames}
-        eventMarkers={eventMarkers}
-        onModeChange={onModeChange}
-        onWindowHoursChange={onWindowHoursChange}
-        onScrub={onScrub}
-        onPlayToggle={onPlayToggle}
-        onJumpToLive={onJumpToLive}
-        onResumeTour={onResumeTour}
-        onPlaybackRateChange={onPlaybackRateChange}
-        compact={compactViewport}
-      />
+      {resolvedShowReplayControls ? (
+        <ReplayControlBar
+          playbackState={playbackState}
+          hasFrames={hasReplayFrames}
+          scrubberMin={scrubberMin}
+          scrubberMax={scrubberMax}
+          scrubberValue={scrubberValue}
+          currentLabel={currentFrameLabel}
+          startLabel={startLabel}
+          endLabel={endLabel}
+          coverageLabel={coverageLabel}
+          freshnessLabel={freshness.label}
+          freshnessColor={freshness.color}
+          freshnessDetail={freshness.detail}
+          autoTourPaused={autoTourPaused}
+          previewFrames={previewFrames}
+          eventMarkers={eventMarkers}
+          onModeChange={onModeChange}
+          onWindowHoursChange={onWindowHoursChange}
+          onScrub={onScrub}
+          onPlayToggle={onPlayToggle}
+          onJumpToLive={onJumpToLive}
+          onResumeTour={onResumeTour}
+          onPlaybackRateChange={onPlaybackRateChange}
+          compact={compactViewport}
+        />
+      ) : null}
 
-      <AgentHoverCard
-        visible={hoveredAgentId !== null && hoverPosition !== null}
-        anchor={hoverPosition}
-        session={hoveredSession}
-        publicId={hoveredPublicId}
-        toolStats={hoveredToolStats}
-        activityPoints={hoveredActivityPoints}
-        dominantWindow={hoveredActiveWindow}
-        loading={isLoading || (hoveredAgentId !== null && hoveredSession === null)}
-        compact={compactViewport}
-      />
+      {showHoverCard ? (
+        <AgentHoverCard
+          visible={hoveredAgentId !== null && hoverPosition !== null}
+          anchor={hoverPosition}
+          session={hoveredSession}
+          toolStats={hoveredToolStats}
+          activityPoints={hoveredActivityPoints}
+          dominantWindow={hoveredActiveWindow}
+          loading={isLoading || (hoveredAgentId !== null && hoveredSession === null)}
+          compact={compactViewport}
+          minimal={hoverCardMode === 'minimal'}
+        />
+      ) : null}
 
-      <div className="gs-stage-topbar">
-        <div className="gs-stage-panel gs-stage-panel--brand">GHOST SHIFT</div>
+      {showStageTopbar ? (
+        <div className="gs-stage-topbar">
+          <div className="gs-stage-panel gs-stage-panel--brand">GHOST SHIFT</div>
 
-        <div className="gs-stage-panel gs-stage-panel--status">
-          <span
-            className="gs-stage-status-dot"
-            data-connection-tone={connectionState}
-            data-has-error={backendError ? 'true' : 'false'}
-          />
-          <span>{getConnectionLabel(connectionState)}</span>
-          {backendError ? <span className="gs-stage-panel__error">{backendError}</span> : null}
+          <div className="gs-stage-panel gs-stage-panel--status">
+            <span
+              className="gs-stage-status-dot"
+              data-connection-tone={connectionState}
+              data-has-error={backendError ? 'true' : 'false'}
+            />
+            <span data-testid="stage-connection-label">{getConnectionLabel(connectionState, tt)}</span>
+            {backendError ? <span className="gs-stage-panel__error">{backendError}</span> : null}
+          </div>
+
+          <div className="gs-stage-panel gs-stage-panel--stats">
+            <span data-testid="stage-visible-count">
+              <strong>{sessions.length}</strong> {tt(i18n.liveOffice.visible)}
+            </span>
+            {!compactViewport ? <span data-testid="stage-warm-count">{warmCount} {tt(i18n.liveOffice.warm)}</span> : null}
+            <span data-testid="stage-live-count">{runningCount} {tt(i18n.liveOffice.liveAgents)}</span>
+          </div>
+
+          <button
+            className={`gs-stage-panel gs-stage-panel--button ${showStatusPanel ? 'is-active' : ''}`}
+            onClick={onToggleStatusPanel}
+            aria-pressed={showStatusPanel}
+          >
+            {tt(i18n.liveOffice.telemetry)}
+          </button>
+
+          <button
+            className={`gs-stage-panel gs-stage-panel--button ${heatmapEnabled ? 'is-active' : ''}`}
+            onClick={onToggleHeatmap}
+            aria-pressed={heatmapEnabled}
+          >
+            {tt(i18n.liveOffice.heatmap)}
+          </button>
         </div>
+      ) : null}
 
-        <div className="gs-stage-panel gs-stage-panel--stats">
-          <span>
-            <strong>{sessions.length}</strong> {i18n.liveOffice.visible}
-          </span>
-          {!compactViewport ? <span>{warmCount} {i18n.liveOffice.warm}</span> : null}
-          <span>{runningCount} {i18n.liveOffice.liveAgents}</span>
+      {panelToggles.length > 0 ? (
+        <div className="gs-stage-panel-toggles">
+          {panelToggles.map((toggle) => (
+            <button
+              key={toggle.key}
+              type="button"
+              className={`gs-stage-panel-toggles__button ${toggle.active ? 'is-active' : ''}`}
+              onClick={toggle.onToggle}
+              aria-pressed={toggle.active}
+              disabled={toggle.disabled}
+            >
+              {toggle.label}
+            </button>
+          ))}
         </div>
+      ) : null}
 
-        <button
-          className={`gs-stage-panel gs-stage-panel--button ${showStatusPanel ? 'is-active' : ''}`}
-          onClick={onToggleStatusPanel}
-          aria-pressed={showStatusPanel}
-        >
-          {i18n.liveOffice.telemetry}
-        </button>
+      {showZoomControls ? (
+        <div className="gs-stage-zoom">
+          <button type="button" aria-label="Zoom in" onClick={() => onZoomChange(Math.min(10, zoom + 1))}>+</button>
+          <span>{zoomLabel}</span>
+          <button type="button" aria-label="Zoom out" onClick={() => onZoomChange(Math.max(1, zoom - 1))}>-</button>
+        </div>
+      ) : null}
 
-        <button
-          className={`gs-stage-panel gs-stage-panel--button ${heatmapEnabled ? 'is-active' : ''}`}
-          onClick={onToggleHeatmap}
-          aria-pressed={heatmapEnabled}
-        >
-          {i18n.liveOffice.heatmap}
-        </button>
-      </div>
-
-      <div className="gs-stage-zoom">
-        <button type="button" aria-label="Zoom in" onClick={() => onZoomChange(Math.min(10, zoom + 1))}>+</button>
-        <span>{zoomLabel}</span>
-        <button type="button" aria-label="Zoom out" onClick={() => onZoomChange(Math.max(1, zoom - 1))}>-</button>
-      </div>
-
-      {heatmapEnabled ? (
+      {heatmapEnabled && showHeatmapLegend ? (
         <div className="gs-stage-heatmap-legend" role="status" aria-live="polite">
-          <div className="gs-stage-heatmap-legend__eyebrow">{i18n.liveOffice.activityHeatmap}</div>
+          <div className="gs-stage-heatmap-legend__eyebrow">{tt(i18n.liveOffice.activityHeatmap)}</div>
           <div className="gs-stage-heatmap-legend__body">
-            <span>{heatmapSources.length} {i18n.liveOffice.activeSources}</span>
-            <span>{heatmapZoneCount} {i18n.liveOffice.hotZones}</span>
-            <span>{compactViewport ? i18n.liveOffice.pinchDragToInspect : i18n.liveOffice.panZoomToInspect}</span>
+            <span>{heatmapSources.length} {tt(i18n.liveOffice.activeSources)}</span>
+            <span>{heatmapZoneCount} {tt(i18n.liveOffice.hotZones)}</span>
+            <span>{compactViewport ? tt(i18n.liveOffice.pinchDragToInspect) : tt(i18n.liveOffice.panZoomToInspect)}</span>
           </div>
         </div>
       ) : null}
@@ -297,11 +359,11 @@ export function LiveOfficeStage({
         position="left"
       />
 
-      {!compactViewport ? <SignalStrip status={officeStatus} sessions={sessions} history={history} /> : null}
+      {resolvedShowSignalStrip ? <SignalStrip status={officeStatus} sessions={sessions} history={history} /> : null}
 
-      {!compactViewport && sessions.length > 0 && !showStatusPanel && !showSessionPanel ? (
+      {resolvedShowRoster && sessions.length > 0 && !showStatusPanel && !showSessionPanel ? (
         <div className="gs-stage-roster">
-          <div className="gs-stage-roster__label">{playbackState.mode === 'replay' ? i18n.liveOffice.replayRoster : i18n.liveOffice.liveRoster}</div>
+          <div className="gs-stage-roster__label">{playbackState.mode === 'replay' ? tt(i18n.liveOffice.replayRoster) : tt(i18n.liveOffice.liveRoster)}</div>
           {sessions.slice(0, 5).map((session) => {
             const numericAgentId = getNumericAgentId(session.sessionKey)
             const isSelected = numericAgentId === selectedAgentId
@@ -322,14 +384,14 @@ export function LiveOfficeStage({
             )
           })}
           {sessions.length > 5 ? (
-            <div className="gs-stage-roster__more">+{sessions.length - 5} {i18n.liveOffice.moreInPublicOffice}</div>
+            <div className="gs-stage-roster__more">{tt(i18n.liveOffice.moreInPublicOfficeCount, { count: sessions.length - 5 })}</div>
           ) : null}
         </div>
       ) : null}
 
-      {!compactViewport ? (
+      {resolvedShowHelp ? (
         <div className="gs-stage-help">
-          {i18n.liveOffice.scrubHelp}
+          {tt(i18n.liveOffice.scrubHelp)}
         </div>
       ) : null}
 
