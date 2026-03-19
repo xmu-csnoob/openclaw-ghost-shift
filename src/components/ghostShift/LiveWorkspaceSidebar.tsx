@@ -1,3 +1,11 @@
+import type {
+  PublicAnalyticsCompareResponse,
+  PublicAnalyticsTrendsResponse,
+  PublicMetricsLive,
+  PublicModelsDistributionResponse,
+  PublicOfficeStatus,
+  PublicZonesHeatmapResponse,
+} from '../../services/types.js'
 import { ExperiencePanel } from '../ExperiencePanel.js'
 import { RealtimeStatsSidebar } from '../RealtimeStatsSidebar.js'
 import type {
@@ -14,15 +22,24 @@ import {
   getZoneLabel,
 } from '../../publicDisplay.js'
 import { useT } from '../../content/locale.js'
+import { AnalyticsPanel } from './AnalyticsPanel.js'
 import { Panel } from './Panel.js'
 
-interface LiveWorkspaceSidebarProps {
+export interface LiveWorkspaceSidebarProps {
   page: 'live' | 'replay'
   loading: boolean
   freshnessLabel: string
   modelMix: RealtimeStatsModelSlice[]
   zoneBars: RealtimeStatsZoneBar[]
   responseTrend: RealtimeTrendPoint[]
+  metricsLive: PublicMetricsLive | null
+  analyticsTrends: PublicAnalyticsTrendsResponse | null
+  analyticsCompare: PublicAnalyticsCompareResponse | null
+  zonesHeatmap: PublicZonesHeatmapResponse | null
+  modelsDistribution: PublicModelsDistributionResponse | null
+  gatewayStatus: PublicOfficeStatus | null
+  sessionInventoryCount: number
+  analyticsError?: string | null
   sessions: DisplaySession[]
   getNumericAgentId: (sessionKey: string) => number | undefined
   noteItems: ReadonlyArray<{ zh: string; en: string }>
@@ -41,6 +58,14 @@ export function LiveWorkspaceSidebar({
   modelMix,
   zoneBars,
   responseTrend,
+  metricsLive,
+  analyticsTrends,
+  analyticsCompare,
+  zonesHeatmap,
+  modelsDistribution,
+  gatewayStatus,
+  sessionInventoryCount,
+  analyticsError,
   sessions,
   getNumericAgentId,
   noteItems,
@@ -61,6 +86,18 @@ export function LiveWorkspaceSidebar({
         modelMix={modelMix}
         zoneBars={zoneBars}
         responseTrend={responseTrend}
+      />
+
+      <AnalyticsPanel
+        loading={loading}
+        metricsLive={metricsLive}
+        trends={analyticsTrends}
+        compare={analyticsCompare}
+        zonesHeatmap={zonesHeatmap}
+        modelsDistribution={modelsDistribution}
+        gatewayStatus={gatewayStatus}
+        sessionCount={sessionInventoryCount}
+        error={analyticsError}
       />
 
       <Panel

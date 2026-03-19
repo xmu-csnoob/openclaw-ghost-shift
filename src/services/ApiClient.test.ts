@@ -73,6 +73,42 @@ describe('ApiClient base resolution', () => {
     )
   })
 
+  test('builds query parameters for analytics and agent detail requests', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+
+    const { createApiClient } = await import('./ApiClient.js')
+    const client = createApiClient('/custom-api')
+
+    await client.getAnalyticsTrends()
+    await client.getZonesHeatmap('2026-03-14T10:00:00Z', '2026-03-14T12:00:00Z')
+    await client.getModelsDistribution(undefined, '2026-03-14T12:00:00Z')
+    await client.getAgentStats('pub/demo', '2026-03-14T10:00:00Z')
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/custom-api/public/analytics/trends?hours=6',
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/custom-api/public/zones/heatmap?since=2026-03-14T10%3A00%3A00Z&until=2026-03-14T12%3A00%3A00Z',
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      '/custom-api/public/models/distribution?until=2026-03-14T12%3A00%3A00Z',
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      '/custom-api/public/agent/pub%2Fdemo?since=2026-03-14T10%3A00%3A00Z',
+    )
+  })
+
   test('throws a descriptive error for non-OK responses', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('unavailable', { status: 503 }))
 
