@@ -45,7 +45,9 @@ export function StatusBar({
 
   return (
     <div className="gs-status-bar">
-      <div className="gs-status-bar__chip gs-status-bar__chip--brand">{brand}</div>
+      <div className="gs-status-bar__chip gs-status-bar__chip--brand">
+        <span className="gs-status-bar__brand-label">{brand}</span>
+      </div>
 
       <div className="gs-status-bar__chip gs-status-bar__chip--connection">
         <span
@@ -53,26 +55,38 @@ export function StatusBar({
           data-connection-tone={connectionState}
           data-has-error={backendError ? 'true' : 'false'}
         />
-        <span data-testid="stage-connection-label">{connectionLabel}</span>
+        <span className="gs-status-bar__connection-label" data-testid="stage-connection-label">
+          {connectionLabel}
+        </span>
         {backendError ? <span className="gs-status-bar__error">{backendError}</span> : null}
       </div>
 
       <div className="gs-status-bar__chip gs-status-bar__chip--stats">
-        <span data-testid="status-bar-visible-count">
-          <strong>{visibleCount}</strong>
+        <span className="gs-status-bar__metric" data-testid="status-bar-visible-count">
+          <strong className="gs-status-bar__metric-value">{visibleCount}</strong>
           {showTotal ? <span className="gs-status-bar__total">/{totalSessions}</span> : null}
-          {' '}{visibleLabel}
+          <span className="gs-status-bar__metric-label">{visibleLabel}</span>
         </span>
-        {!compact ? <span data-testid="stage-warm-count">{warmCount} {warmLabel}</span> : null}
-        <span data-testid="stage-live-count">{liveCount} {liveLabel}</span>
+        {!compact ? (
+          <span className="gs-status-bar__metric" data-testid="stage-warm-count">
+            <strong className="gs-status-bar__metric-value">{warmCount}</strong>
+            <span className="gs-status-bar__metric-label">{warmLabel}</span>
+          </span>
+        ) : null}
+        <span className="gs-status-bar__metric" data-testid="stage-live-count">
+          <strong className="gs-status-bar__metric-value">{liveCount}</strong>
+          <span className="gs-status-bar__metric-label">{liveLabel}</span>
+        </span>
       </div>
 
       <div className="gs-status-bar__chip gs-status-bar__chip--filter">
         {FILTER_OPTIONS.map((option) => (
           <button
             key={option.value}
+            type="button"
             className={`gs-status-bar__filter-btn ${filterStatus === option.value ? 'is-active' : ''}`}
             onClick={() => onFilterChange(option.value)}
+            aria-pressed={filterStatus === option.value}
             data-testid={`filter-btn-${option.value}`}
           >
             {option.label}

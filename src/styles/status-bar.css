@@ -1,44 +1,97 @@
 .gs-status-bar {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 88px;
+  top: 16px;
+  left: 16px;
+  right: 96px;
   z-index: 100;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 }
 
 .gs-status-bar__chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 0 14px;
-  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.14);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 245, 237, 0.78));
-  backdrop-filter: blur(14px);
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--gs-border-subtle, rgba(0, 0, 0, 0.06));
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
   box-shadow:
-    0 12px 24px rgba(var(--gs-accent-secondary-rgb), 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.52);
-  color: #555555;
+    var(
+      --gs-shadow-layered,
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.06),
+      0 16px 32px rgba(0, 0, 0, 0.04)
+    ),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  color: rgba(45, 45, 45, 0.72);
 }
 
 .gs-status-bar__chip--brand {
+  padding-inline: 18px;
+  border-color: rgba(var(--gs-accent-secondary-rgb), 0.18);
+  background: linear-gradient(135deg, rgba(var(--gs-accent-secondary-rgb), 0.08), rgba(255, 255, 255, 0.96) 60%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 20px rgba(var(--gs-accent-secondary-rgb), 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.gs-status-bar__brand-label {
   font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
-  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   color: var(--gs-accent-secondary);
 }
 
-.gs-status-bar__chip--stats {
-  gap: 14px;
-  font-size: 0.84rem;
+.gs-status-bar__chip--connection {
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
-.gs-status-bar__chip strong {
-  font-size: 0.98rem;
+.gs-status-bar__connection-label {
+  font-size: 0.8rem;
+  font-weight: 600;
   color: #2d2d2d;
+  white-space: nowrap;
+}
+
+.gs-status-bar__chip--stats {
+  gap: 16px;
+  row-gap: 10px;
+  flex-wrap: wrap;
+  padding-inline: 18px;
+  background: rgba(250, 250, 250, 0.96);
+}
+
+.gs-status-bar__metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gs-status-bar__metric-value {
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  font-size: 1.22rem;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: #1f1f1f;
+  text-shadow: 0 0 0 rgba(0, 0, 0, 0.01);
+}
+
+.gs-status-bar__metric-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .gs-status-bar__error {
@@ -48,59 +101,88 @@
 
 .gs-status-bar__chip--filter {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
+  padding: 4px;
+  background: rgba(250, 250, 250, 0.94);
 }
 
 .gs-status-bar__filter-btn {
-  padding: 2px 10px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: #777;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.52);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    transform 0.2s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color 0.2s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)),
+    background 0.2s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow 0.2s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)),
+    color 0.2s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .gs-status-bar__filter-btn:hover {
-  background: rgba(255, 255, 255, 0.7);
-  color: #555;
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.03);
+  color: #2d2d2d;
 }
 
 .gs-status-bar__filter-btn.is-active {
-  background: rgba(232, 119, 34, 0.15);
-  border-color: rgba(232, 119, 34, 0.4);
-  color: #c45e10;
+  border-color: rgba(var(--gs-accent-secondary-rgb), 0.24);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  color: var(--gs-accent-secondary);
 }
 
 .gs-status-bar__total {
-  color: #999;
+  color: rgba(0, 0, 0, 0.34);
+  font-size: 0.82rem;
   font-weight: 400;
+  letter-spacing: -0.04em;
 }
 
 @media (max-width: 720px) {
-
   .gs-status-bar {
-    right: 72px;
+    right: 76px;
   }
 
   .gs-status-bar__chip--stats {
-    font-size: 0.78rem;
+    gap: 12px;
+  }
+
+  .gs-status-bar__chip--filter {
+    margin-left: 0;
   }
 }
 
 @media (max-width: 560px) {
-
   .gs-status-bar {
     top: 12px;
     left: 12px;
     right: 68px;
+    gap: 10px;
   }
 
   .gs-status-bar__chip {
-    min-height: 38px;
+    min-height: 40px;
+    padding: 0 12px;
+  }
+
+  .gs-status-bar__chip--brand,
+  .gs-status-bar__chip--stats {
+    padding-inline: 14px;
+  }
+
+  .gs-status-bar__filter-btn {
+    min-height: 30px;
     padding: 0 12px;
   }
 }

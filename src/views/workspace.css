@@ -3,10 +3,15 @@
   flex-direction: column;
   min-height: 100vh;
   overflow: hidden;
+  --gs-shadow-layered: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06), 0 16px 32px rgba(0, 0, 0, 0.04);
+  --gs-shadow-layered-lg: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 18px rgba(0, 0, 0, 0.08), 0 20px 36px rgba(0, 0, 0, 0.06);
+  --gs-border-subtle: rgba(0, 0, 0, 0.06);
+  --gs-border-strong: rgba(0, 0, 0, 0.08);
+  --gs-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   background:
-    radial-gradient(circle at top left, rgba(255, 107, 53, 0.06), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(239, 68, 68, 0.06), transparent 32%),
-    linear-gradient(180deg, #fffbf7 0%, #fff5ed 50%, #ffe8dd 100%);
+    radial-gradient(circle at top left, rgba(var(--gs-accent-secondary-rgb), 0.04), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(var(--gs-accent-primary-rgb), 0.04), transparent 34%),
+    linear-gradient(180deg, #fffcf9 0%, #faf7f2 52%, #f2eee7 100%);
 }
 
 .gs-workspace-view {
@@ -37,11 +42,10 @@
   width: 0;
   overflow: hidden;
   flex-shrink: 0;
-  border-left: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 251, 247, 0.88), rgba(255, 245, 237, 0.8));
+  border-left: 1px solid var(--gs-border-subtle, rgba(0, 0, 0, 0.06));
+  background: rgba(250, 250, 250, 0.88);
   backdrop-filter: blur(18px);
-  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.28s var(--gs-ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .gs-live-sidebar.is-open {
@@ -63,7 +67,7 @@
     bottom: 0;
     z-index: 60;
     width: min(320px, calc(100vw - 24px));
-    background: rgba(255, 251, 247, 0.98);
+    background: rgba(250, 250, 250, 0.98);
   }
 }
 
