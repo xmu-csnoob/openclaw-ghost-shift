@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useHref, useLocation } from 'react-router-dom'
 import { CaseStudyLayer } from '../components/CaseStudyLayer.js'
+import { ErrorBoundary } from '../components/ErrorBoundary.js'
 import { AboutOverviewSection } from '../components/ghostShift/AboutOverviewSection.js'
 import { AgentDetailModal } from '../components/ghostShift/AgentDetailModal.js'
 import { DocsStudioSection } from '../components/ghostShift/DocsStudioSection.js'
 import { Modal } from '../components/Modal.js'
 import { SettingsContent } from '../components/SettingsContent.js'
 import { SharePanel } from '../components/SharePanel.js'
+import { SurfaceProvider } from '../contexts/SurfaceContext.js'
 import { useAgentDetail } from '../hooks/useAgentDetail.js'
 import { useAnalyticsData } from '../hooks/useAnalyticsData.js'
 import { useOfficeSnapshot } from '../hooks/useOfficeSnapshot.js'
@@ -900,9 +902,20 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
       pageContent = null
   }
 
+  const surfaceContextValue = useMemo(() => ({
+    officeState,
+    sessions: displaySessions,
+    history: displayHistory,
+    connectionState,
+    backendError,
+    playbackState,
+    isLoading,
+  }), [officeState, displaySessions, displayHistory, connectionState, backendError, playbackState, isLoading])
+
   return (
+    <SurfaceProvider value={surfaceContextValue}>
     <div className="gs-shell" data-theme={surfacePreferences.theme} data-density={surfacePreferences.density}>
-      <main className="gs-page">{pageContent}</main>
+      <main className="gs-page"><ErrorBoundary name="page">{pageContent}</ErrorBoundary></main>
 
       {/* Share Modal */}
       <Modal
@@ -959,6 +972,7 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
       </Modal>
 
     </div>
+    </SurfaceProvider>
   )
 }
 

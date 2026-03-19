@@ -1,0 +1,41 @@
+.gs-error-boundary {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  padding: 24px;
+}
+
+.gs-error-boundary__card {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 245, 237, 0.88));
+  box-shadow: 4px 4px 0 #fecaca;
+  max-width: 400px;
+  width: 100%;
+}
+
+.gs-error-boundary__icon {
+  font-size: 2rem;
+}
+
+.gs-error-boundary__title {
+  font-family: var(--font-pixel-mono), 'VT323', monospace;
+  font-size: 1rem;
+  color: #dc2626;
+}
+
+.gs-error-boundary__message {
+  font-size: 0.88rem;
+  color: rgba(85, 85, 85, 0.8);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.gs-error-boundary__retry {
+  justify-self: center;
+  min-width: 120px;
+}
