@@ -1,11 +1,20 @@
+/** Known office zones — extend as new zones are added */
+export type AgentZone = 'code-studio' | 'chat-lounge' | 'ops-lab' | (string & {})
+
+/** Known agent roles — extend as new roles are added */
+export type AgentRole = 'coding-agent' | 'webchat' | 'automation' | (string & {})
+
+/** Agent session status */
+export type AgentStatus = 'idle' | 'running' | 'connected' | 'disconnected' | 'error'
+
 export interface AgentSession {
   publicId?: string
   sessionKey: string
   agentId: string
   model?: string
-  status?: 'idle' | 'running' | 'connected' | 'disconnected' | 'error'
-  zone: 'code-studio' | 'chat-lounge' | 'ops-lab' | string
-  role: 'coding-agent' | 'webchat' | 'automation' | string
+  status?: AgentStatus
+  zone: AgentZone
+  role: AgentRole
   origin: string
   activityScore?: number
   activityWindow?: string
@@ -14,7 +23,7 @@ export interface AgentSession {
 
 export interface PublicOfficeStatus {
   connected: boolean
-  status: string
+  status: 'healthy' | 'degraded' | 'error' | string
   displayed: number
   running: number
   lastUpdatedAt: string
