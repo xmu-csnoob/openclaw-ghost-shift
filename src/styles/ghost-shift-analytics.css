@@ -1,0 +1,103 @@
+.gs-analytics-stat strong,
+.gs-analytics-compare-card__primary,
+.gs-analytics-trend-card__head strong,
+.gs-analytics-stat,
+.gs-analytics-compare-card,
+.gs-analytics-trend-card,
+.gs-analytics-list__row,
+.gs-analytics-zone-card,
+.gs-analytics-stat:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-stat:nth-child(2) { animation-delay: 0.06s; }
+.gs-analytics-stat:nth-child(3) { animation-delay: 0.12s; }
+.gs-analytics-compare-card:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-compare-card:nth-child(2) { animation-delay: 0.04s; }
+.gs-analytics-compare-card:nth-child(3) { animation-delay: 0.08s; }
+.gs-analytics-compare-card:nth-child(4) { animation-delay: 0.12s; }
+.gs-analytics-compare-card:nth-child(5) { animation-delay: 0.16s; }
+.gs-analytics-compare-card:nth-child(6) { animation-delay: 0.2s; }
+.gs-analytics-trend-card:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-trend-card:nth-child(2) { animation-delay: 0.06s; }
+.gs-analytics-trend-card:nth-child(3) { animation-delay: 0.12s; }
+.gs-analytics-bar__fill,
+.gs-analytics-bar__fill::after,
+.gs-analytics-stat,
+.gs-analytics-compare-card,
+.gs-analytics-trend-card,
+.gs-analytics-zone-card,
+.gs-analytics-list__row,
+.gs-analytics-stat:hover,
+.gs-analytics-compare-card:hover,
+.gs-analytics-trend-card:hover,
+.gs-analytics-zone-card:hover,
+.gs-analytics-list__row:hover {
+  border-color: rgba(255, 107, 53, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 242, 0.82));
+.gs-analytics-stack > .gs-analytics-panel {
+  animation: gs-rise 0.5s ease both;
+.gs-analytics-stack > .gs-analytics-panel:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(2) { animation-delay: 0.08s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(3) { animation-delay: 0.16s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(4) { animation-delay: 0.24s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(5) { animation-delay: 0.32s; }
+.gs-analytics-delta {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+.gs-analytics-delta.is-positive {
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.15);
+  color: #16a34a;
+.gs-analytics-delta.is-negative {
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+.gs-analytics-zone-card__pill {
+  transition: all 0.2s ease;
+.gs-analytics-zone-card__pill:hover {
+  transform: scale(1.06);
+  background: rgba(255, 251, 247, 0.95);
+.gs-analytics-stat strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+.gs-analytics-trend-card__chart::after {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.gs-analytics-stack {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.15) transparent;
+
+  .gs-analytics-stat:hover,
+  .gs-analytics-compare-card:hover,
+  .gs-analytics-trend-card:hover {
+    transform: none;
+  }
+.gs-analytics-compare-card,
+.gs-analytics-zone-card,
+.gs-analytics-trend-card__head,
+.gs-analytics-trend-card__delta,
+.gs-analytics-list__head,
+.gs-analytics-list__foot,
+.gs-analytics-zone-card__head,
+.gs-analytics-bar,
+.gs-analytics-bar__fill,
+.gs-analytics-empty,
+
+  .gs-analytics-strip,
+  .gs-analytics-inline-meta,
+  .gs-agent-detail__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gs-analytics-compare-grid,
+  .gs-analytics-zone-grid,
+  .gs-agent-detail__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .gs-analytics-strip,
+  .gs-analytics-inline-meta,
+  .gs-agent-detail__stats {
+    grid-template-columns: 1fr;
+  }

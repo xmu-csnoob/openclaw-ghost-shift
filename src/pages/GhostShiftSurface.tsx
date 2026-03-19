@@ -8,6 +8,7 @@ import { DocsStudioSection } from '../components/ghostShift/DocsStudioSection.js
 import { Modal } from '../components/Modal.js'
 import { SettingsContent } from '../components/SettingsContent.js'
 import { SharePanel } from '../components/SharePanel.js'
+import type { SessionFilterStatus } from '../services/types.js'
 import { SurfaceProvider } from '../contexts/SurfaceContext.js'
 import { useAgentDetail } from '../hooks/useAgentDetail.js'
 import { useAnalyticsData } from '../hooks/useAnalyticsData.js'
@@ -79,7 +80,8 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
   const tourCursorRef = useRef(-1)
   const tourCandidatesRef = useRef<number[]>([])
   const surfaceUI = useSurfaceUI({ page })
-  const snapshot = useOfficeSnapshot({ officeState })
+  const [filterStatus, setFilterStatus] = useState<SessionFilterStatus>('active')
+  const snapshot = useOfficeSnapshot({ officeState, filterStatus })
   const analytics = useAnalyticsData()
   const replay = useReplayPlayback({
     officeState,
@@ -841,6 +843,15 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           stageProps={liveStageProps}
           sidebarOpen={sidebarOpen}
           sidebarProps={liveSidebarProps}
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+          visibleCount={liveSessions.length}
+          warmCount={liveSessions.filter((s) => s.signalScore >= 0.6).length}
+          liveCount={liveSessions.filter((s) => s.status === 'running').length}
+          totalSessions={snapshot.liveSnapshot?.status.total}
+          connectionState={connectionState}
+          connectionLabel={freshness.label}
+          backendError={backendError}
         />
       )
       break
@@ -855,6 +866,15 @@ function GhostShiftSurface({ page }: GhostShiftSurfaceProps) {
           stageProps={replayStageProps}
           sidebarOpen={sidebarOpen}
           sidebarProps={replaySidebarProps}
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+          visibleCount={displaySessions.length}
+          warmCount={displaySessions.filter((s) => s.signalScore >= 0.6).length}
+          liveCount={displaySessions.filter((s) => s.status === 'running').length}
+          totalSessions={undefined}
+          connectionState={connectionState}
+          connectionLabel={freshness.label}
+          backendError={backendError}
         />
       )
       break

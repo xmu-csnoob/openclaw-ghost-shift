@@ -58,7 +58,7 @@ export function StatusBar({
       </div>
 
       <div className="gs-status-bar__chip gs-status-bar__chip--stats">
-        <span data-testid="stage-visible-count">
+        <span data-testid="status-bar-visible-count">
           <strong>{visibleCount}</strong>
           {showTotal ? <span className="gs-status-bar__total">/{totalSessions}</span> : null}
           {' '}{visibleLabel}
