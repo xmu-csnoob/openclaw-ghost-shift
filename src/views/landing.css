@@ -2,6 +2,10 @@
   display: grid;
   grid-template-rows: auto 1fr;
   min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 107, 53, 0.04), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(239, 68, 68, 0.04), transparent 32%),
+    linear-gradient(180deg, #fffbf7 0%, #fff5ed 50%, #ffe8dd 100%);
 }
 
 .gs-live-minimal-shell .gs-header-nav--site {
@@ -46,6 +50,12 @@
   box-shadow:
     0 38px 70px rgba(var(--gs-accent-secondary-rgb), 0.12),
     10px 10px 0 rgba(var(--gs-accent-secondary-rgb), 0.12);
+  animation: gs-stage-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes gs-stage-glow {
+  0% { border-color: rgba(var(--gs-accent-secondary-rgb), 0.14); }
+  100% { border-color: rgba(var(--gs-accent-secondary-rgb), 0.26); }
 }
 
 .gs-landing-showcase__stage .gs-live-stage {
@@ -145,6 +155,17 @@
   font-size: 1.1rem;
   line-height: 1.15;
 }
+
+/* Staggered feature card entrance */
+.gs-feature-card {
+  animation: gs-rise 0.5s ease both;
+}
+.gs-feature-card:nth-child(1) { animation-delay: 0s; }
+.gs-feature-card:nth-child(2) { animation-delay: 0.08s; }
+.gs-feature-card:nth-child(3) { animation-delay: 0.16s; }
+.gs-feature-card:nth-child(4) { animation-delay: 0.24s; }
+.gs-feature-card:nth-child(5) { animation-delay: 0.32s; }
+.gs-feature-card:nth-child(6) { animation-delay: 0.40s; }
 
 .gs-feature-card p {
   margin-top: 0;
