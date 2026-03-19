@@ -355,6 +355,23 @@ button.ghost:active,
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   像素风 Selection
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes pixel-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '█';
+  animation: pixel-blink 1s step-end infinite;
+  color: var(--orange);
+  font-family: var(--font-pixel-mono);
+  margin-left: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    工具类
    ═══════════════════════════════════════════════════════════════ */
 

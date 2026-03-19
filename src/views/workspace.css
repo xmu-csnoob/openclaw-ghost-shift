@@ -41,7 +41,7 @@
   background:
     linear-gradient(180deg, rgba(255, 251, 247, 0.88), rgba(255, 245, 237, 0.8));
   backdrop-filter: blur(18px);
-  transition: width 0.25s ease;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .gs-live-sidebar.is-open {

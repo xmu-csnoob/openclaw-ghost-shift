@@ -2519,6 +2519,243 @@
   }
 }
 
+/* ── Core animations (restored after CSS modular split) ── */
+
+@keyframes gs-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes gs-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gs-page-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gs-bar-rise {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+@keyframes gs-hover-card-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gs-hover-sheen {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* ── Value pulse (for real-time metric updates) ── */
+
+@keyframes gs-value-pulse {
+  0% { color: #ff6b35; transform: scale(1.04); }
+  100% { color: inherit; transform: scale(1); }
+}
+
+.gs-analytics-stat strong,
+.gs-analytics-compare-card__primary,
+.gs-analytics-trend-card__head strong,
+.gs-agent-detail__stat strong {
+  transition: color 0.4s ease, transform 0.4s ease;
+}
+
+.gs-value-pulse {
+  animation: gs-value-pulse 0.6s ease both;
+}
+
+/* ── Staggered card entrance ── */
+
+.gs-analytics-stat,
+.gs-analytics-compare-card,
+.gs-analytics-trend-card,
+.gs-analytics-list__row,
+.gs-analytics-zone-card,
+.gs-agent-detail__stat,
+.gs-session-panel__stat {
+  animation: gs-rise 0.42s ease both;
+}
+
+.gs-analytics-stat:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-stat:nth-child(2) { animation-delay: 0.06s; }
+.gs-analytics-stat:nth-child(3) { animation-delay: 0.12s; }
+
+.gs-analytics-compare-card:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-compare-card:nth-child(2) { animation-delay: 0.04s; }
+.gs-analytics-compare-card:nth-child(3) { animation-delay: 0.08s; }
+.gs-analytics-compare-card:nth-child(4) { animation-delay: 0.12s; }
+.gs-analytics-compare-card:nth-child(5) { animation-delay: 0.16s; }
+.gs-analytics-compare-card:nth-child(6) { animation-delay: 0.2s; }
+
+.gs-analytics-trend-card:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-trend-card:nth-child(2) { animation-delay: 0.06s; }
+.gs-analytics-trend-card:nth-child(3) { animation-delay: 0.12s; }
+
+/* ── Enhanced bar fill animation ── */
+
+.gs-analytics-bar__fill,
+.gs-agent-detail__period-fill {
+  animation: gs-bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
+}
+
+.gs-analytics-bar__fill::after,
+.gs-agent-detail__period-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5));
+  border-radius: 999px;
+}
+
+/* ── Card hover glow effect ── */
+
+.gs-analytics-stat,
+.gs-analytics-compare-card,
+.gs-analytics-trend-card,
+.gs-analytics-zone-card,
+.gs-analytics-list__row,
+.gs-agent-detail__stat {
+  position: relative;
+}
+
+.gs-analytics-stat:hover,
+.gs-analytics-compare-card:hover,
+.gs-analytics-trend-card:hover,
+.gs-analytics-zone-card:hover,
+.gs-analytics-list__row:hover {
+  border-color: rgba(255, 107, 53, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 242, 0.82));
+}
+
+/* ── Panel entrance animation ── */
+
+.gs-analytics-stack > .gs-analytics-panel {
+  animation: gs-rise 0.5s ease both;
+}
+
+.gs-analytics-stack > .gs-analytics-panel:nth-child(1) { animation-delay: 0s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(2) { animation-delay: 0.08s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(3) { animation-delay: 0.16s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(4) { animation-delay: 0.24s; }
+.gs-analytics-stack > .gs-analytics-panel:nth-child(5) { animation-delay: 0.32s; }
+
+/* ── Delta badge polish ── */
+
+.gs-analytics-delta {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.gs-analytics-delta.is-positive {
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.15);
+  color: #16a34a;
+}
+
+.gs-analytics-delta.is-negative {
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+/* ── Zone pill polish ── */
+
+.gs-analytics-zone-card__pill {
+  transition: all 0.2s ease;
+}
+
+.gs-analytics-zone-card__pill:hover {
+  transform: scale(1.06);
+  background: rgba(255, 251, 247, 0.95);
+}
+
+/* ── Metric number pixel-mono enhancement ── */
+
+.gs-analytics-stat strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Tooltip fade-in polish ── */
+
+.gs-analytics-trend-card__chart::after {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Scrollbar styling for analytics panels ── */
+
+.gs-analytics-stack {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.15) transparent;
+}
+
+/* ── Reduced motion preference ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gs-skeleton::after,
+  .gs-value-pulse,
+  .gs-analytics-stat,
+  .gs-analytics-compare-card,
+  .gs-analytics-trend-card,
+  .gs-analytics-list__row,
+  .gs-analytics-zone-card,
+  .gs-agent-detail__stat,
+  .gs-analytics-stack > .gs-analytics-panel,
+  .gs-analytics-bar__fill,
+  .gs-agent-detail__period-fill {
+    animation: none !important;
+  }
+
+  .gs-analytics-stat:hover,
+  .gs-analytics-compare-card:hover,
+  .gs-analytics-trend-card:hover {
+    transform: none;
+  }
+}
+
 @media (max-width: 980px) {
   .gs-app-nav {
     align-items: flex-start;
