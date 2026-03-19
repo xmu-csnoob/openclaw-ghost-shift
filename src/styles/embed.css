@@ -1,0 +1,71 @@
+.gs-embed-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(255, 107, 53, 0.06), transparent 28%),
+    linear-gradient(180deg, #fffbf7 0%, #fff5ed 100%);
+}
+
+.gs-share-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  min-width: 64px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 2px solid var(--gs-accent-primary);
+  background: var(--gs-accent-primary);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 4px 4px 0 #ffd4c4;
+  cursor: pointer;
+  z-index: 100;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.gs-share-fab:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #ffd4c4;
+}
+
+.gs-docs-studio__panel .gs-panel__body,
+.gs-about-overview__panel .gs-panel__body {
+  padding-top: 0;
+}
+
+.gs-docs-studio__code pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gs-about-overview .gs-route-grid {
+  margin-top: 22px;
+}
+
+@media (max-width: 768px) {
+  .gs-share-fab {
+    right: 16px;
+    bottom: 16px;
+    min-width: 56px;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gs-share-fab {
+    right: 12px;
+    bottom: 12px;
+    min-width: 52px;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+  }
+}

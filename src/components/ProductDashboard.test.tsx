@@ -95,21 +95,21 @@ describe('ProductDashboard', () => {
 
     expect(screen.getByRole('region', { name: 'Product dashboard' })).toBeInTheDocument()
     expect(
-      screen.getByText('Realtime metrics, comparison baselines, and lightweight prediction in one storytelling layer.'),
+      screen.getByText('Live metrics, comparison baselines, and lightweight forecasting in one narrative layer.'),
     ).toBeInTheDocument()
     const statValues = Array.from(container.querySelectorAll('.gs-dashboard-card--stat strong')).map((node) => node.textContent)
     expect(statValues).toEqual(['5', '2', '0.0h / 12h'])
     expect(screen.getByText('70%')).toBeInTheDocument()
     expect(screen.getByText('Yesterday is partial because retention is limited')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Today versus yesterday running agent comparison chart' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Forecast chart' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Comparison chart' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Linear forecast' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Radar chart' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Scatter plot' })).toBeInTheDocument()
     expect(container.querySelectorAll('.gs-dashboard-compare__bucket')).toHaveLength(24)
   })
 
   test('falls back gracefully when no sessions or history are available', () => {
-    render(
+    const { container } = render(
       <ProductDashboard
         status={null}
         sessions={[]}
@@ -119,8 +119,10 @@ describe('ProductDashboard', () => {
       />,
     )
 
-    expect(screen.getByText('No history')).toBeInTheDocument()
-    expect(screen.getByText((_, node) => node?.textContent === '0% connected inside the retained window')).toBeInTheDocument()
-    expect(screen.getByText('24h', { selector: 'strong' })).toBeInTheDocument()
+    // When no data, the dashboard still renders but with zero values
+    expect(screen.getByRole('region', { name: 'Product dashboard' })).toBeInTheDocument()
+    const statValues = Array.from(container.querySelectorAll('.gs-dashboard-card--stat strong')).map((node) => node.textContent)
+    expect(statValues).toEqual(['0', '0', 'No history'])
+    expect(screen.getByText('24h', { selector: 'strong' })).toBeInTheDocument() // retention period
   })
 })

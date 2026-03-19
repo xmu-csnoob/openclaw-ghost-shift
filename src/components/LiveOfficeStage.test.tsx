@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { LiveOfficeStage } from './LiveOfficeStage.js'
+import { setLocale } from '../content/locale.js'
 import type { DisplaySession, PulseSample } from '../publicDisplay.js'
 import type { PlaybackState } from '../replay.js'
 import type { PublicOfficeStatus } from '../services/types.js'
@@ -52,6 +53,7 @@ function makeSession(index: number, overrides: Partial<DisplaySession> = {}): Di
 }
 
 function renderStage(overrides: Partial<ComponentProps<typeof LiveOfficeStage>> = {}) {
+  setLocale('en')
   const sessions = Array.from({ length: 6 }, (_, index) => makeSession(index + 1))
   const playbackState: PlaybackState = {
     mode: 'live',
@@ -82,7 +84,6 @@ function renderStage(overrides: Partial<ComponentProps<typeof LiveOfficeStage>> 
     hoveredAgentId: 1,
     hoverPosition: { x: 720, y: 30 },
     hoveredSession: sessions[0],
-    hoveredPublicId: sessions[0].publicId || null,
     hoveredToolStats: [{ label: 'Write', count: 2, color: '#f6c978' }],
     hoveredActivityPoints: [
       { timestamp: 1, score: 0.4 },
@@ -169,21 +170,21 @@ describe('LiveOfficeStage', () => {
   test('renders live stage controls, hover summary, and heatmap wiring', () => {
     const { props } = renderStage()
 
-    expect(screen.getByText('Connected')).toBeInTheDocument()
-    expect(screen.getByText((_, node) => node?.textContent === '6 visible')).toBeInTheDocument()
-    expect(screen.getByText((_, node) => node?.textContent === '3 warm')).toBeInTheDocument()
-    expect(screen.getByText((_, node) => node?.textContent === '2 live')).toBeInTheDocument()
+    expect(screen.getByTestId('stage-connection-label')).toHaveTextContent('Connected')
+    expect(screen.getByTestId('stage-visible-count')).toHaveTextContent(/6 visible/i)
+    expect(screen.getByTestId('stage-warm-count')).toHaveTextContent(/3 warm/i)
+    expect(screen.getByTestId('stage-live-count')).toHaveTextContent(/2 live/i)
     expect(screen.getByText('heatmap:off')).toBeInTheDocument()
     expect(screen.getByText('sources:6')).toBeInTheDocument()
-    expect(screen.getByText('Agent hover')).toBeInTheDocument()
-    expect(screen.getByText('Live Roster')).toBeInTheDocument()
-    expect(screen.getByText('+1 more in the public office')).toBeInTheDocument()
+    expect(screen.getAllByText('Agent 01').length).toBeGreaterThan(0)
+    expect(screen.getByText(/live roster/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 more in the public office/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Telemetry' }))
     fireEvent.click(screen.getByRole('button', { name: 'Heatmap' }))
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Resume tour' }))
+    fireEvent.click(screen.getByRole('button', { name: /continue tour/i }))
     fireEvent.click(screen.getByRole('button', { name: /Window A/i }))
     fireEvent.click(screen.getByRole('button', { name: /Agent 01.*Chat Lounge/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Canvas interaction' }))

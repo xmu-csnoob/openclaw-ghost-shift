@@ -28,7 +28,8 @@ import {
   LogEntry,
   mockLogs,
 } from './panels/LogsPanel'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
+import { useT } from '../content/locale.js'
 
 export interface DashboardSidebarProps {
   /** Initial collapsed state */
@@ -60,6 +61,7 @@ export function DashboardSidebar({
   style,
 }: DashboardSidebarProps): React.ReactElement {
   const [collapsed, setCollapsed] = useState(initialCollapsed)
+  const tt = useT()
 
   const styles = {
     container: {
@@ -122,13 +124,13 @@ export function DashboardSidebar({
         {!collapsed && (
           <span style={styles.title}>
             <span>📊</span>
-            <span>Dashboard</span>
+            <span>{tt(i18n.dashboard.title)}</span>
           </span>
         )}
         <button
           style={styles.collapseBtn}
           onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? i18n.expandSidebar : i18n.collapseSidebar}
+          title={collapsed ? tt(i18n.expandSidebar) : tt(i18n.collapseSidebar)}
         >
           <span style={styles.collapseIcon}>◀</span>
         </button>

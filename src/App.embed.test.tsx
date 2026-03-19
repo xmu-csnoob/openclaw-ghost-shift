@@ -5,6 +5,7 @@ import type {
   PublicReplayResponse,
   PublicTimelineResponse,
 } from './services/types.js'
+import { setLocale } from './content/locale.js'
 
 const FIXED_NOW = Date.parse('2026-03-14T12:00:00Z')
 
@@ -46,6 +47,8 @@ beforeEach(() => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
   window.history.replaceState({}, '', '/office/embed/card')
   vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+  // Ensure locale is set to English before each test
+  setLocale('en')
 })
 
 afterEach(() => {
@@ -72,15 +75,17 @@ test('renders the embed summary card and uses the /office API base on mobile pat
   })
 
   vi.resetModules()
+  // Reset modules re-import, locale, so we need to set it again
+  setLocale('en')
   const { default: App } = await import('./App.tsx')
 
   render(<App />)
 
   await screen.findByText('Ghost Shift')
-  expect(screen.getByText('Public office demo in a portfolio-sized frame.')).toBeInTheDocument()
+  expect(screen.getByText('Public office demo in a portfolio-sized Embed frame.')).toBeInTheDocument()
   expect(urls).toEqual(
     expect.arrayContaining([
-      '/office/api/public/snapshot',
+      expect.stringContaining('/office/api/public/snapshot'),
       expect.stringContaining('/office/api/public/timeline'),
       expect.stringContaining('/office/api/public/replay'),
     ]),

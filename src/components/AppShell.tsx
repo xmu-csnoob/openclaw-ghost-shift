@@ -1,6 +1,7 @@
 import { Suspense, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
+import { setLocale, useLocale, useT } from '../content/locale.js'
 import { Modal } from './Modal.js'
 
 interface AppShellProps {
@@ -9,43 +10,41 @@ interface AppShellProps {
   onToggleSettings?: () => void
 }
 
-const routeLabels: Record<string, string> = {
-  '/': '首页',
-  '/live': i18n.nav.live,
-  '/replay': i18n.nav.replay,
-  '/embed': i18n.nav.embed,
-  '/embed/card': '卡片',
-  '/docs': i18n.nav.docs,
-  '/about': i18n.nav.about,
-}
-
 const navLinks = [
-  { to: '/', label: '首页' },
-  { to: '/live', label: i18n.nav.live },
-  { to: '/replay', label: i18n.nav.replay },
-  { to: '/embed', label: i18n.nav.embed },
-  { to: '/docs', label: i18n.nav.docs },
-  { to: '/about', label: i18n.nav.about },
+  { to: '/', labelKey: 'home' },
+  { to: '/live', labelKey: 'live' },
+  { to: '/replay', labelKey: 'replay' },
+  { to: '/embed', labelKey: 'embed' },
+  { to: '/docs', labelKey: 'docs' },
+  { to: '/about', labelKey: 'about' },
 ]
 
 function Breadcrumbs() {
   const location = useLocation()
+  const tt = useT()
   const path = location.pathname
 
   const parts = path.split('/').filter(Boolean)
-  const crumbs: { label: string; path: string }[] = [{ label: '首页', path: '/' }]
+  const crumbs: { label: string; path: string }[] = [{ label: tt(i18n.nav.home), path: '/' }]
 
   let currentPath = ''
   for (const part of parts) {
     currentPath += '/' + part
-    const label = routeLabels[currentPath] || part
+    let label: string
+    if (currentPath === '/live') label = tt(i18n.nav.live)
+    else if (currentPath === '/replay') label = tt(i18n.nav.replay)
+    else if (currentPath === '/embed') label = tt(i18n.nav.embed)
+    else if (currentPath === '/embed/card') label = tt(i18n.nav.card)
+    else if (currentPath === '/docs') label = tt(i18n.nav.docs)
+    else if (currentPath === '/about') label = tt(i18n.nav.about)
+    else label = part
     crumbs.push({ label, path: currentPath })
   }
 
   if (crumbs.length <= 1) return null
 
   return (
-    <nav className="gs-breadcrumbs" aria-label="Breadcrumbs">
+    <nav className="gs-breadcrumbs" aria-label={tt(i18n.common.breadcrumbs)}>
       {crumbs.map((crumb, index) => (
         <span key={crumb.path}>
           {index > 0 && <span className="gs-breadcrumbs__separator">/</span>}
@@ -65,7 +64,9 @@ function Breadcrumbs() {
 export function AppShell({ children, showSettings = false, onToggleSettings }: AppShellProps) {
   const location = useLocation()
   const [localShowSettings, setLocalShowSettings] = useState(false)
-  
+  const locale = useLocale()
+  const tt = useT()
+
   // 使用外部状态（如果提供）或本地状态
   const isSettingsOpen = onToggleSettings ? showSettings : localShowSettings
   const handleToggleSettings = onToggleSettings || (() => setLocalShowSettings(!localShowSettings))
@@ -76,8 +77,8 @@ export function AppShell({ children, showSettings = false, onToggleSettings }: A
         <Link to="/" className="gs-app-nav__brand">
           <div className="gs-app-nav__logo">GS</div>
           <div>
-            <div className="gs-app-nav__title">{i18n.brand.en}</div>
-            <div className="gs-app-nav__subtitle">{i18n.brand.tagline}</div>
+            <div className="gs-app-nav__title">{tt(i18n.brand.name)}</div>
+            <div className="gs-app-nav__subtitle">{tt(i18n.brand.tagline)}</div>
           </div>
         </Link>
         <nav className="gs-app-nav__links">
@@ -87,40 +88,51 @@ export function AppShell({ children, showSettings = false, onToggleSettings }: A
               to={link.to}
               className={`gs-app-nav__link ${location.pathname === link.to ? 'is-active' : ''}`}
             >
-              {link.label}
+              {tt(i18n.nav[link.labelKey as keyof typeof i18n.nav])}
             </Link>
           ))}
         </nav>
-        <button
-          type="button"
-          className={`gs-settings-icon ${isSettingsOpen ? 'is-active' : ''}`}
-          onClick={handleToggleSettings}
-          aria-label="设置"
-          title="打开设置"
-        >
-          ⚙️
-        </button>
+        <div className="gs-app-nav__actions">
+          <button
+            type="button"
+            className="gs-settings-icon"
+            onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+            aria-label={locale === 'zh' ? tt(i18n.localeSwitcher.toggleToEn) : tt(i18n.localeSwitcher.toggleToZh)}
+            title={locale === 'zh' ? tt(i18n.localeSwitcher.toggleToEn) : tt(i18n.localeSwitcher.toggleToZh)}
+          >
+            🌐 {tt(i18n.localeSwitcher.compact)}
+          </button>
+          <button
+            type="button"
+            className={`gs-settings-icon ${isSettingsOpen ? 'is-active' : ''}`}
+            onClick={handleToggleSettings}
+            aria-label={tt(i18n.panels.settings)}
+            title={tt(i18n.panels.settings)}
+          >
+            ⚙️
+          </button>
+        </div>
       </header>
       <Breadcrumbs />
       <main className="gs-route-transition">
         <Suspense
           fallback={
-            <div className="gs-route-loading">{i18n.common.loading}</div>
+            <div className="gs-route-loading">{tt(i18n.common.loading)}</div>
           }
         >
           {children}
         </Suspense>
       </main>
-      
+
       {/* 设置 Modal 占位符 - 内容由 GhostShiftSurface 提供 */}
       {isSettingsOpen && (
         <Modal
           isOpen={isSettingsOpen}
           onClose={handleToggleSettings}
-          title="设置"
+          title={tt(i18n.panels.settings)}
         >
           <div style={{ padding: '20px 0', color: 'var(--gs-text-dim)' }}>
-            设置内容正在加载...
+            {tt(i18n.common.loadingSettingsContent)}
           </div>
         </Modal>
       )}

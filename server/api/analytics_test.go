@@ -678,6 +678,8 @@ func TestPublicAnalyticsFallbackSnapshotAndSingleSampleBoundary(t *testing.T) {
 	}
 
 	heatmapRes := httptest.NewRecorder()
+	// Advance time to expire cache from previous empty query (TTL is 2s)
+	*nowRef = t0.Add(3 * time.Second)
 	handler.PublicZonesHeatmap(heatmapRes, emptyHeatmapReq)
 	if heatmapRes.Code != http.StatusOK {
 		t.Fatalf("fallback PublicZonesHeatmap status = %d, want 200", heatmapRes.Code)

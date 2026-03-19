@@ -14,7 +14,8 @@ import {
   type HistoryMeta,
 } from '../portfolioMetrics.js'
 import { MiniSparkline } from './MiniSparkline.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
+import { useT } from '../content/locale.js'
 
 export interface ProductDashboardProps {
   status: PublicOfficeStatus | null
@@ -42,6 +43,7 @@ export function ProductDashboard({
   displayTimestamp,
   defaultCollapsed = false,
 }: ProductDashboardProps) {
+  const tt = useT()
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem('gs-dashboard-collapsed')
     return stored !== null ? stored === 'true' : defaultCollapsed
@@ -77,12 +79,12 @@ export function ProductDashboard({
       ? (comparison.todayAverage > 0 ? 1 : 0)
       : (comparison.todayAverage - comparison.yesterdayAverage) / comparison.yesterdayAverage
   const radarMetrics = [
-    { label: i18n.dashboard.charts.radarChart, value: averageSignal, color: '#7db3ff' },
-    { label: i18n.dashboard.metrics.realtimeSignal, value: activeShare, color: '#f6c978' },
-    { label: i18n.dashboard.metrics.freshness, value: uptime.ratio, color: '#9bffb4' },
-    { label: i18n.dashboard.metrics.modelDiversity, value: Math.min(1, modelMix.length / 5), color: '#ff9fb2' },
-    { label: i18n.dashboard.metrics.zoneConcentration, value: Math.max(0, Math.min(1, 1 - concentration)), color: '#8fc0ff' },
-    { label: i18n.dashboard.metrics.prediction, value: Math.max(0, Math.min(1, 0.3 + (forecast.confidence * 0.7))), color: '#cba6f7' },
+    { label: tt(i18n.dashboard.charts.radarChart), value: averageSignal, color: '#7db3ff' },
+    { label: tt(i18n.dashboard.metrics.realtimeSignal), value: activeShare, color: '#f6c978' },
+    { label: tt(i18n.dashboard.metrics.freshness), value: uptime.ratio, color: '#9bffb4' },
+    { label: tt(i18n.dashboard.metrics.modelDiversity), value: Math.min(1, modelMix.length / 5), color: '#ff9fb2' },
+    { label: tt(i18n.dashboard.metrics.zoneConcentration), value: Math.max(0, Math.min(1, 1 - concentration)), color: '#8fc0ff' },
+    { label: tt(i18n.dashboard.metrics.prediction), value: Math.max(0, Math.min(1, 0.3 + (forecast.confidence * 0.7))), color: '#cba6f7' },
   ]
   const scatterPoints = sessions
     .slice()
@@ -102,22 +104,22 @@ export function ProductDashboard({
   )
 
   return (
-    <section className={`gs-dashboard-section ${collapsed ? 'is-collapsed' : ''}`} aria-label="Product dashboard">
+    <section className={`gs-dashboard-section ${collapsed ? 'is-collapsed' : ''}`} aria-label={tt(i18n.dashboard.title)}>
       <div className="gs-dashboard-head">
         <div>
-          <span className="gs-section-kicker">{i18n.dashboard.title}</span>
-          <h2>{i18n.dashboard.subtitle}</h2>
+          <span className="gs-section-kicker">{tt(i18n.dashboard.title)}</span>
+          <h2>{tt(i18n.dashboard.subtitle)}</h2>
         </div>
         <div className="gs-dashboard-head__actions">
           <p>
-            {i18n.dashboard.description}
+            {tt(i18n.dashboard.description)}
           </p>
           <button
             type="button"
             className="gs-panel-toggle"
             onClick={handleToggleCollapse}
-            aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
-            title={collapsed ? '展开' : '折叠'}
+            aria-label={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
+            title={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
           >
             {collapsed ? '▼' : '▲'}
           </button>
@@ -128,26 +130,26 @@ export function ProductDashboard({
         <>
       <div className="gs-dashboard-grid">
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.agents}</span>
+          <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.agents)}</span>
           <strong>{status?.displayed ?? sessions.length}</strong>
-          <span className="gs-dashboard-card__meta">{i18n.dashboard.meta.publicAliasesVisible}</span>
+          <span className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.publicAliasesVisible)}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.sessions}</span>
+          <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.sessions)}</span>
           <strong>{status?.running ?? sessions.filter((session) => session.status === 'running').length}</strong>
-          <span className="gs-dashboard-card__meta">{i18n.dashboard.meta.currentlyRunning}</span>
+          <span className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.currentlyRunning)}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--stat">
-          <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.uptime}</span>
+          <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.uptime)}</span>
           <strong>{uptime.label}</strong>
-          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} {i18n.dashboard.meta.connectedInRetainedWindow}</span>
+          <span className="gs-dashboard-card__meta">{formatRatio(uptime.ratio)} {tt(i18n.dashboard.meta.connectedInRetainedWindow)}</span>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--trend">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.liveTrend}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.liveTrend)}</span>
             <strong className={runningTrend.direction === 'down' ? 'is-down' : runningTrend.direction === 'up' ? 'is-up' : ''}>
               {formatDelta(runningTrend.deltaRatio)}
             </strong>
@@ -157,95 +159,95 @@ export function ProductDashboard({
             stroke="#7db3ff"
             fill="rgba(125, 179, 255, 0.14)"
           />
-          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.peakLiveAgents}</div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.peakLiveAgents)}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.realtimeSignal}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.realtimeSignal)}</span>
             <strong>{formatRatio(averageSignal)}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.averageSignalAcrossAgents}</div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.averageSignalAcrossAgents)}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.visibleLoad}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.visibleLoad)}</span>
             <strong>{peakLoad.toFixed(0)}</strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {formatDelta(visibleTrend.deltaRatio)} {i18n.dashboard.meta.vsEarlierHalf}
+            {formatDelta(visibleTrend.deltaRatio)} {tt(i18n.dashboard.meta.vsEarlierHalf)}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.rollingDelta}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.rollingDelta)}</span>
             <strong className={runningWindowComparison.deltaRatio < 0 ? 'is-down' : runningWindowComparison.deltaRatio > 0 ? 'is-up' : ''}>
               {formatDelta(runningWindowComparison.deltaRatio)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {runningWindowComparison.currentAverage.toFixed(1)} {i18n.dashboard.meta.avgNowVsPrevious}
+            {runningWindowComparison.currentAverage.toFixed(1)} {tt(i18n.dashboard.meta.avgNowVsPrevious)}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.sameHourBaseline}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.sameHourBaseline)}</span>
             <strong className={sameHourDelta < 0 ? 'is-down' : sameHourDelta > 0 ? 'is-up' : ''}>
               {formatDelta(sameHourDelta)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {i18n.dashboard.meta.todayVsYesterday}
+            {tt(i18n.dashboard.meta.todayVsYesterday)}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.prediction}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.prediction)}</span>
             <strong className={forecast.deltaRatio < 0 ? 'is-down' : forecast.deltaRatio > 0 ? 'is-up' : ''}>
               {formatDelta(forecast.deltaRatio)}
             </strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {i18n.dashboard.meta.nextProjection}
+            {tt(i18n.dashboard.meta.nextProjection)}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.zoneConcentration}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.zoneConcentration)}</span>
             <strong>{topZone ? formatRatio(topZone.count / Math.max(sessions.length, 1)) : '0%'}</strong>
           </div>
           <div className="gs-dashboard-card__meta">
-            {topZone ? `${topZone.label} ${i18n.dashboard.meta.leadsVisibleMix}` : i18n.dashboard.meta.waitingForSessions}
+            {topZone ? `${topZone.label} ${tt(i18n.dashboard.meta.leadsVisibleMix)}` : tt(i18n.dashboard.meta.waitingForSessions)}
           </div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.modelDiversity}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.modelDiversity)}</span>
             <strong>{modelMix.length}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.familiesVisible}</div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.familiesVisible)}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.freshness}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.freshness)}</span>
             <strong>{formatTimestamp(displayTimestamp)}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.currentFrameTimestamp}</div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.currentFrameTimestamp)}</div>
         </article>
 
         <article className="gs-dashboard-card gs-dashboard-card--metric">
           <div className="gs-dashboard-card__row">
-            <span className="gs-dashboard-card__label">{i18n.dashboard.metrics.retention}</span>
+            <span className="gs-dashboard-card__label">{tt(i18n.dashboard.metrics.retention)}</span>
             <strong>{historyMeta ? `${historyMeta.retentionHours}h` : '24h'}</strong>
           </div>
-          <div className="gs-dashboard-card__meta">{i18n.dashboard.meta.historyBufferUsed}</div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.meta.historyBufferUsed)}</div>
         </article>
       </div>
 
@@ -253,35 +255,35 @@ export function ProductDashboard({
         <article className="gs-dashboard-compare">
           <div className="gs-dashboard-compare__head">
             <div>
-              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.comparisonChart}</span>
-              <h3>{i18n.dashboard.charts.todayVsYesterdayProfile}</h3>
+              <span className="gs-dashboard-card__label">{tt(i18n.dashboard.charts.comparisonChart)}</span>
+              <h3>{tt(i18n.dashboard.charts.todayVsYesterdayProfile)}</h3>
             </div>
             <div className="gs-dashboard-compare__summary">
-              <span>6h {i18n.dashboard.metrics.rollingDelta} {formatDelta(runningWindowComparison.deltaRatio)}</span>
-              <span>{i18n.dashboard.metrics.visibleLoad} {formatDelta(visibleWindowComparison.deltaRatio)}</span>
-              <span>{i18n.dashboard.metrics.sameHourBaseline} {formatDelta(sameHourDelta)}</span>
-              {comparison.partialYesterday ? <span>{i18n.dashboard.charts.yesterdayPartial}</span> : null}
+              <span>6h {tt(i18n.dashboard.metrics.rollingDelta)} {formatDelta(runningWindowComparison.deltaRatio)}</span>
+              <span>{tt(i18n.dashboard.metrics.visibleLoad)} {formatDelta(visibleWindowComparison.deltaRatio)}</span>
+              <span>{tt(i18n.dashboard.metrics.sameHourBaseline)} {formatDelta(sameHourDelta)}</span>
+              {comparison.partialYesterday ? <span>{tt(i18n.dashboard.charts.yesterdayPartial)}</span> : null}
             </div>
           </div>
 
           <div className="gs-dashboard-compare__legend">
-            <span><i className="is-today" />{i18n.dashboard.charts.today}</span>
-            <span><i className="is-yesterday" />{i18n.dashboard.charts.yesterday}</span>
+            <span><i className="is-today" />{tt(i18n.dashboard.charts.today)}</span>
+            <span><i className="is-yesterday" />{tt(i18n.dashboard.charts.yesterday)}</span>
           </div>
 
-          <div className="gs-dashboard-compare__chart" role="img" aria-label="Today versus yesterday running agent comparison chart">
+          <div className="gs-dashboard-compare__chart" role="img" aria-label={tt(i18n.dashboard.charts.comparisonChart)}>
             {comparison.buckets.map((bucket) => (
               <div className="gs-dashboard-compare__bucket" key={bucket.hour}>
                 <div className="gs-dashboard-compare__bars">
                   <span
                     className="gs-dashboard-compare__bar gs-dashboard-compare__bar--today"
                     style={{ height: `${(bucket.today / maxBar) * 100}%` }}
-                    title={`Today ${bucket.hour}:00 - ${bucket.today.toFixed(1)}`}
+                    title={`${tt(i18n.dashboard.charts.today)} ${bucket.hour}:00 - ${bucket.today.toFixed(1)}`}
                   />
                   <span
                     className="gs-dashboard-compare__bar gs-dashboard-compare__bar--yesterday"
                     style={{ height: `${(bucket.yesterday / maxBar) * 100}%` }}
-                    title={`Yesterday ${bucket.hour}:00 - ${bucket.yesterday.toFixed(1)}`}
+                    title={`${tt(i18n.dashboard.charts.yesterday)} ${bucket.hour}:00 - ${bucket.yesterday.toFixed(1)}`}
                   />
                 </div>
                 <span className="gs-dashboard-compare__label">{bucket.hour}</span>
@@ -293,14 +295,14 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual gs-dashboard-visual--forecast">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.linearForecast}</span>
-              <h3>{i18n.dashboard.charts.projectedTrajectory}</h3>
+              <span className="gs-dashboard-card__label">{tt(i18n.dashboard.charts.linearForecast)}</span>
+              <h3>{tt(i18n.dashboard.charts.projectedTrajectory)}</h3>
             </div>
             <strong className={forecast.slope < 0 ? 'is-down' : forecast.slope > 0 ? 'is-up' : ''}>
-              {forecast.projectedValue.toFixed(1)} {i18n.dashboard.charts.projected}
+              {forecast.projectedValue.toFixed(1)} {tt(i18n.dashboard.charts.projected)}
             </strong>
           </div>
-          <svg viewBox="0 0 360 180" className="gs-dashboard-chart" role="img" aria-label="Forecast chart">
+          <svg viewBox="0 0 360 180" className="gs-dashboard-chart" role="img" aria-label={tt(i18n.dashboard.charts.linearForecast)}>
             <path className="gs-dashboard-chart__grid" d="M24 24H336 M24 78H336 M24 132H336" />
             <path className="gs-dashboard-chart__actual" d={buildSeriesPath(forecast.history, 24, 24, 312, 132, forecast)} />
             <path className="gs-dashboard-chart__forecast" d={buildForecastPath(forecast, 24, 24, 312, 132)} />
@@ -315,7 +317,7 @@ export function ProductDashboard({
             ))}
           </svg>
           <div className="gs-dashboard-card__meta">
-            {i18n.dashboard.charts.forecastExplanation}
+            {tt(i18n.dashboard.charts.forecastExplanation)}
           </div>
         </article>
       </div>
@@ -324,12 +326,12 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.radarChart}</span>
-              <h3>{i18n.dashboard.charts.surfaceHealthProfile}</h3>
+              <span className="gs-dashboard-card__label">{tt(i18n.dashboard.charts.radarChart)}</span>
+              <h3>{tt(i18n.dashboard.charts.surfaceHealthProfile)}</h3>
             </div>
-            <strong>{topZone?.label || i18n.dashboard.charts.noZoneLead}</strong>
+            <strong>{topZone?.label || tt(i18n.dashboard.charts.noZoneLead)}</strong>
           </div>
-          <svg viewBox="0 0 260 240" className="gs-dashboard-radar" role="img" aria-label="Radar chart">
+          <svg viewBox="0 0 260 240" className="gs-dashboard-radar" role="img" aria-label={tt(i18n.dashboard.charts.radarChart)}>
             {Array.from({ length: 4 }, (_, layer) => (
               <polygon
                 key={layer}
@@ -370,12 +372,12 @@ export function ProductDashboard({
         <article className="gs-dashboard-visual">
           <div className="gs-dashboard-visual__head">
             <div>
-              <span className="gs-dashboard-card__label">{i18n.dashboard.charts.scatterPlot}</span>
-              <h3>{i18n.dashboard.charts.signalVsLatency}</h3>
+              <span className="gs-dashboard-card__label">{tt(i18n.dashboard.charts.scatterPlot)}</span>
+              <h3>{tt(i18n.dashboard.charts.signalVsLatency)}</h3>
             </div>
-            <strong>{scatterPoints.length} {i18n.dashboard.charts.trackedAgents}</strong>
+            <strong>{scatterPoints.length} {tt(i18n.dashboard.charts.trackedAgents)}</strong>
           </div>
-          <svg viewBox="0 0 360 220" className="gs-dashboard-chart" role="img" aria-label="Scatter plot">
+          <svg viewBox="0 0 360 220" className="gs-dashboard-chart" role="img" aria-label={tt(i18n.dashboard.charts.scatterPlot)}>
             <path className="gs-dashboard-chart__grid" d="M36 28V182 M148 28V182 M260 28V182 M36 182H332 M36 105H332 M36 28H332" />
             {scatterPoints.map((point) => (
               <circle
@@ -386,13 +388,11 @@ export function ProductDashboard({
                 r={point.radius}
                 fill={getZoneColor(point.zone)}
               >
-                <title>{`${point.label} • ${point.xMinutes.toFixed(0)}m ${i18n.dashboard.charts.minutesSinceStatusChange} • ${formatRatio(point.ySignal)}`}</title>
+                <title>{`${point.label} • ${point.xMinutes.toFixed(0)}m ${tt(i18n.dashboard.charts.minutesSinceStatusChange)} • ${formatRatio(point.ySignal)}`}</title>
               </circle>
             ))}
           </svg>
-          <div className="gs-dashboard-card__meta">
-            X{i18n.dashboard.charts.minutesSinceStatusChange}。Y{i18n.dashboard.charts.signalScore}。
-          </div>
+          <div className="gs-dashboard-card__meta">{tt(i18n.dashboard.charts.scatterExplanation)}</div>
         </article>
       </div>
         </>

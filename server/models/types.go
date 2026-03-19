@@ -2,23 +2,24 @@ package models
 
 // Session represents an agent session
 type Session struct {
-	SessionKey    string `json:"sessionKey"`
-	SessionID     string `json:"sessionId,omitempty"`
-	AgentID       string `json:"agentId"`
-	Channel       string `json:"channel,omitempty"`
-	Status        string `json:"status"` // idle, running, waiting
-	Model         string `json:"model,omitempty"`
-	ModelProvider string `json:"modelProvider,omitempty"`
-	DisplayName   string `json:"displayName,omitempty"`
-	Kind          string `json:"kind,omitempty"`
-	MessageCount  int    `json:"messageCount,omitempty"`
-	CreatedAt     string `json:"createdAt,omitempty"`
-	UpdatedAt     string `json:"updatedAt,omitempty"`
-	LastActiveAt  string `json:"lastActiveAt,omitempty"`
-	Thinking      string `json:"thinking,omitempty"`
-	InputTokens   int    `json:"inputTokens,omitempty"`
-	OutputTokens  int    `json:"outputTokens,omitempty"`
-	TotalTokens   int    `json:"totalTokens,omitempty"`
+	SessionKey    string            `json:"sessionKey"`
+	SessionID     string            `json:"sessionId,omitempty"`
+	AgentID       string            `json:"agentId"`
+	Channel       string            `json:"channel,omitempty"`
+	Status        string            `json:"status"` // idle, running, waiting
+	Model         string            `json:"model,omitempty"`
+	ModelProvider string            `json:"modelProvider,omitempty"`
+	DisplayName   string            `json:"displayName,omitempty"`
+	Kind          string            `json:"kind,omitempty"`
+	MessageCount  int               `json:"messageCount,omitempty"`
+	CreatedAt     string            `json:"createdAt,omitempty"`
+	UpdatedAt     string            `json:"updatedAt,omitempty"`
+	LastActiveAt  string            `json:"lastActiveAt,omitempty"`
+	Thinking      string            `json:"thinking,omitempty"`
+	InputTokens   int               `json:"inputTokens,omitempty"`
+	OutputTokens  int               `json:"outputTokens,omitempty"`
+	TotalTokens   int               `json:"totalTokens,omitempty"`
+	Tags          map[string]string `json:"tags,omitempty"`
 }
 
 // HealthStatus represents gateway health

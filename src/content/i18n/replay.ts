@@ -1,0 +1,47 @@
+import { text } from './base.js'
+
+export const replayI18n = {
+  replay: {
+    storyline: text('故事线', 'Storyline'),
+    play: text('播放', 'Play'),
+    pause: text('暂停', 'Pause'),
+    speed: text('倍速', 'Speed'),
+    window: {
+      '1h': text('1小时', '1h'),
+      '6h': text('6小时', '6h'),
+      '24h': text('24小时', '24h'),
+    },
+    jumpToLive: text('跳到实时', 'Jump to live'),
+    continueTour: text('继续导览', 'Continue tour'),
+    thumbnail: text('缩略图', 'Thumbnail'),
+    active: text('活跃', 'active'),
+    frame: text('帧', 'Frame'),
+    waitingForReplayFrames: text('等待回放帧', 'Waiting for replay frames'),
+    liveEdge: text('实时边缘', 'Live edge'),
+    replayBufferEmpty: text('回放缓存为空', 'Replay buffer empty'),
+    buffered: text('已缓存', 'Buffered'),
+    bufferedRetention: text('24小时保留期', '24h retention'),
+    chooseRecordedFrame: text('选择已记录的帧', 'Choose a recorded frame'),
+    replayRoster: text('回放名单', 'Replay roster'),
+    liveRoster: text('实时名单', 'Live roster'),
+    freshness: {
+      live: text('实时', 'Live'),
+      fresh: text('新鲜', 'Fresh'),
+      cooling: text('冷却中', 'Cooling'),
+      replay: text('回放', 'Replay'),
+      trackingLatestHeartbeat: text('公开办公室正在追踪最新心跳', 'The public office is tracking the latest heartbeat'),
+      capturedAgo: text('{age}前捕获', 'Captured {age}'),
+      viewingRecorded: text('在保留窗口中查看 {age} 的记录', 'Viewing a {age} capture in the retention window'),
+      viewingHistorical: text('正在查看 {age} 的历史帧', 'Viewing a {age} historical frame'),
+      liveDeltaSuffix: text('实时', 'live'),
+      visibleDeltaSuffix: text('可见', 'visible'),
+      leadPrefix: text('领先', 'lead'),
+    },
+  },
+
+  quietOffice: text('安静的办公室', 'Quiet office'),
+  historyUnavailable: text('历史记录不可用', 'History unavailable'),
+  replayRoster: text('回放名单', 'Replay roster'),
+  liveRoster: text('实时名单', 'Live roster'),
+  replayNotes: text('回放说明', 'Replay notes'),
+} as const

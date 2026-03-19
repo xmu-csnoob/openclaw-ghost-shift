@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { i18n } from '../content/i18n/index.js'
+import { useT } from '../content/locale.js'
 
 export interface RealtimeStatsModelSlice {
   label: string
@@ -65,6 +67,7 @@ export function RealtimeStatsSidebar({
   responseTrend,
   defaultCollapsed = true,
 }: RealtimeStatsSidebarProps): React.ReactElement {
+  const tt = useT()
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem('gs-stats-sidebar-collapsed')
     return stored !== null ? stored === 'true' : defaultCollapsed
@@ -94,25 +97,25 @@ export function RealtimeStatsSidebar({
     <article className={`gs-side-card gs-stats-sidebar gs-animate-rise ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="gs-side-card__header">
         <div>
-          <div className="gs-side-card__eyebrow">Realtime stats</div>
-          <h3>Live mix, zone pressure, and surface latency.</h3>
+          <div className="gs-side-card__eyebrow">{tt(i18n.realtimeStats.eyebrow)}</div>
+          <h3>{tt(i18n.realtimeStats.title)}</h3>
         </div>
         <button
           type="button"
           className="gs-panel-toggle"
           onClick={handleToggleCollapse}
-          aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
-          title={collapsed ? '展开' : '折叠'}
+          aria-label={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
+          title={collapsed ? tt(i18n.common.expandPanel) : tt(i18n.common.collapsePanel)}
         >
           {collapsed ? '▼' : '▲'}
         </button>
       </div>
-      <div className="gs-stats-sidebar__meta">Freshness: {freshnessLabel}</div>
+      <div className="gs-stats-sidebar__meta">{tt(i18n.realtimeStats.freshness)}: {freshnessLabel}</div>
 
       {!collapsed && (
         <>
           <div className="gs-stats-sidebar__section">
-            <div className="gs-stats-sidebar__section-title">Model usage</div>
+            <div className="gs-stats-sidebar__section-title">{tt(i18n.realtimeStats.sections.modelUsage)}</div>
         {loading ? (
           <div className="gs-skeleton gs-skeleton--donut" />
         ) : (
@@ -145,7 +148,7 @@ export function RealtimeStatsSidebar({
       </div>
 
       <div className="gs-stats-sidebar__section">
-        <div className="gs-stats-sidebar__section-title">Zone activity</div>
+        <div className="gs-stats-sidebar__section-title">{tt(i18n.realtimeStats.sections.zoneActivity)}</div>
         {loading ? (
           <div className="gs-skeleton gs-skeleton--bars" />
         ) : (
@@ -172,7 +175,7 @@ export function RealtimeStatsSidebar({
       </div>
 
       <div className="gs-stats-sidebar__section">
-        <div className="gs-stats-sidebar__section-title">Surface latency</div>
+        <div className="gs-stats-sidebar__section-title">{tt(i18n.realtimeStats.sections.surfaceLatency)}</div>
         {loading ? (
           <div className="gs-skeleton gs-skeleton--line" />
         ) : (

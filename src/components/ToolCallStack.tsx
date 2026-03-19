@@ -14,7 +14,8 @@ import {
   ToolCallData,
   ToolType,
 } from './ToolCallCard.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
+import { useT } from '../content/locale.js'
 
 export interface ToolCallStackProps {
   calls: ToolCallData[]
@@ -71,6 +72,7 @@ export function ToolCallStack({
   const containerRef = useRef<HTMLDivElement>(null)
   const [expandedAll, setExpandedAll] = useState(false)
   const [showOlder, setShowOlder] = useState(false)
+  const tt = useT()
 
   // Auto-scroll to bottom on new calls
   useEffect(() => {
@@ -228,14 +230,14 @@ export function ToolCallStack({
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.title}>
-          Tool Calls
+          {tt(i18n.toolCall.title)}
           <span style={styles.count}>{stats.total}</span>
         </span>
         <div style={styles.actions}>
           <button
             style={styles.actionBtn}
             onClick={() => setExpandedAll(!expandedAll)}
-            title={expandedAll ? i18n.toolCall.collapseAll : i18n.toolCall.expandAll}
+            title={expandedAll ? tt(i18n.toolCall.collapseAll) : tt(i18n.toolCall.expandAll)}
           >
             {expandedAll ? '⊟' : '⊞'}
           </button>
@@ -301,12 +303,12 @@ export function ToolCallStack({
       {/* Hidden calls notice */}
       {hiddenCount > 0 && !showOlder && (
         <div style={styles.hiddenNotice}>
-          <span>{hiddenCount} older calls hidden</span>
+          <span>{tt(i18n.toolCall.olderHidden).replace('{count}', String(hiddenCount))}</span>
           <button
             style={styles.showMoreBtn}
             onClick={() => setShowOlder(true)}
           >
-            Show All
+            {tt(i18n.toolCall.showAll)}
           </button>
         </div>
       )}
@@ -315,7 +317,7 @@ export function ToolCallStack({
       {isEmpty ? (
         <div style={styles.emptyState}>
           <span style={styles.emptyIcon}>🔧</span>
-          <span>No tool calls yet</span>
+          <span>{tt(i18n.toolCall.empty)}</span>
         </div>
       ) : (
         <div ref={containerRef} style={styles.list}>

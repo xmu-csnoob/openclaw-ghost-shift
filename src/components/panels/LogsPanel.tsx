@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { i18n } from '../../content/i18n'
+import { useT } from '../../content/locale.js'
 
 export type LogLevel = 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
 
@@ -49,6 +50,7 @@ export function LogsPanel({
   onPauseToggle,
   maxVisible = 50,
 }: LogsPanelProps): React.ReactElement {
+  const tt = useT()
   const [isPaused, setIsPaused] = useState(paused)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>([])
@@ -179,16 +181,16 @@ export function LogsPanel({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginTop: 6 }}>
           {errorCount > 0 && (
             <span style={{ fontSize: 10, color: '#F38BA8' }}>
-              {errorCount} {i18n.logs.err}
+              {errorCount} {tt(i18n.logs.err)}
             </span>
           )}
           {warnCount > 0 && (
             <span style={{ fontSize: 10, color: '#F9E2AF' }}>
-              {warnCount} {i18n.logs.warn}
+              {warnCount} {tt(i18n.logs.warn)}
             </span>
           )}
           <span style={{ fontSize: 9, color: '#6C7086' }}>
-            {i18n.logs.logsCount.replace('{count}', String(logs.length))}
+            {tt(i18n.logs.logsCount).replace('{count}', String(logs.length))}
           </span>
         </div>
       </div>
@@ -198,26 +200,26 @@ export function LogsPanel({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.title}>{i18n.logs.title}</span>
+        <span style={styles.title}>{tt(i18n.logs.title)}</span>
         <div style={styles.controls}>
           <span style={{ fontSize: 10, color: '#45475A' }}>
             {visibleLogs.length}
           </span>
           <button style={styles.pauseBtn} onClick={handlePauseToggle}>
-            {isPaused ? `▶ ${i18n.logs.resume}` : `⏸ ${i18n.logs.pause}`}
+            {isPaused ? `▶ ${tt(i18n.logs.resume)}` : `⏸ ${tt(i18n.logs.pause)}`}
           </button>
         </div>
       </div>
 
       {isPaused && (
         <div style={styles.pausedIndicator}>
-          ⏸ {i18n.logs.paused} - {i18n.logs.newEntries.replace('{count}', String(logs.length - visibleLogs.length))}
+          ⏸ {tt(i18n.logs.paused)} - {tt(i18n.logs.newEntries).replace('{count}', String(logs.length - visibleLogs.length))}
         </div>
       )}
 
       <div ref={scrollRef} style={styles.logList}>
         {visibleLogs.length === 0 ? (
-          <div style={styles.emptyState}>{i18n.logs.noLogsYet}</div>
+          <div style={styles.emptyState}>{tt(i18n.logs.noLogsYet)}</div>
         ) : (
           visibleLogs.map(log => (
             <div

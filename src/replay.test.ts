@@ -59,10 +59,10 @@ describe('replay helpers', () => {
   test('getPlaybackFreshness returns expected tones', () => {
     const now = Date.parse('2026-03-14T12:00:00Z')
 
-    expect(getPlaybackFreshness(now, now)).toMatchObject({ label: 'Live now', color: '#A6E3A1' })
-    expect(getPlaybackFreshness(now - 30_000, now)).toMatchObject({ label: 'Fresh', color: '#89B4FA' })
-    expect(getPlaybackFreshness(now - 10 * 60_000, now)).toMatchObject({ label: 'Cooling', color: '#F9E2AF' })
-    expect(getPlaybackFreshness(now - 60 * 60_000, now)).toMatchObject({ label: 'Replay', color: '#F38BA8' })
+    expect(getPlaybackFreshness(now, now)).toMatchObject({ label: 'Live', color: '#22c55e' })
+    expect(getPlaybackFreshness(now - 30_000, now)).toMatchObject({ label: 'Fresh', color: '#14b8a6' })
+    expect(getPlaybackFreshness(now - 10 * 60_000, now)).toMatchObject({ label: 'Cooling', color: '#f59e0b' })
+    expect(getPlaybackFreshness(now - 60 * 60_000, now)).toMatchObject({ label: 'Replay', color: '#ff5c5c' })
   })
 
   test('replayFramesToTimeline mirrors replay status counts', () => {
@@ -78,9 +78,9 @@ describe('replay helpers', () => {
   })
 
   test('formatRelativeAge stays readable for seconds and hours', () => {
-    expect(formatRelativeAge(3_000)).toBe('just now')
-    expect(formatRelativeAge(25_000)).toBe('25s ago')
-    expect(formatRelativeAge(2 * 60 * 60_000)).toBe('2h ago')
+    expect(formatRelativeAge(3_000)).toBe('Just now')
+    expect(formatRelativeAge(25_000)).toBe('25 seconds ago')
+    expect(formatRelativeAge(2 * 60 * 60_000)).toBe('2 hours ago')
   })
 
   test('clones sessions and characters without sharing nested references', () => {

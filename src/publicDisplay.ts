@@ -1,3 +1,5 @@
+import { i18n } from './content/i18n/index.js'
+import { t } from './content/locale.js'
 import type { AgentSession } from './services/types.js'
 
 export type ActivityBand = 'surging' | 'steady' | 'warm' | 'quiet'
@@ -118,10 +120,18 @@ export function formatDurationShort(ms: number): string {
   const days = Math.floor(totalSeconds / 86400)
   const hours = Math.floor((totalSeconds % 86400) / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const dayLabel = t(i18n.time.short.day)
+  const hourLabel = t(i18n.time.short.hour)
+  const minuteLabel = t(i18n.time.short.minute)
 
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${minutes}m`
-  return `${minutes}m`
+  if (days > 0) {
+    return `${days}${dayLabel} ${hours}${hourLabel}`
+  }
+  if (hours > 0) {
+    return `${hours}${hourLabel} ${minutes}${minuteLabel}`
+  }
+
+  return `${minutes}${minuteLabel}`
 }
 
 export function formatRatio(ratio: number): string {
@@ -131,36 +141,36 @@ export function formatRatio(ratio: number): string {
 export function getSignalWindowLabel(window: string): string {
   switch (window) {
     case 'live':
-      return '实时'
+      return t(i18n.agent.window.live)
     case 'just-now':
-      return '刚刚'
+      return t(i18n.agent.window.justNow)
     case '2m':
-      return '2分钟前'
+      return t(i18n.agent.window.twoMinutesAgo)
     case '10m':
-      return '10分钟前'
+      return t(i18n.agent.window.tenMinutesAgo)
     case '30m':
-      return '30分钟前'
+      return t(i18n.agent.window.thirtyMinutesAgo)
     case '2h':
-      return '2小时前'
+      return t(i18n.agent.window.twoHoursAgo)
     case 'today':
-      return '今天早些'
+      return t(i18n.agent.window.earlierToday)
     case 'archive':
-      return '背景'
+      return t(i18n.agent.window.background)
     default:
-      return '已观察'
+      return t(i18n.agent.window.observed)
   }
 }
 
 export function getZoneLabel(zone: string): string {
   switch (zone) {
     case 'code-studio':
-      return '代码工作室'
+      return t(i18n.zones['code-studio'])
     case 'chat-lounge':
-      return '对话休息室'
+      return t(i18n.zones['chat-lounge'])
     case 'ops-lab':
-      return '运维实验室'
+      return t(i18n.zones['ops-lab'])
     default:
-      return '公共区域'
+      return t(i18n.zones.public)
   }
 }
 
@@ -180,13 +190,13 @@ export function getZoneColor(zone: string): string {
 export function getActivityLabel(band: ActivityBand): string {
   switch (band) {
     case 'surging':
-      return 'Surging'
+      return t(i18n.agent.band.surging)
     case 'steady':
-      return 'Steady'
+      return t(i18n.agent.band.steady)
     case 'warm':
-      return 'Warm'
+      return t(i18n.agent.band.warm)
     default:
-      return 'Quiet'
+      return t(i18n.agent.band.quiet)
   }
 }
 
@@ -206,15 +216,44 @@ export function getActivityColor(band: ActivityBand): string {
 export function getFootprintLabel(footprint: string | undefined): string {
   switch (footprint) {
     case 'deep-stack':
-      return 'Deep Stack'
+      return t(i18n.agent.footprint.deepStack)
     case 'heavy-context':
-      return 'Heavy Context'
+      return t(i18n.agent.footprint.heavyContext)
     case 'working-set':
-      return 'Working Set'
+      return t(i18n.agent.footprint.workingSet)
     case 'fresh-thread':
-      return 'Fresh Thread'
+      return t(i18n.agent.footprint.freshThread)
     default:
-      return 'Public Thread'
+      return t(i18n.agent.footprint.publicThread)
+  }
+}
+
+export function getStatusLabel(status: string | undefined): string {
+  switch (status) {
+    case 'running':
+      return t(i18n.agent.status.running)
+    case 'idle':
+    case undefined:
+    case null:
+      return t(i18n.agent.status.idle)
+    default:
+      return status
+  }
+}
+
+export function getRoleLabel(role: string | undefined): string {
+  switch (role) {
+    case 'assistant':
+      return t(i18n.agent.role.assistant)
+    case 'automation':
+      return t(i18n.agent.role.automation)
+    case 'webchat':
+      return t(i18n.agent.role.webchat)
+    case undefined:
+    case null:
+      return t(i18n.caseStudy.fields.hidden)
+    default:
+      return role
   }
 }
 

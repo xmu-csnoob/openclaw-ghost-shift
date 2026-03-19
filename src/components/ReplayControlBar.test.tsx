@@ -73,7 +73,7 @@ describe('ReplayControlBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Replay' }))
     fireEvent.click(screen.getByRole('button', { name: '6h' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Resume tour' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue tour' }))
     fireEvent.click(screen.getByRole('button', { name: /Window B/i }))
     fireEvent.click(screen.getByTitle('2: stable'))
     fireEvent.change(screen.getByRole('slider'), { target: { value: '3000' } })
