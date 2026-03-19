@@ -1,6 +1,6 @@
 import { Suspense, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { setLocale, useLocale, useT } from '../content/locale.js'
 import { Modal } from './Modal.js'
 

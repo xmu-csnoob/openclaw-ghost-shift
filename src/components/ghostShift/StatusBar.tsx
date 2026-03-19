@@ -1,4 +1,5 @@
 import type { SessionFilterStatus } from '../../services/types.js'
+import '../../styles/status-bar.css'
 
 export type GhostShiftConnectionState = 'disconnected' | 'connecting' | 'connected'
 

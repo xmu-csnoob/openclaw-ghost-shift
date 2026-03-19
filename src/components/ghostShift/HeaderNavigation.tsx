@@ -1,3 +1,5 @@
+import './HeaderNavigation.css'
+
 interface HeaderNavigationLink {
   href: string
   label: string

@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 import { GhostShiftSummaryCard } from '../components/GhostShiftSummaryCard.js'
 import { DocsStudioSection } from '../components/ghostShift/DocsStudioSection.js'
+import './embed.css'
 
 interface EmbedViewProps {
   page: 'embed' | 'embed-card'

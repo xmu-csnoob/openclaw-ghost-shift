@@ -1,0 +1,106 @@
+.gs-status-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 88px;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gs-status-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 245, 237, 0.78));
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 12px 24px rgba(var(--gs-accent-secondary-rgb), 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  color: #555555;
+}
+
+.gs-status-bar__chip--brand {
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  letter-spacing: 0.16em;
+  color: var(--gs-accent-secondary);
+}
+
+.gs-status-bar__chip--stats {
+  gap: 14px;
+  font-size: 0.84rem;
+}
+
+.gs-status-bar__chip strong {
+  font-size: 0.98rem;
+  color: #2d2d2d;
+}
+
+.gs-status-bar__error {
+  color: #b42318;
+  font-size: 0.74rem;
+}
+
+.gs-status-bar__chip--filter {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.gs-status-bar__filter-btn {
+  padding: 2px 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #777;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gs-status-bar__filter-btn:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: #555;
+}
+
+.gs-status-bar__filter-btn.is-active {
+  background: rgba(232, 119, 34, 0.15);
+  border-color: rgba(232, 119, 34, 0.4);
+  color: #c45e10;
+}
+
+.gs-status-bar__total {
+  color: #999;
+  font-weight: 400;
+}
+
+@media (max-width: 720px) {
+
+  .gs-status-bar {
+    right: 72px;
+  }
+
+  .gs-status-bar__chip--stats {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 560px) {
+
+  .gs-status-bar {
+    top: 12px;
+    left: 12px;
+    right: 68px;
+  }
+
+  .gs-status-bar__chip {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+}

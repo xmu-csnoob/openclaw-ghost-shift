@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 import { HeaderNavigation } from '../components/ghostShift/HeaderNavigation.js'
 import { LiveOfficeStage } from '../components/LiveOfficeStage.js'
+import './landing.css'
 
 interface LandingViewProps {
   headerProps: ComponentProps<typeof HeaderNavigation>

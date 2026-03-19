@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { DisplaySession } from '../publicDisplay.js'
 import { getPublicAgentLabel, getSignalWindowLabel, getStatusLabel, getZoneLabel } from '../publicDisplay.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useT } from '../content/locale.js'
 
 type CaseStudyView = 'raw' | 'public' | 'surface'

@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { t } from '../content/locale.js'
 import { apiClient } from '../services/ApiClient.js'
 import type {

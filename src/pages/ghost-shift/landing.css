@@ -1,0 +1,53 @@
+.gs-live-minimal-shell--landing {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 107, 53, 0.08), transparent 30%),
+    linear-gradient(180deg, #fffcf9 0%, #fff5ed 48%, #ffe7da 100%);
+}
+
+.gs-live-minimal-shell--landing .gs-header-nav--site {
+  width: 100%;
+  margin: 0;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 247, 0.92), rgba(255, 245, 237, 0.84)),
+    linear-gradient(90deg, rgba(var(--gs-accent-secondary-rgb), 0.04), transparent 48%);
+  backdrop-filter: blur(18px);
+}
+
+.gs-live-minimal-shell--landing .gs-header-nav__actions {
+  justify-content: flex-end;
+}
+
+.gs-live-minimal-shell--landing .gs-live-minimal-stage {
+  position: relative;
+  min-height: 0;
+}
+
+.gs-live-minimal-shell--landing .gs-live-stage {
+  min-height: calc(100vh - 78px);
+}
+
+@media (max-width: 1080px) {
+  .gs-live-minimal-shell--landing .gs-header-nav--site {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .gs-live-minimal-shell--landing .gs-header-nav--site {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .gs-live-minimal-shell--landing .gs-header-nav--site {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

@@ -1,7 +1,7 @@
 import type { DisplaySession, PulseSample } from './publicDisplay.js'
 import type { Character } from './office/types.js'
 import type { PublicOfficeStatus } from './services/types.js'
-import { i18n } from './content/i18n.js'
+import { i18n } from './content/i18n/index.js'
 import { getIntlLocale, t } from './content/locale.js'
 
 export type PlaybackMode = 'live' | 'replay'

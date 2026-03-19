@@ -13,7 +13,7 @@ import type {
   RealtimeStatsZoneBar,
   RealtimeTrendPoint,
 } from '../RealtimeStatsSidebar.js'
-import { i18n } from '../../content/i18n.js'
+import { i18n } from '../../content/i18n/index.js'
 import type { DisplaySession } from '../../publicDisplay.js'
 import {
   getPublicAgentLabel,
@@ -22,6 +22,7 @@ import {
   getZoneLabel,
 } from '../../publicDisplay.js'
 import { useT } from '../../content/locale.js'
+import './LiveWorkspaceSidebar.css'
 import { AnalyticsPanel } from './AnalyticsPanel.js'
 import { Panel } from './Panel.js'
 

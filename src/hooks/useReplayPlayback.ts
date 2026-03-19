@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useLocale, useT } from '../content/locale.js'
 import type { OfficeState } from '../office/engine/officeState.js'
 import type { DisplaySession } from '../publicDisplay.js'

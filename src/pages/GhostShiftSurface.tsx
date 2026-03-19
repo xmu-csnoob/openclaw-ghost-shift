@@ -19,7 +19,7 @@ import {
   demoSidebarNotes,
   documentationPoints,
 } from '../content/ghostShiftContent.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { setLocale, t, useLocale, useT } from '../content/locale.js'
 import type { DisplaySession } from '../publicDisplay.js'
 import {

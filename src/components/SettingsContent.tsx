@@ -1,6 +1,6 @@
 import type { SurfaceExperiencePreferences } from './ExperiencePanel.js'
 import { surfaceThemeOptions } from '../surfaceThemes.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { setLocale, useLocale, useT } from '../content/locale.js'
 
 export interface SettingsContentProps {

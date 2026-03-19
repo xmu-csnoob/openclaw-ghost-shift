@@ -1,5 +1,5 @@
 import { MiniSparkline } from '../MiniSparkline.js'
-import { i18n } from '../../content/i18n.js'
+import { i18n } from '../../content/i18n/index.js'
 import { getIntlLocale, useLocale, useT } from '../../content/locale.js'
 import { getZoneColor, getZoneLabel } from '../../publicDisplay.js'
 import type {
@@ -10,6 +10,7 @@ import type {
   PublicOfficeStatus,
   PublicZonesHeatmapResponse,
 } from '../../services/types.js'
+import './AnalyticsPanel.css'
 import { Panel } from './Panel.js'
 
 interface AnalyticsPanelProps {
@@ -84,6 +85,16 @@ function getStatusLabel(status: string, tt: AnalyticsPanelTranslate): string {
   return status
 }
 
+function getDeltaArrow(value: number): string {
+  if (value > 0) return '↑'
+  if (value < 0) return '↓'
+  return '→'
+}
+
+function getGradientFill(color: string): string {
+  return `linear-gradient(90deg, ${color} 0%, ${color}cc 55%, rgba(255, 255, 255, 0.96) 100%)`
+}
+
 type AnalyticsPanelTranslate = ReturnType<typeof useT>
 
 export function AnalyticsPanel({
@@ -101,12 +112,35 @@ export function AnalyticsPanel({
   const tt = useT()
   const intlLocale = getIntlLocale(locale)
   const latestTrendPoint = trends?.points[trends.points.length - 1] ?? null
+  const trendSummary = trends?.summary
+  const modelEntries = modelsDistribution?.models ?? []
+  const heatmapZones = zonesHeatmap?.zones ?? []
+  const realtimeStats = [
+    {
+      key: 'tps',
+      label: tt(i18n.analytics.realtime.tps),
+      value: typeof metricsLive?.tps === 'number' ? metricsLive.tps.toFixed(1) : '--',
+      intensity: typeof metricsLive?.tps === 'number' ? Math.min(1, metricsLive.tps / 20) : 0,
+    },
+    {
+      key: 'online-agents',
+      label: tt(i18n.analytics.realtime.onlineAgents),
+      value: typeof metricsLive?.onlineAgents === 'number' ? formatCompactNumber(metricsLive.onlineAgents, intlLocale) : '--',
+      intensity: typeof metricsLive?.onlineAgents === 'number' ? Math.min(1, metricsLive.onlineAgents / 24) : 0,
+    },
+    {
+      key: 'average-load',
+      label: tt(i18n.analytics.realtime.averageLoad),
+      value: typeof metricsLive?.averageLoad === 'number' ? formatPercent(metricsLive.averageLoad, intlLocale) : '--',
+      intensity: typeof metricsLive?.averageLoad === 'number' ? Math.min(1, metricsLive.averageLoad) : 0,
+    },
+  ]
   const trendCards = [
     {
       key: 'online-agents',
       label: tt(i18n.analytics.trends.onlineAgents),
       value: latestTrendPoint?.onlineAgents ?? metricsLive?.onlineAgents ?? 0,
-      delta: trends?.summary.onlineAgentsDelta ?? 0,
+      delta: trendSummary?.onlineAgentsDelta ?? 0,
       values: trends?.points.map((point) => point.onlineAgents) ?? [],
       accent: '#ef4444',
       fill: 'rgba(239, 68, 68, 0.14)',
@@ -115,7 +149,7 @@ export function AnalyticsPanel({
       key: 'messages',
       label: tt(i18n.analytics.trends.messageCount),
       value: latestTrendPoint?.messageCount ?? 0,
-      delta: trends?.summary.messageCountDelta ?? 0,
+      delta: trendSummary?.messageCountDelta ?? 0,
       values: trends?.points.map((point) => point.messageCount) ?? [],
       accent: '#ff6b35',
       fill: 'rgba(255, 107, 53, 0.14)',
@@ -124,13 +158,13 @@ export function AnalyticsPanel({
       key: 'tokens',
       label: tt(i18n.analytics.trends.tokenCount),
       value: latestTrendPoint?.totalTokens ?? 0,
-      delta: trends?.summary.totalTokensDelta ?? 0,
+      delta: trendSummary?.totalTokensDelta ?? 0,
       values: trends?.points.map((point) => point.totalTokens) ?? [],
       accent: '#f59e0b',
       fill: 'rgba(245, 158, 11, 0.16)',
     },
   ]
-  const compareCards = compare
+  const compareCards = compare?.today && compare?.yesterday && compare?.delta
     ? [
         {
           key: 'avg-online-agents',
@@ -182,7 +216,6 @@ export function AnalyticsPanel({
         },
       ]
     : []
-
   return (
     <div className="gs-analytics-stack">
       <Panel
@@ -196,38 +229,51 @@ export function AnalyticsPanel({
         }
       >
         <div className="gs-analytics-strip">
-          <div className="gs-analytics-stat">
-            <span>{tt(i18n.analytics.realtime.tps)}</span>
-            <strong>{metricsLive ? metricsLive.tps.toFixed(1) : '--'}</strong>
-          </div>
-          <div className="gs-analytics-stat">
-            <span>{tt(i18n.analytics.realtime.onlineAgents)}</span>
-            <strong>{metricsLive ? formatCompactNumber(metricsLive.onlineAgents, intlLocale) : '--'}</strong>
-          </div>
-          <div className="gs-analytics-stat">
-            <span>{tt(i18n.analytics.realtime.averageLoad)}</span>
-            <strong>{metricsLive ? formatPercent(metricsLive.averageLoad, intlLocale) : '--'}</strong>
-          </div>
+          {realtimeStats.map((stat) => (
+            <div key={stat.key} className={`gs-analytics-stat ${loading && !metricsLive ? 'is-skeleton' : ''}`}>
+              <span>{stat.label}</span>
+              {loading && !metricsLive ? (
+                <span className="gs-skeleton gs-analytics-skeleton-line gs-analytics-skeleton-line--value" />
+              ) : (
+                <strong>{stat.value}</strong>
+              )}
+              <div className="gs-analytics-stat__meter" aria-hidden="true">
+                <div className="gs-analytics-stat__meter-fill" style={{ width: `${Math.max(10, stat.intensity * 100)}%` }} />
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="gs-analytics-inline-meta">
           <div className="gs-analytics-inline-meta__item">
             <span>{tt(i18n.analytics.realtime.gatewayStatus)}</span>
-            <strong className={gatewayStatus?.connected ? 'is-positive' : 'is-negative'}>
-              {gatewayStatus?.connected ? tt(i18n.status.connected) : tt(i18n.status.disconnected)}
-            </strong>
+            {loading && !gatewayStatus ? (
+              <span className="gs-skeleton gs-analytics-skeleton-line" />
+            ) : (
+              <strong className={gatewayStatus?.connected ? 'is-positive' : 'is-negative'}>
+                {gatewayStatus?.connected ? tt(i18n.status.connected) : tt(i18n.status.disconnected)}
+              </strong>
+            )}
           </div>
           <div className="gs-analytics-inline-meta__item">
             <span>{tt(i18n.analytics.realtime.gatewayAgents)}</span>
-            <strong>
-              {gatewayStatus
-                ? `${formatCompactNumber(gatewayStatus.displayed, intlLocale)} / ${formatCompactNumber(gatewayStatus.running, intlLocale)}`
-                : '--'}
-            </strong>
+            {loading && !gatewayStatus ? (
+              <span className="gs-skeleton gs-analytics-skeleton-line" />
+            ) : (
+              <strong>
+                {gatewayStatus
+                  ? `${formatCompactNumber(gatewayStatus.displayed, intlLocale)} / ${formatCompactNumber(gatewayStatus.running, intlLocale)}`
+                  : '--'}
+              </strong>
+            )}
           </div>
           <div className="gs-analytics-inline-meta__item">
             <span>{tt(i18n.analytics.realtime.sessionInventory)}</span>
-            <strong>{formatCompactNumber(sessionCount, intlLocale)}</strong>
+            {loading && sessionCount === 0 ? (
+              <span className="gs-skeleton gs-analytics-skeleton-line" />
+            ) : (
+              <strong>{formatCompactNumber(sessionCount, intlLocale)}</strong>
+            )}
           </div>
         </div>
       </Panel>
@@ -247,19 +293,33 @@ export function AnalyticsPanel({
         {compareCards.length > 0 ? (
           <div className="gs-analytics-compare-grid">
             {compareCards.map((card) => {
+              const deltaTone = card.rawDelta > 0 ? 'is-positive' : card.rawDelta < 0 ? 'is-negative' : ''
               return (
                 <article key={card.key} className="gs-analytics-compare-card">
                   <span className="gs-analytics-compare-card__label">{card.label}</span>
                   <strong className="gs-analytics-compare-card__primary">{card.today}</strong>
                   <div className="gs-analytics-compare-card__meta">
                     <span>{tt(i18n.analytics.compare.yesterdayShort)} {card.yesterday}</span>
-                    <span className={card.rawDelta >= 0 ? 'is-positive' : 'is-negative'}>
+                    <span className={['gs-analytics-delta', deltaTone].filter(Boolean).join(' ')}>
+                      <span className="gs-analytics-compare-card__delta-icon" aria-hidden="true">
+                        {getDeltaArrow(card.rawDelta)}
+                      </span>
                       {tt(i18n.analytics.compare.deltaShort)} {card.delta}
                     </span>
                   </div>
                 </article>
               )
             })}
+          </div>
+        ) : loading ? (
+          <div className="gs-analytics-skeleton-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={`compare-skeleton-${index}`} className="gs-analytics-skeleton-card">
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+                <div className="gs-skeleton gs-analytics-skeleton-line gs-analytics-skeleton-line--value" />
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="gs-analytics-empty">{tt(i18n.common.noData)}</div>
@@ -272,7 +332,7 @@ export function AnalyticsPanel({
         title={tt(i18n.analytics.trends.title)}
         subtitle={
           trends
-            ? `${formatDate(trends.since, intlLocale)} → ${formatDate(trends.until, intlLocale)} • ${trends.summary.sampleCount} ${tt(i18n.analytics.trends.samples)}`
+            ? `${formatDate(trends.since, intlLocale)} → ${formatDate(trends.until, intlLocale)} • ${trendSummary?.sampleCount ?? 0} ${tt(i18n.analytics.trends.samples)}`
             : loading
               ? tt(i18n.common.loading)
               : tt(i18n.common.noData)
@@ -286,14 +346,33 @@ export function AnalyticsPanel({
                   <span>{card.label}</span>
                   <strong>{formatCompactNumber(card.value, intlLocale)}</strong>
                 </div>
-                <MiniSparkline values={card.values} stroke={card.accent} fill={card.fill} height={48} />
+                <div
+                  className="gs-analytics-trend-card__chart"
+                  data-tooltip={`${card.label}: ${formatCompactNumber(card.value, intlLocale)}`}
+                  title={`${card.label}: ${formatCompactNumber(card.value, intlLocale)}`}
+                >
+                  <MiniSparkline values={card.values} stroke={card.accent} fill={card.fill} height={48} />
+                </div>
                 <div className="gs-analytics-trend-card__delta">
                   <span>{tt(i18n.analytics.compare.deltaShort)}</span>
-                  <strong className={card.delta >= 0 ? 'is-positive' : 'is-negative'}>
+                  <strong className={['gs-analytics-delta', card.delta > 0 ? 'is-positive' : card.delta < 0 ? 'is-negative' : ''].filter(Boolean).join(' ')}>
+                    <span className="gs-analytics-compare-card__delta-icon" aria-hidden="true">
+                      {getDeltaArrow(card.delta)}
+                    </span>
                     {formatSignedNumber(card.delta, intlLocale, 0)}
                   </strong>
                 </div>
               </article>
+            ))}
+          </div>
+        ) : loading ? (
+          <div className="gs-analytics-skeleton-grid">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={`trend-skeleton-${index}`} className="gs-analytics-skeleton-card">
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+                <div className="gs-skeleton gs-analytics-skeleton-block" />
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+              </div>
             ))}
           </div>
         ) : (
@@ -307,9 +386,9 @@ export function AnalyticsPanel({
         title={tt(i18n.analytics.models.title)}
         subtitle={tt(i18n.analytics.models.subtitle)}
       >
-        {modelsDistribution?.models.length ? (
+        {modelEntries.length ? (
           <div className="gs-analytics-list">
-            {modelsDistribution.models.map((entry) => (
+            {modelEntries.map((entry) => (
               <article key={entry.model} className="gs-analytics-list__row">
                 <div className="gs-analytics-list__head">
                   <div>
@@ -332,6 +411,16 @@ export function AnalyticsPanel({
               </article>
             ))}
           </div>
+        ) : loading ? (
+          <div className="gs-analytics-skeleton-grid gs-analytics-skeleton-grid--stack">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={`model-skeleton-${index}`} className="gs-analytics-skeleton-card">
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+                <div className="gs-skeleton gs-analytics-skeleton-block gs-analytics-skeleton-block--thin" />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="gs-analytics-empty">{tt(i18n.common.noData)}</div>
         )}
@@ -349,9 +438,9 @@ export function AnalyticsPanel({
               : tt(i18n.common.noData)
         }
       >
-        {zonesHeatmap?.zones.length ? (
+        {heatmapZones.length ? (
           <div className="gs-analytics-zone-grid">
-            {zonesHeatmap.zones.map((zone) => (
+            {heatmapZones.map((zone) => (
               <article key={zone.zone} className="gs-analytics-zone-card">
                 <div className="gs-analytics-zone-card__head">
                   <div>
@@ -367,7 +456,7 @@ export function AnalyticsPanel({
                     className="gs-analytics-bar__fill"
                     style={{
                       width: `${Math.max(8, Math.min(zone.activityScore * 100, 100))}%`,
-                      background: getZoneColor(zone.zone),
+                      background: getGradientFill(getZoneColor(zone.zone)),
                     }}
                   />
                 </div>
@@ -383,6 +472,16 @@ export function AnalyticsPanel({
                   ))}
                 </div>
               </article>
+            ))}
+          </div>
+        ) : loading ? (
+          <div className="gs-analytics-skeleton-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={`zone-skeleton-${index}`} className="gs-analytics-skeleton-card">
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+                <div className="gs-skeleton gs-analytics-skeleton-block gs-analytics-skeleton-block--thin" />
+                <div className="gs-skeleton gs-analytics-skeleton-line" />
+              </div>
             ))}
           </div>
         ) : (

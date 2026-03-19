@@ -1,5 +1,5 @@
 import { demoSidebarNotes } from '../../content/ghostShiftContent.js'
-import { i18n } from '../../content/i18n.js'
+import { i18n } from '../../content/i18n/index.js'
 import { useT } from '../../content/locale.js'
 import type { GhostShiftSummaryCardProps } from '../GhostShiftSummaryCard.js'
 import { GhostShiftSummaryCard } from '../GhostShiftSummaryCard.js'

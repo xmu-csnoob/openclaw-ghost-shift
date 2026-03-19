@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { t, useT } from '../content/locale.js'
 
 // ==================== Types ====================

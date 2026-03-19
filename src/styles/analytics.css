@@ -1,0 +1,314 @@
+.gs-analytics-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.gs-analytics-panel .gs-panel__body {
+  display: grid;
+  gap: 14px;
+}
+
+.gs-analytics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-analytics-stat {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 245, 237, 0.74)),
+    linear-gradient(135deg, rgba(var(--gs-accent-secondary-rgb), 0.06), transparent 60%);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gs-analytics-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(var(--gs-accent-secondary-rgb), 0.08);
+}
+
+.gs-analytics-stat.is-skeleton strong,
+.gs-analytics-stat.is-skeleton span {
+  opacity: 0.55;
+}
+
+.gs-analytics-stat span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(85, 85, 85, 0.66);
+}
+
+.gs-analytics-stat strong {
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  font-size: 1.1rem;
+  color: #2d2d2d;
+}
+
+.gs-analytics-stat__meter {
+  width: 100%;
+  height: 8px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.08);
+  background: rgba(255, 245, 237, 0.88);
+  overflow: hidden;
+}
+
+.gs-analytics-stat__meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #ff6b35);
+  transition: width 0.4s ease;
+}
+
+.gs-analytics-inline-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-analytics-inline-meta__item {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.1);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.gs-analytics-inline-meta__item span {
+  font-size: 0.7rem;
+  color: rgba(85, 85, 85, 0.68);
+}
+
+.gs-analytics-inline-meta__item strong {
+  color: #2d2d2d;
+  font-size: 0.9rem;
+}
+
+.gs-analytics-compare-grid,
+.gs-analytics-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-analytics-compare-card,
+.gs-analytics-zone-card {
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.76);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gs-analytics-compare-card:hover,
+.gs-analytics-zone-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(var(--gs-accent-secondary-rgb), 0.08);
+}
+
+.gs-analytics-compare-card {
+  display: grid;
+  gap: 8px;
+}
+
+.gs-analytics-compare-card__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(85, 85, 85, 0.72);
+}
+
+.gs-analytics-compare-card__primary {
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  font-size: 1rem;
+  color: #2d2d2d;
+}
+
+.gs-analytics-compare-card__meta {
+  display: grid;
+  gap: 4px;
+  font-size: 0.76rem;
+  color: rgba(85, 85, 85, 0.72);
+}
+
+.gs-analytics-compare-card__delta-icon {
+  display: inline-block;
+  margin-right: 4px;
+  font-weight: 900;
+}
+
+.gs-analytics-trend-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.gs-analytics-trend-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.gs-analytics-trend-card__head,
+.gs-analytics-trend-card__delta,
+.gs-analytics-list__head,
+.gs-analytics-list__foot,
+.gs-analytics-zone-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gs-analytics-trend-card__head span,
+.gs-analytics-trend-card__delta span {
+  font-size: 0.78rem;
+  color: rgba(85, 85, 85, 0.74);
+}
+
+.gs-analytics-trend-card__head strong,
+.gs-analytics-trend-card__delta strong {
+  font-size: 0.9rem;
+  color: #2d2d2d;
+}
+
+.gs-analytics-trend-card__chart {
+  position: relative;
+}
+
+.gs-analytics-trend-card__chart::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 10px);
+  padding: 6px 8px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.14);
+  background: rgba(255, 251, 247, 0.98);
+  color: #2d2d2d;
+  font-size: 0.72rem;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.gs-analytics-trend-card__chart:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gs-analytics-list {
+  display: grid;
+  gap: 10px;
+}
+
+.gs-analytics-list__row {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.gs-analytics-list__head strong,
+.gs-analytics-zone-card__head strong {
+  color: #2d2d2d;
+}
+
+.gs-analytics-list__head span,
+.gs-analytics-list__meta,
+.gs-analytics-list__foot,
+.gs-analytics-zone-card__head span {
+  font-size: 0.76rem;
+  color: rgba(85, 85, 85, 0.72);
+}
+
+.gs-analytics-list__head > div,
+.gs-analytics-zone-card__head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.gs-analytics-list__meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.gs-analytics-list__foot {
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+}
+
+.gs-analytics-bar {
+  width: 100%;
+  height: 10px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.08);
+  background: rgba(255, 245, 237, 0.9);
+  overflow: hidden;
+}
+
+.gs-analytics-bar--zone {
+  height: 12px;
+}
+
+.gs-analytics-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #ff6b35);
+  transition: width 0.4s ease;
+}
+
+.gs-analytics-zone-card {
+  display: grid;
+  gap: 10px;
+}
+
+.gs-analytics-zone-card__mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gs-analytics-zone-card__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.76);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gs-analytics-empty {
+  padding: 14px;
+  border: 1px dashed rgba(var(--gs-accent-secondary-rgb), 0.16);
+  color: rgba(85, 85, 85, 0.72);
+  font-size: 0.84rem;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+@media (max-width: 980px) {
+  .gs-analytics-strip,
+  .gs-analytics-inline-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gs-analytics-compare-grid,
+  .gs-analytics-zone-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .gs-analytics-strip,
+  .gs-analytics-inline-meta {
+    grid-template-columns: 1fr;
+  }
+}

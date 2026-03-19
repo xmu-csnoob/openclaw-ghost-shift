@@ -1,0 +1,213 @@
+.gs-agent-detail-modal .gs-modal {
+  width: min(92vw, 920px);
+  animation: gs-agent-detail-in 0.22s ease;
+}
+
+.gs-agent-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.gs-agent-detail__panel .gs-panel__body {
+  display: grid;
+  gap: 14px;
+}
+
+.gs-agent-detail__hero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-agent-detail__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.gs-agent-detail__identity strong {
+  color: #2d2d2d;
+}
+
+.gs-agent-detail__identity span {
+  color: rgba(85, 85, 85, 0.74);
+  font-size: 0.82rem;
+}
+
+.gs-agent-detail__zone-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
+.gs-agent-detail__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-agent-detail__stat {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.76);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gs-agent-detail__stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(var(--gs-accent-secondary-rgb), 0.08);
+}
+
+.gs-agent-detail__stat span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(85, 85, 85, 0.68);
+}
+
+.gs-agent-detail__stat strong {
+  color: #2d2d2d;
+  font-family: var(--font-pixel-mono), 'Azeret Mono', monospace;
+  font-size: 0.98rem;
+}
+
+.gs-agent-detail__periods {
+  display: grid;
+  gap: 10px;
+}
+
+.gs-agent-detail__period {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.gs-agent-detail__period-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gs-agent-detail__period-head strong {
+  color: #2d2d2d;
+}
+
+.gs-agent-detail__period-head span {
+  font-size: 0.78rem;
+  color: rgba(85, 85, 85, 0.74);
+}
+
+.gs-agent-detail__period-visual {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.gs-agent-detail__period-cell {
+  height: 12px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.1);
+  border-radius: 999px;
+  background: rgba(255, 245, 237, 0.86);
+}
+
+.gs-agent-detail__period-cell.is-active {
+  background: linear-gradient(180deg, #ff9e6b, #ef4444);
+  box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.08);
+}
+
+.gs-agent-detail__period-bar {
+  width: 100%;
+  height: 10px;
+  border: 1px solid rgba(var(--gs-accent-secondary-rgb), 0.08);
+  border-radius: 999px;
+  background: rgba(255, 245, 237, 0.9);
+  overflow: hidden;
+}
+
+.gs-agent-detail__period-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #ff6b35 55%, #f59e0b 100%);
+  transition: width 0.4s ease;
+}
+
+.gs-agent-detail__stat.is-skeleton span,
+.gs-agent-detail__stat.is-skeleton strong,
+.gs-agent-detail__period.is-skeleton span {
+  color: transparent;
+}
+
+.gs-agent-detail__skeleton-line {
+  display: block;
+  width: 72%;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.gs-agent-detail__skeleton-line--value {
+  width: 54%;
+  height: 20px;
+}
+
+.gs-agent-detail__skeleton-grid {
+  display: block;
+  width: 100%;
+  height: 18px;
+  border-radius: 12px;
+}
+
+.gs-agent-detail__skeleton-bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.gs-agent-detail__empty {
+  padding: 14px;
+  border: 1px dashed rgba(var(--gs-accent-secondary-rgb), 0.16);
+  border-radius: 12px;
+  color: rgba(85, 85, 85, 0.72);
+  font-size: 0.84rem;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+@keyframes gs-agent-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 980px) {
+  .gs-agent-detail__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gs-agent-detail__hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .gs-agent-detail__stats {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { LocalizedText } from '../content/locale.js'
 import type { SurfaceTheme } from '../surfaceThemes.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useT } from '../content/locale.js'
 
 export interface SurfaceExperiencePreferences {

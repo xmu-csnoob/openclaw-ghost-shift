@@ -13,7 +13,7 @@ import type { TimelinePoint } from '../replay.js'
 import type { PublicOfficeStatus } from '../services/types.js'
 import { clampRecentTimeline, computeTrendSummary, formatDelta, getTopAgentEntries } from '../portfolioMetrics.js'
 import { MiniSparkline } from './MiniSparkline.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { getIntlLocale, useT } from '../content/locale.js'
 import { getStatusLabel } from '../publicDisplay.js'
 

@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import { HeaderNavigation } from '../components/ghostShift/HeaderNavigation.js'
 import { LiveWorkspaceSidebar } from '../components/ghostShift/LiveWorkspaceSidebar.js'
 import { LiveOfficeStage } from '../components/LiveOfficeStage.js'
+import './workspace.css'
 
 interface WorkspaceViewProps {
   page: 'live' | 'replay'

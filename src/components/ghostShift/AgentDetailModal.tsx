@@ -1,4 +1,4 @@
-import { i18n } from '../../content/i18n.js'
+import { i18n } from '../../content/i18n/index.js'
 import { getIntlLocale, useLocale, useT } from '../../content/locale.js'
 import {
   formatDurationShort,
@@ -9,6 +9,7 @@ import {
 } from '../../publicDisplay.js'
 import type { DisplaySession } from '../../publicDisplay.js'
 import type { PublicAgentStats } from '../../services/types.js'
+import './AgentDetailModal.css'
 import { Modal } from '../Modal.js'
 import { Panel } from './Panel.js'
 
@@ -55,9 +56,23 @@ export function AgentDetailModal({
   const intlLocale = getIntlLocale(locale)
   const agentLabel = getPublicAgentLabel(stats?.agentId || session?.agentId)
   const title = `${agentLabel} · ${tt(i18n.analytics.agentDetail.title)}`
+  const statCards = stats
+    ? [
+        { key: 'work-time', label: tt(i18n.analytics.agentDetail.workTime), value: formatDurationShort(stats.workTimeSeconds * 1000) },
+        { key: 'tool-calls', label: tt(i18n.analytics.agentDetail.toolCalls), value: formatCount(stats.toolCallCount, intlLocale) },
+        { key: 'avg-response-time', label: tt(i18n.analytics.agentDetail.avgResponseTime), value: formatLatency(stats.avgResponseTime, intlLocale) },
+        { key: 'message-count', label: tt(i18n.analytics.agentDetail.messageCount), value: formatCount(stats.messageCount, intlLocale) },
+        { key: 'sample-count', label: tt(i18n.analytics.agentDetail.sampleCount), value: formatCount(stats.sampleCount, intlLocale) },
+      ]
+    : []
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} className="gs-agent-detail-modal">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      className={`gs-agent-detail-modal ${isOpen ? 'is-open' : ''}`}
+    >
       <div className="gs-agent-detail">
         <Panel
           className="gs-agent-detail__panel"
@@ -95,30 +110,25 @@ export function AgentDetailModal({
         >
           {stats ? (
             <div className="gs-agent-detail__stats">
-              <div className="gs-agent-detail__stat">
-                <span>{tt(i18n.analytics.agentDetail.workTime)}</span>
-                <strong>{formatDurationShort(stats.workTimeSeconds * 1000)}</strong>
-              </div>
-              <div className="gs-agent-detail__stat">
-                <span>{tt(i18n.analytics.agentDetail.toolCalls)}</span>
-                <strong>{formatCount(stats.toolCallCount, intlLocale)}</strong>
-              </div>
-              <div className="gs-agent-detail__stat">
-                <span>{tt(i18n.analytics.agentDetail.avgResponseTime)}</span>
-                <strong>{formatLatency(stats.avgResponseTime, intlLocale)}</strong>
-              </div>
-              <div className="gs-agent-detail__stat">
-                <span>{tt(i18n.analytics.agentDetail.messageCount)}</span>
-                <strong>{formatCount(stats.messageCount, intlLocale)}</strong>
-              </div>
-              <div className="gs-agent-detail__stat">
-                <span>{tt(i18n.analytics.agentDetail.sampleCount)}</span>
-                <strong>{formatCount(stats.sampleCount, intlLocale)}</strong>
-              </div>
+              {statCards.map((card) => (
+                <div key={card.key} className="gs-agent-detail__stat">
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                </div>
+              ))}
+            </div>
+          ) : loading ? (
+            <div className="gs-agent-detail__stats">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={`agent-detail-stat-skeleton-${index}`} className="gs-agent-detail__stat is-skeleton">
+                  <span className="gs-skeleton gs-agent-detail__skeleton-line" />
+                  <strong className="gs-skeleton gs-agent-detail__skeleton-line gs-agent-detail__skeleton-line--value" />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="gs-agent-detail__empty">
-              {loading ? tt(i18n.common.loading) : error || tt(i18n.common.noData)}
+              {error || tt(i18n.common.noData)}
             </div>
           )}
         </Panel>
@@ -137,12 +147,33 @@ export function AgentDetailModal({
                     <strong>{period.label}</strong>
                     <span>{formatCount(period.count, intlLocale)} · {formatShare(period.share, intlLocale)}</span>
                   </div>
+                  <div className="gs-agent-detail__period-visual" aria-hidden="true">
+                    {Array.from({ length: 12 }).map((_, index) => (
+                      <span
+                        key={`${period.label}-${index}`}
+                        className={`gs-agent-detail__period-cell ${index < Math.round(period.share * 12) ? 'is-active' : ''}`}
+                      />
+                    ))}
+                  </div>
                   <div className="gs-agent-detail__period-bar">
                     <div
                       className="gs-agent-detail__period-fill"
                       style={{ width: `${Math.max(8, Math.min(period.share * 100, 100))}%` }}
                     />
                   </div>
+                </article>
+              ))}
+            </div>
+          ) : loading ? (
+            <div className="gs-agent-detail__periods">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <article key={`agent-detail-period-skeleton-${index}`} className="gs-agent-detail__period is-skeleton">
+                  <div className="gs-agent-detail__period-head">
+                    <span className="gs-skeleton gs-agent-detail__skeleton-line" />
+                    <span className="gs-skeleton gs-agent-detail__skeleton-line" />
+                  </div>
+                  <div className="gs-skeleton gs-agent-detail__skeleton-grid" />
+                  <div className="gs-skeleton gs-agent-detail__skeleton-bar" />
                 </article>
               ))}
             </div>

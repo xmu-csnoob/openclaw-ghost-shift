@@ -5,7 +5,7 @@ import type { PublicOfficeStatus } from '../services/types.js'
 import { renderShareCard } from '../shareCard.js'
 import type { SurfaceTheme } from '../surfaceThemes.js'
 import { surfaceThemeOptions } from '../surfaceThemes.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useLocale, useT } from '../content/locale.js'
 
 export interface SharePanelProps {

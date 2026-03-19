@@ -11,8 +11,9 @@ import { ReplayControlBar } from './ReplayControlBar.js'
 import { SessionPanel } from './SessionPanel.js'
 import { SignalStrip } from './SignalStrip.js'
 import { StatusPanel } from './StatusPanel.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useT } from '../content/locale.js'
+import './LiveOfficeStage.css'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 type HoverCardMode = 'full' | 'minimal'
@@ -208,7 +209,7 @@ export function LiveOfficeStage({
   const showHoverCard = hoverCardMode === 'minimal' || hoverCardMode === 'full'
 
   return (
-    <div className="gs-live-stage">
+    <div className="gs-live-stage" data-mode={playbackState.mode}>
       <OfficeCanvas
         officeState={officeState}
         onClick={onAgentClick}
@@ -289,6 +290,7 @@ export function LiveOfficeStage({
           </div>
 
           <button
+            type="button"
             className={`gs-stage-panel gs-stage-panel--button ${showStatusPanel ? 'is-active' : ''}`}
             onClick={onToggleStatusPanel}
             aria-pressed={showStatusPanel}
@@ -297,6 +299,7 @@ export function LiveOfficeStage({
           </button>
 
           <button
+            type="button"
             className={`gs-stage-panel gs-stage-panel--button ${heatmapEnabled ? 'is-active' : ''}`}
             onClick={onToggleHeatmap}
             aria-pressed={heatmapEnabled}

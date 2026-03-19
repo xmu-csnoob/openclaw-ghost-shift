@@ -1,4 +1,5 @@
 import type { ElementType, ReactNode } from 'react'
+import './Panel.css'
 
 type PanelVariant = 'side' | 'overlay'
 

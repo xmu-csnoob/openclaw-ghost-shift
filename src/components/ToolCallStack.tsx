@@ -14,7 +14,7 @@ import {
   ToolCallData,
   ToolType,
 } from './ToolCallCard.js'
-import { i18n } from '../content/i18n.js'
+import { i18n } from '../content/i18n/index.js'
 import { useT } from '../content/locale.js'
 
 export interface ToolCallStackProps {
